@@ -195,7 +195,7 @@ export function simulate(opts) {
   const vmin = q(0.04);
   const vmax = Math.max(q(0.997), vmin + 6);
 
-  const result = { nx, ny, epochs, stacks, frames, vmin, vmax, stars, posAt, visibleAt, object, cosmicHits, lam, arrayIdx, channel, fov, objFlux: object ? objFlux : null };
+  const result = { nx, ny, pxScale: PX, epochs, stacks, frames, vmin, vmax, stars, posAt, visibleAt, object, cosmicHits, lam, arrayIdx, channel, fov, objFlux: object ? objFlux : null };
   if (key) {
     if (cache.size > 40) cache.delete(cache.keys().next().value);
     cache.set(key, result);
@@ -341,7 +341,7 @@ export function drawReticle(ctx, x, y, { color = '#b8afff', r = 14, label, sub }
   }
   ctx.restore();
 }
-export function drawCompass(ctx, W, H, fovArcmin, nx) {
+export function drawCompass(ctx, W, H, fovArcmin, nx, pxScale = PX) {
   ctx.save();
   ctx.strokeStyle = 'rgba(233,235,243,.7)';
   ctx.fillStyle = 'rgba(233,235,243,.75)';
@@ -351,7 +351,7 @@ export function drawCompass(ctx, W, H, fovArcmin, nx) {
   ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - 20); ctx.moveTo(cx, cy); ctx.lineTo(cx - 20, cy); ctx.stroke();
   ctx.fillText('N', cx - 3.5, cy - 25);
   ctx.fillText('E', cx - 34, cy + 4);
-  const barPx = (60 / PX) * (W / nx); // 1 arcminute
+  const barPx = (60 / pxScale) * (W / nx); // 1 arcminute
   ctx.beginPath(); ctx.moveTo(14, H - 16); ctx.lineTo(14 + barPx, H - 16); ctx.stroke();
   ctx.fillText('1′', 14, H - 22);
   ctx.restore();
