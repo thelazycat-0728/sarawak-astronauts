@@ -71,6 +71,14 @@ class Settings:
     # In-memory cache of /epochs results, keyed by the rounded position, fov and band.
     epochs_cache_ttl_s: float = 600.0
     epochs_cache_max_entries: int = 32
+    # A sequence that lost a visit because its downloads failed is still returned,
+    # but cached only this long, so it is rebuilt soon after IRSA recovers.
+    epochs_cache_degraded_ttl_s: float = 30.0
+    # Most /epochs requests waiting for a build at once. Each waiting request holds
+    # a worker thread; more answer 503 unavailable at once.
+    epochs_max_waiters: int = 16
+    # Whole-request limit for /frame/{id}.png in irsa mode (504 upstream_timeout).
+    frame_deadline_s: float = 60.0
 
     # ------------------------------------------------ cleaning pipeline (app.pipeline)
     # FLAGS bits that mask a pixel, by name. Bit numbers are read from each cutout's
