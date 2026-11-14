@@ -14,7 +14,7 @@ Two data modes, chosen with the `DATA_MODE` environment variable:
   `diff_url_template: null` and `diffs: []`.
 
 `GET /health` always returns `{"status": "ok"}`; the `X-Data-Mode` response header
-says which mode is running. `POST /explain` (Track C) is not implemented yet;
+(readable from browser JavaScript through CORS) says which mode is running. `POST /explain` (Track C) is not implemented yet;
 `app/models.py` holds its request and response models.
 
 ## Set up (from `backend/`)
@@ -71,6 +71,20 @@ A build that has started keeps going in the background, so the same view a minut
 later is often fast. At most 4 IRSA requests run at once in the whole process
 (`Settings.irsa_max_concurrency`). On Render's free plan the disk is wiped on every
 restart, so the first request after a restart is a cold one.
+
+When IRSA fails, the API says so instead of reporting "no data":
+
+- exposures exist but every cutout download failed: `502 upstream_error` (or `504`
+  when every failure was a timeout), not cached;
+- a visit lost because its downloads failed: the shorter sequence is returned but
+  cached for only 30 s (`epochs_cache_degraded_ttl_s`);
+- `count: 0` means IRSA lists no exposure there (cached normally).
+
+More than 16 requests waiting for builds at once (`epochs_max_waiters`) get
+`503 unavailable` straight away. `/frame` gives up after 60 s (`frame_deadline_s`,
+`504`). `/health` runs on the event loop, so slow requests cannot delay it. In this
+mode the `app.*` log lines (for example the per-build timings) appear in uvicorn's
+output.
 
 **The presets are the demo fallback.** The five preset targets (API.md section 4)
 are pre-computed files in `frontend/public/presets/` (built with
