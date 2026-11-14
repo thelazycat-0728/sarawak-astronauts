@@ -554,7 +554,7 @@ def check_epochs(doc: dict, errs: list[str]) -> set[str]:
         errs.append("epochs.json: stretch.asinh_a must be > 0")
     for i, e in enumerate(doc["epochs"]):
         where = f"epochs.json $.epochs[{i}]"
-        if not EPOCH_ID_RE.match(e["id"]):
+        if not EPOCH_ID_RE.fullmatch(e["id"]):
             errs.append(f"{where}: id {e['id']!r} does not match {EPOCH_ID_RE.pattern}")
         if abs(iso_to_mjd(e["time_utc"]) - e["mjd"]) > 1e-5:
             errs.append(f"{where}: mjd does not match time_utc")

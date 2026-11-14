@@ -159,7 +159,7 @@ def parse_sia_votable(content: bytes, band: str, settings: Settings) -> list[Exp
         t_max = _float_or_none(_cell(row, "t_max"))
         if (
             release is None
-            or not _OBS_ID_RE.match(obs_id)
+            or not _OBS_ID_RE.fullmatch(obs_id)
             or not url.startswith("https://")
             or t_min is None
             or t_max is None

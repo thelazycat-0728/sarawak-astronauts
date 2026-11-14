@@ -95,20 +95,20 @@ def group_visits(
 
 def build_epoch_id(release: str, obs_id: str, band: str) -> str:
     """Stable epoch id; ValueError if the parts cannot form a safe id."""
-    if not _RELEASE_RE.match(release):
+    if not _RELEASE_RE.fullmatch(release):
         raise ValueError(f"release label not usable in an epoch id: {release!r}")
-    if not _OBS_ID_RE.match(obs_id):
+    if not _OBS_ID_RE.fullmatch(obs_id):
         raise ValueError(f"obs_id not usable in an epoch id: {obs_id!r}")
     if band not in BAND_IDS:
         raise ValueError(f"unknown band: {band!r}")
     epoch_id = f"sx_{release.lower()}_{obs_id}_{band}"
-    assert EPOCH_ID_RE.match(epoch_id)
+    assert EPOCH_ID_RE.fullmatch(epoch_id)
     return epoch_id
 
 
 def parse_epoch_id(epoch_id: str) -> tuple[str, str, str]:
     """Inverse of build_epoch_id: (lower-case release label, obs_id, band)."""
-    m = _PARSE_RE.match(epoch_id)
+    m = _PARSE_RE.fullmatch(epoch_id)
     if not m:
         raise ValueError(f"not a SPHEREx epoch id: {epoch_id!r}")
     return m.group(1), m.group(2), m.group(3)

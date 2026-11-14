@@ -31,7 +31,7 @@ QualityStatus = Literal["good", "warn", "bad"]
 def check_band(value: str) -> str:
     if value in BAND_IDS:
         return value
-    if RESERVED_CHANNEL_RE.match(value):
+    if RESERVED_CHANNEL_RE.fullmatch(value):
         raise ValueError(
             f"single channels such as {value} are not available yet; use D1 to D6"
         )

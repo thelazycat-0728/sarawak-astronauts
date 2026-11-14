@@ -42,11 +42,11 @@ def cutout_key(
 ) -> str:
     """Cache key from already rounded values; ValueError if unsafe as a file name."""
     if not (
-        _RELEASE_RE.match(release) and _OBS_ID_RE.match(obs_id) and band in BAND_IDS
+        _RELEASE_RE.fullmatch(release) and _OBS_ID_RE.fullmatch(obs_id) and band in BAND_IDS
     ):
         raise ValueError(f"unusable cache key parts: {release!r}, {obs_id!r}, {band!r}")
     key = f"{release.lower()}_{obs_id}_{band}_{ra:.4f}_{dec:+.4f}_{size_arcmin:.1f}"
-    if not _KEY_RE.match(key) or ".." in key:
+    if not _KEY_RE.fullmatch(key) or ".." in key:
         raise ValueError(f"unusable cache key: {key!r}")
     return key
 
@@ -59,7 +59,7 @@ class CutoutCache:
         self._key_locks: dict[str, threading.Lock] = {}
 
     def path_for(self, key: str) -> Path:
-        if not _KEY_RE.match(key) or ".." in key:
+        if not _KEY_RE.fullmatch(key) or ".." in key:
             raise ValueError(f"unusable cache key: {key!r}")
         return self.directory / f"{key}.fits"
 
