@@ -30,7 +30,10 @@ Frames use the grey-level convention in `docs/API.md` section 3: grey 0
 (`image.nodata_gray`) means no data, and valid pixels are 1-255 from the asinh
 stretch with `stretch.vmin`, `stretch.vmax` and `stretch.asinh_a`. The mock's
 `asinh_a` is 0.03; real SPHEREx frames use 0.1, so always read it from the JSON.
-The mock has no masked pixels, so grey 0 does not occur in these frames.
+Three frames have synthetic no-data patches (grey 0): a large masked blob in the
+third frame (the `warn` example, `PERSIST`), a small one in the sixth (`PERSIST`)
+and a 1 px off-detector strip at the east (left) edge of the eighth. Each
+`quality.flagged_fraction` is the measured share of grey-0 pixels in its frame.
 
 ## Regenerate
 

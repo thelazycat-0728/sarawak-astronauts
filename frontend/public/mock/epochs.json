@@ -47,7 +47,7 @@
       "wavelength_um": 1.496,
       "quality": {
         "status": "good",
-        "flagged_fraction": 0.004,
+        "flagged_fraction": 0.0,
         "flags": []
       },
       "frame_url": "/mock/frames/mock_20250514_01_D2.png"
@@ -63,7 +63,7 @@
       "wavelength_um": 1.484,
       "quality": {
         "status": "good",
-        "flagged_fraction": 0.006,
+        "flagged_fraction": 0.0,
         "flags": []
       },
       "frame_url": "/mock/frames/mock_20250514_02_D2.png"
@@ -79,7 +79,7 @@
       "wavelength_um": 1.278,
       "quality": {
         "status": "warn",
-        "flagged_fraction": 0.071,
+        "flagged_fraction": 0.0665,
         "flags": [
           "PERSIST"
         ]
@@ -97,7 +97,7 @@
       "wavelength_um": 1.144,
       "quality": {
         "status": "good",
-        "flagged_fraction": 0.003,
+        "flagged_fraction": 0.0,
         "flags": []
       },
       "frame_url": "/mock/frames/mock_20251111_04_D2.png"
@@ -113,7 +113,7 @@
       "wavelength_um": 1.371,
       "quality": {
         "status": "good",
-        "flagged_fraction": 0.005,
+        "flagged_fraction": 0.0,
         "flags": []
       },
       "frame_url": "/mock/frames/mock_20251112_05_D2.png"
@@ -129,7 +129,7 @@
       "wavelength_um": 1.351,
       "quality": {
         "status": "good",
-        "flagged_fraction": 0.009,
+        "flagged_fraction": 0.0088,
         "flags": [
           "PERSIST"
         ]
@@ -147,7 +147,7 @@
       "wavelength_um": 1.491,
       "quality": {
         "status": "good",
-        "flagged_fraction": 0.004,
+        "flagged_fraction": 0.0,
         "flags": []
       },
       "frame_url": "/mock/frames/mock_20260513_07_D2.png"
@@ -163,7 +163,7 @@
       "wavelength_um": 1.293,
       "quality": {
         "status": "good",
-        "flagged_fraction": 0.012,
+        "flagged_fraction": 0.0104,
         "flags": []
       },
       "frame_url": "/mock/frames/mock_20260513_08_D2.png"
@@ -179,7 +179,7 @@
       "wavelength_um": 1.166,
       "quality": {
         "status": "good",
-        "flagged_fraction": 0.006,
+        "flagged_fraction": 0.0,
         "flags": []
       },
       "frame_url": "/mock/frames/mock_20260514_09_D2.png"
