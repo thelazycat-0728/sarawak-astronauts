@@ -33,6 +33,7 @@ from urllib3.exceptions import ReadTimeoutError
 
 from app.config import Settings
 from app.cutouts.geometry import KEPT_HDUS
+from app.cutouts.limit import irsa_slot
 from app.errors import ApiError, UpstreamError, UpstreamTimeout
 from app.irsa.sia import USER_AGENT
 
@@ -179,6 +180,8 @@ def download_cutout(
     ``cutout_retry_backoff_s * 2**(n-1)`` times a random factor from 0.5 to 1.5, so
     parallel workers that hit IRSA's "Server busy" 503 at once do not retry in step,
     and never less than a numeric Retry-After header (capped at 30 s).
+    Each attempt holds one process-wide IRSA slot (``app.cutouts.limit``); the
+    wait between attempts does not.
     Raises UpstreamTimeout or UpstreamError when every attempt fails.
     """
     check_access_url(url.split("?", 1)[0])
@@ -188,7 +191,8 @@ def download_cutout(
     try:
         for attempt in range(attempts):
             try:
-                return _download_once(url, dest, settings, sess)
+                with irsa_slot(settings):
+                    return _download_once(url, dest, settings, sess)
             except _Retryable as exc:
                 if attempt + 1 >= attempts:
                     raise exc.error from exc
