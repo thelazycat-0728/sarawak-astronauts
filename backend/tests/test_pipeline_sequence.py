@@ -55,6 +55,7 @@ def test_sequence_validates_as_epochs_response(tmp_path, mode, count):
     assert (resp.image.width_px, resp.image.height_px) == (97, 97)
     assert resp.image.pixel_scale_arcsec == 6.2
     assert resp.stretch.shared and resp.stretch.method == "asinh"
+    assert resp.stretch.asinh_a == 0.1 and resp.image.nodata_gray == 0
     assert resp.stretch.vmax > resp.stretch.vmin
     assert [e.mjd for e in resp.epochs] == sorted(e.mjd for e in resp.epochs)
     assert len(session.calls) == count  # per_visit fetches one per visit only

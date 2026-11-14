@@ -46,6 +46,7 @@ from app.models import (
 from app.pipeline.clean import CleanFrame, grid_side
 from app.pipeline.render import clean_path, compute_stretch, frame_png
 from app.pipeline.select import Attempt, select_per_visit
+from app.stretch import NODATA_GRAY
 
 Mode = Literal["per_visit", "all"]
 FrameUrlFn = Callable[[str, float, float], str]
@@ -187,8 +188,10 @@ def build_sequence(
         fov_arcmin=view.fov_arcmin,
         band=BandInfo.for_band(band_s),
         image=ImageInfo(width_px=side, height_px=side,
-                        pixel_scale_arcsec=settings.pipeline_pixel_scale_arcsec),
-        stretch=Stretch(shared=True, method="asinh", vmin=vmin, vmax=vmax, note=STRETCH_NOTE),
+                        pixel_scale_arcsec=settings.pipeline_pixel_scale_arcsec,
+                        nodata_gray=NODATA_GRAY),
+        stretch=Stretch(shared=True, method="asinh", vmin=vmin, vmax=vmax,
+                        asinh_a=settings.stretch_asinh_a, note=STRETCH_NOTE),
         releases=releases,
         duplicates_removed=query.duplicates_removed,
         count=len(out_epochs),

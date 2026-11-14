@@ -3,12 +3,13 @@
 - **Stretch.** ``vmin`` and ``vmax`` (MJy/sr) are the ``Settings.stretch_percentiles``
   (1st and 99.5th) of every valid pixel of every frame in the sequence, rounded to 5
   significant digits so the values written to JSON give the same PNG bytes when
-  they come back as ``frame_url`` parameters. A pixel maps to
+  they come back as ``frame_url`` parameters. Grey levels follow ``app.stretch``:
   ``x = clip((v - vmin) / (vmax - vmin), 0, 1)``, then
-  ``asinh(x / a) / asinh(1 / a)`` with ``a = stretch_asinh_a`` (0.1).
+  ``gray = 1 + round(254 * asinh(x / a) / asinh(1 / a))`` with
+  ``a = stretch_asinh_a`` (0.1), reported as ``stretch.asinh_a``.
 - **PNG.** 8-bit greyscale, row 0 = north, column 0 = east. Valid pixels map to grey
-  levels 1-255; masked, off-detector and empty pixels get ``png_fill_value`` (0).
-  Pillow writes no timestamp, so equal arrays give equal bytes.
+  levels 1-255; masked, off-detector and empty pixels get grey 0
+  (``image.nodata_gray``). Pillow writes no timestamp, so equal arrays give equal bytes.
 - **render_frame** finds the cutout from the epoch id alone (the cache key is built
   from the release, exposure id and band in the id), so a warm frame needs no IRSA
   call, even after a restart. On a cache miss it re-finds the exposure with
@@ -40,6 +41,7 @@ from app.errors import InvalidParameter, NotFound, UpstreamError
 from app.irsa.epochs import parse_epoch_id
 from app.irsa.sia import HttpSession, validate_band
 from app.pipeline.clean import CleanFrame, clean_cutout
+from app.stretch import value_to_gray
 
 STRETCH_DIGITS = 5
 
@@ -72,17 +74,10 @@ def compute_stretch(
 
 
 def to_gray8(image: np.ndarray, vmin: float, vmax: float, settings: Settings) -> np.ndarray:
-    """Apply the asinh stretch: valid pixels to 1-255, others to the fill value."""
+    """Apply the asinh stretch (app.stretch): valid pixels to 1-255, others to 0."""
     if not (math.isfinite(vmin) and math.isfinite(vmax) and vmax > vmin):
         raise InvalidParameter("vmax must be greater than vmin")
-    valid = np.isfinite(image)
-    a = settings.stretch_asinh_a
-    with np.errstate(invalid="ignore"):
-        x = np.clip((np.where(valid, image, vmin) - vmin) / (vmax - vmin), 0.0, 1.0)
-    y = np.arcsinh(x / a) / np.arcsinh(1.0 / a)
-    levels = 1.0 + np.round(y * 254.0)
-    out = np.where(valid, levels, settings.png_fill_value)
-    return out.astype(np.uint8)
+    return value_to_gray(image, vmin, vmax, settings.stretch_asinh_a)
 
 
 def encode_png(gray: np.ndarray) -> bytes:

@@ -94,12 +94,11 @@ class Settings:
     pipeline_pixel_scale_arcsec: float = 6.2
     # Shared stretch: asinh between robust percentiles of every valid pixel in the
     # sequence (MJy/sr, after ZODI subtraction). asinh softening as in astropy's
-    # AsinhStretch (smaller = more contrast in faint parts).
+    # AsinhStretch (smaller = more contrast in faint parts); reported to clients as
+    # stretch.asinh_a. Grey levels follow app.stretch: valid pixels 1-255, grey 0
+    # (image.nodata_gray) for masked, off-detector or empty pixels.
     stretch_percentiles: tuple[float, float] = (1.0, 99.5)
     stretch_asinh_a: float = 0.1
-    # PNG grey level for masked, off-detector or empty pixels. Valid pixels are
-    # mapped to 1-255, so 0 always means "no data".
-    png_fill_value: int = 0
     # Quality status from the flagged fraction of the view (API.md section 3).
     quality_warn_fraction: float = 0.05
     quality_bad_fraction: float = 0.25

@@ -12,6 +12,7 @@ from app.config import Settings
 from app.cutouts import QueryCache
 from app.errors import InvalidParameter, NotFound, UpstreamError
 from app.pipeline.render import compute_stretch, encode_png, render_frame, to_gray8
+from app.stretch import NODATA_GRAY
 from tests.cutout_helpers import FOV10, StreamResponse, StreamSession, make_settings, ok
 from tests.irsa_helpers import FakeResponse, FakeSession, fixture_bytes
 from tests.pipeline_helpers import DEC, RA
@@ -53,7 +54,7 @@ def test_gray_levels_and_fill_value():
     image = np.array([[np.nan, -5.0, 0.0, 0.5, 1.0, 7.0]])
     gray = to_gray8(image, 0.0, 1.0, S)
     assert gray.dtype == np.uint8
-    assert gray[0, 0] == S.png_fill_value == 0
+    assert gray[0, 0] == NODATA_GRAY == 0
     assert gray[0, 1] == gray[0, 2] == 1  # at or below vmin
     assert gray[0, 4] == gray[0, 5] == 255  # at or above vmax
     assert 1 < gray[0, 3] < 255
