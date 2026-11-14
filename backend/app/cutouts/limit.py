@@ -49,17 +49,38 @@ class LimitedSiaSession:
     """An ``app.irsa.sia.HttpSession`` that takes an IRSA slot for each request.
 
     Wraps ``inner`` (for example a test double); without one, every request uses
-    a fresh ``requests.Session``, as ``fetch_sia`` does by default.
+    a fresh ``requests.Session``, as ``fetch_sia`` does by default. A streamed
+    request (``stream=True``) has its body read inside the slot, with the size
+    cap of ``app.irsa.sia.read_capped``, and comes back already buffered.
     """
 
     def __init__(self, settings: Settings, inner: Any | None = None):
         self._settings = settings
         self._inner = inner
 
-    def get(self, url: str, *, params: Any, timeout: Any, headers: Any) -> Any:
+    def get(self, url: str, *, params: Any, timeout: Any, headers: Any,
+            stream: bool = False) -> Any:
+        extra = {"stream": True} if stream else {}
         with irsa_slot(self._settings):
             if self._inner is not None:
-                return self._inner.get(url, params=params, timeout=timeout,
-                                       headers=headers)
+                resp = self._inner.get(url, params=params, timeout=timeout,
+                                       headers=headers, **extra)
+                return self._buffer(resp, timeout) if stream else resp
             with requests.Session() as session:
-                return session.get(url, params=params, timeout=timeout, headers=headers)
+                resp = session.get(url, params=params, timeout=timeout, headers=headers,
+                                   **extra)
+                return self._buffer(resp, timeout) if stream else resp
+
+    def _buffer(self, resp: Any, timeout: Any) -> Any:
+        from app.irsa.sia import BufferedResponse, read_capped
+
+        try:
+            content = read_capped(resp, self._settings.irsa_sia_max_bytes,
+                                  float(timeout) if isinstance(timeout, int | float)
+                                  else self._settings.irsa_timeout_s)
+            return BufferedResponse(int(getattr(resp, "status_code", 0)),
+                                    getattr(resp, "headers", None), content)
+        finally:
+            close = getattr(resp, "close", None)
+            if close is not None:
+                close()

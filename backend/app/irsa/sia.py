@@ -26,6 +26,7 @@ import requests
 from astropy.io.votable import parse as parse_votable
 from pyvo.dal import DALResults
 from pyvo.dal.exceptions import DALQueryError
+from urllib3.exceptions import ReadTimeoutError
 
 from app.config import Settings
 from app.errors import InvalidParameter, UpstreamError, UpstreamTimeout
@@ -50,7 +51,8 @@ _OBS_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,56}$")
 
 
 class HttpSession(Protocol):
-    def get(self, url: str, *, params: Any, timeout: Any, headers: Any) -> Any: ...
+    def get(self, url: str, *, params: Any, timeout: Any, headers: Any,
+            stream: bool = False) -> Any: ...
 
 
 # ------------------------------------------------------------------ validation
@@ -202,33 +204,94 @@ def _make_session() -> requests.Session:
     return requests.Session()
 
 
+SIA_CHUNK_BYTES = 64 * 1024
+
+
+class BufferedResponse:
+    """A response whose body was already read (by ``read_capped``)."""
+
+    def __init__(self, status_code: int, headers: Any, content: bytes):
+        self.status_code = status_code
+        self.headers = dict(headers or {})
+        self.content = content
+
+    def iter_content(self, chunk_size: int = SIA_CHUNK_BYTES):
+        for start in range(0, len(self.content), max(1, chunk_size)):
+            yield self.content[start:start + chunk_size]
+
+    def close(self) -> None:
+        pass
+
+
+def read_capped(resp: Any, max_bytes: int, timeout_s: float) -> bytes:
+    """Read a streamed response body, refusing more than ``max_bytes``.
+
+    A ``Content-Length`` above the cap is refused before reading. Raises
+    UpstreamError for an oversized or broken body and UpstreamTimeout when a
+    read times out.
+    """
+    too_big = UpstreamError(
+        f"IRSA SIA response is larger than {max_bytes / (1024 * 1024):g} MB")
+    try:
+        length = int((getattr(resp, "headers", None) or {}).get("Content-Length", -1))
+    except (TypeError, ValueError):
+        length = -1
+    if length > max_bytes:
+        raise too_big
+    parts: list[bytes] = []
+    total = 0
+    try:
+        for chunk in resp.iter_content(chunk_size=SIA_CHUNK_BYTES):
+            total += len(chunk)
+            if total > max_bytes:
+                raise too_big
+            parts.append(chunk)
+    except requests.Timeout as exc:
+        raise UpstreamTimeout(f"IRSA did not answer within {timeout_s:g} s") from exc
+    except requests.ConnectionError as exc:
+        if exc.args and isinstance(exc.args[0], ReadTimeoutError):
+            raise UpstreamTimeout(f"IRSA did not answer within {timeout_s:g} s") from exc
+        raise UpstreamError(f"IRSA SIA response broke off ({type(exc).__name__})") from exc
+    except requests.RequestException as exc:  # ChunkedEncodingError and similar
+        raise UpstreamError(f"IRSA SIA response broke off ({type(exc).__name__})") from exc
+    return b"".join(parts)
+
+
 def fetch_sia(
     params: Sequence[tuple[str, str]],
     settings: Settings,
     session: HttpSession | None = None,
 ) -> bytes:
-    """GET the SIA endpoint with the configured timeout; map failures to API errors."""
+    """GET the SIA endpoint with the configured timeout and stream the body with
+    a size cap (``Settings.irsa_sia_max_bytes``); map failures to API errors."""
     timeout = settings.irsa_timeout_s
     own_session = session is None
     sess: Any = _make_session() if own_session else session
     try:
-        resp = sess.get(
-            settings.irsa_sia_url,
-            params=list(params),
-            timeout=timeout,
-            headers={"User-Agent": USER_AGENT},
-        )
-    except requests.Timeout as exc:
-        raise UpstreamTimeout(f"IRSA did not answer within {timeout:g} s") from exc
-    except requests.RequestException as exc:
-        raise UpstreamError(f"IRSA request failed ({type(exc).__name__})") from exc
+        try:
+            resp = sess.get(
+                settings.irsa_sia_url,
+                params=list(params),
+                timeout=timeout,
+                headers={"User-Agent": USER_AGENT},
+                stream=True,
+            )
+        except requests.Timeout as exc:
+            raise UpstreamTimeout(f"IRSA did not answer within {timeout:g} s") from exc
+        except requests.RequestException as exc:
+            raise UpstreamError(f"IRSA request failed ({type(exc).__name__})") from exc
+        try:
+            status = int(getattr(resp, "status_code", 0))
+            if status >= 400:
+                raise UpstreamError(f"IRSA SIA returned HTTP {status}")
+            return read_capped(resp, settings.irsa_sia_max_bytes, timeout)
+        finally:
+            close = getattr(resp, "close", None)
+            if close is not None:
+                close()
     finally:
         if own_session:
             sess.close()
-    status = int(getattr(resp, "status_code", 0))
-    if status >= 400:
-        raise UpstreamError(f"IRSA SIA returned HTTP {status}")
-    return resp.content
 
 
 def query_exposures(

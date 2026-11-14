@@ -48,9 +48,10 @@ class GatedSession(FakeSession):
         super().__init__(**kwargs)
         self.gate = gate
 
-    def get(self, url, *, params=None, timeout=None, headers=None):
+    def get(self, url, *, params=None, timeout=None, headers=None, stream=False):
         assert self.gate.wait(10), "test gate never opened"
-        return super().get(url, params=params, timeout=timeout, headers=headers)
+        return super().get(url, params=params, timeout=timeout, headers=headers,
+                           stream=stream)
 
 
 def live(tmp_path, sia=None, cutouts=None, clock=time.monotonic, **changes):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 import requests
+from urllib3.exceptions import ReadTimeoutError
 
 from app.config import Settings
 from app.errors import InvalidParameter, UpstreamError, UpstreamTimeout
@@ -152,3 +153,58 @@ def test_default_session_is_created_and_closed(monkeypatch):
     monkeypatch.setattr(sia, "_make_session", SessionFactory)
     find_epochs(*BARNARD, "D2")
     assert len(created) == 1 and created[0].closed and len(created[0].calls) == 1
+
+
+# ------------------------------------------------- T-015: streamed with a size cap
+
+
+def test_sia_response_is_streamed_and_closed():
+    session = barnard_session()
+    find_epochs(*BARNARD, "D2", session=session)
+    assert session.calls[0]["stream"] is True
+    assert session.response.chunks_read > 1 and session.response.closed
+    assert Settings().irsa_sia_max_bytes == 16 * 1024 * 1024
+
+
+def test_oversized_sia_response_is_refused_while_streaming():
+    body = fixture_bytes("barnard_d2.xml")
+    session = FakeSession(response=FakeResponse(body))
+    with pytest.raises(UpstreamError, match="larger than") as info:
+        find_epochs(*BARNARD, "D2", settings=Settings(irsa_sia_max_bytes=100_000),
+                    session=session)
+    assert info.value.status_code == 502
+    # It stopped once past the cap instead of reading all 158 kB.
+    assert session.response.chunks_read == 2 and session.response.closed
+
+
+def test_a_large_content_length_is_refused_before_reading():
+    resp = FakeResponse(b"<VOTABLE/>", headers={"Content-Length": str(10**9)})
+    with pytest.raises(UpstreamError, match="larger than"):
+        find_epochs(*BARNARD, "D2", session=FakeSession(response=resp))
+    assert resp.chunks_read == 0
+
+
+@pytest.mark.parametrize("error, kind", [
+    (requests.ReadTimeout(), UpstreamTimeout),
+    (requests.ConnectionError(ReadTimeoutError(None, "/SIA", "read timed out")),
+     UpstreamTimeout),
+    (requests.exceptions.ChunkedEncodingError("cut"), UpstreamError),
+])
+def test_errors_while_reading_the_sia_body_are_mapped(error, kind):
+    resp = FakeResponse(fixture_bytes("barnard_d2.xml"), error_after=error)
+    with pytest.raises(kind):
+        find_epochs(*BARNARD, "D2", settings=Settings(irsa_timeout_s=7),
+                    session=FakeSession(response=resp))
+    assert resp.closed
+
+
+def test_limited_session_reads_the_body_inside_the_slot_with_the_cap():
+    from app.cutouts.limit import LimitedSiaSession
+
+    session = barnard_session()
+    limited = LimitedSiaSession(Settings(), session)
+    result = find_epochs(*BARNARD, "D2", session=limited)
+    assert len(result.epochs) == 61 and session.response.closed
+    small = LimitedSiaSession(Settings(irsa_sia_max_bytes=1000), barnard_session())
+    with pytest.raises(UpstreamError, match="larger than"):
+        find_epochs(*BARNARD, "D2", session=small)
