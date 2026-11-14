@@ -27,17 +27,17 @@ Supabase (Auth + Postgres)     Python API (FastAPI on Render)
 | Need | Technology | Used for |
 | --- | --- | --- |
 | Framework and build | **React + Vite** | Whole app; Netlify detects Vite automatically |
-| Screens | **React Router** | `/explore`, `/learn`, `/play`, `/time-machine`, `/submit`, `/review`, `/profile` |
-| Styling and UI components | **Tailwind CSS** + **shadcn/ui** (Radix UI) | Consistent controls, dialogs and the "?" tooltips for plain-language labels |
+| Screens | **React Router** (`react-router` v7) | `/` (Explore), `/learn`, `/play`, `/time-machine`, `/submit`, `/review`, `/profile` |
+| Styling and UI components | **Tailwind CSS v4** + **Radix UI** primitives, shadcn-style components in `components/ui.jsx` (`clsx`, `tailwind-merge`), **lucide-react** icons | Consistent controls, dialogs and the "?" tooltips for plain-language labels |
 | Shared state | **Zustand** | Current target, band, selected epochs, Beginner/Expert mode |
-| Shareable views | URL search params | `?ra=133.795&dec=-7.245&fov=5&band=D2` reproduces any view (Level 3 public sharing) |
-| Sky map and overlays | **Aladin Lite v3** (CDS) | Context map, Gaia and WISE catalogue overlays |
+| Shareable views | URL search params | `?target=barnard` or `?ra=…&dec=…`, plus `fov` (3, 6 or 12 arcmin), `array` (1–6) and `mode` (`blink`, `diff`, `stack`), reproduces a view (Level 3 public sharing) |
+| Sky map and overlays | **Aladin Lite v3** (CDS), planned | Context map and real Gaia/WISE catalogue overlays. Not added yet: the current Gaia overlay is drawn on the canvas from simulated catalogue stars |
 | Time-series viewer, blink, subtraction | **HTML `<canvas>`** components | Level 1 viewer and Level 2 comparison tools (reuses the Spot the Mover canvas code) |
-| Charts | **Recharts** or **Plotly.js** | Brightness over time, spectra |
-| Guided tour | **driver.js** or **react-joyride** | First-run tour and target tutorials |
-| Glossary | Local JSON file | Single source for tooltips, the glossary page and the AI explainer's grounding |
-| Guest progress | Browser `localStorage` | Tutorial and game progress for users without an account |
-| Demo safety | Pre-computed frames in `public/` | The five presets load instantly even if IRSA or the backend is slow |
+| Charts | **Recharts** | Brightness over time, spectra |
+| Guided tour | **driver.js** | First-run tour and target tutorials (`lib/tour.js`) |
+| Glossary | `GLOSSARY` in `frontend/src/lib/data.js` (to move to a shared `glossary.json`) | Single source for tooltips, the glossary page and the AI explainer's grounding |
+| Guest progress | Browser `localStorage` (Zustand `persist`) | Tutorial and game progress for users without an account. Until Supabase tables exist, submissions, points and the review queue are also stored here |
+| Demo safety | Pre-computed frames in `public/presets/` (planned); built-in simulator (`lib/sim.js`) now | The five presets load instantly even if IRSA or the backend is slow. Today the presets, games and time machine render simulated fields; only typed-in coordinates call the API |
 
 ## 3. Science backend (Python)
 
@@ -46,14 +46,14 @@ Supabase (Auth + Postgres)     Python API (FastAPI on Render)
 | Web API | **FastAPI** + Uvicorn | All data endpoints; interactive API docs at `/docs` |
 | Input validation | **Pydantic** | Coordinates, field of view, band and epoch parameters |
 | Astronomy core | **astropy** | FITS files, WCS (sky position and per-pixel wavelength), coordinates, time |
-| Archive queries | **astroquery**, **pyvo** | IRSA TAP/SIA, Gaia, SIMBAD |
+| Archive queries | **requests** + **pyvo** (VOTable parsing), **astroquery** | SPHEREx exposures via IRSA SIA v2 (`backend/app/irsa/`); Gaia and SIMBAD later |
 | Image alignment | **reproject** | Rotating every exposure onto one north-up grid |
 | Numerics | **numpy**, **scipy** | Masking, stacking, subtraction, smoothing |
 | Photometry and tracking | **photutils** | Brightness inspection (Level 2) and centroids for object tracking (Level 3) |
 | Image output | **Pillow** | PNG frames for the viewer |
 | Background jobs | FastAPI `BackgroundTasks` (upgrade to **RQ + Redis** later) | Slow jobs such as the time machine |
 | Rate limiting | **slowapi** | Limits on submissions and the AI explainer |
-| Existing pipelines | `spherex_blink.py`, `time_machine.py` | Core processing, wrapped as API endpoints |
+| Existing pipelines | `spherex_blink.py`, `time_machine.py` | Core processing, to be wrapped as API endpoints. Not in the repo yet |
 
 ### Handling the 102 bands
 
@@ -116,7 +116,7 @@ Supabase (Auth + Postgres)     Python API (FastAPI on Render)
 | Frontend | **Netlify**, deployed from GitHub with a deploy preview for every pull request |
 | Python API | **Render** web service on the native Python runtime (no Docker), configured in `render.yaml`. Fallbacks: a local laptop, optionally behind a tunnel (see below) |
 | Auth and database | **Supabase** (hosted) |
-| Source control and CI | **GitHub** + **GitHub Actions** (lint, tests, build) |
+| Source control and CI | **GitHub** + **GitHub Actions**: frontend lint and build; backend `ruff` and a syntax check (the pytest suite is not run in CI yet) |
 | Secrets | Environment variables on Netlify and the API host; never in the frontend bundle |
 
 ### Netlify configuration
