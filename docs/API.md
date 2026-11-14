@@ -66,7 +66,7 @@ No parameters. Returns `200`:
 
 ### `GET /epochs?ra&dec&fov&band`
 
-Lists every SPHEREx exposure covering the position, cleaned and rendered as frames, sorted by time (oldest first). The frontend applies its own `epochs` URL selection to this list.
+Lists the SPHEREx exposures covering the position, cleaned and rendered as frames, sorted by time (oldest first). The live API returns **one representative exposure per visit** (the best-ranked exposure of each survey pass, chosen from the IRSA metadata before downloading). Preset manifests (section 4) have the same shape but may hold several exposures per visit, so group frames by `visit` rather than assuming one each. The frontend applies its own `epochs` URL selection to this list.
 
 | Param | Type | Unit | Default | Range |
 | --- | --- | --- | --- | --- |
@@ -233,19 +233,36 @@ Errors: `400 invalid_parameter`, `429 rate_limited`, `502 upstream_error` (LLM f
 
 ## 4. Preset manifests
 
-Pre-computed demo data for the five test targets lives in static files so the demo works without IRSA or the API:
+Pre-computed demo data for the five test targets lives in static files so the demo works without IRSA or the API. Each preset is rendered at three fields of view (12, 6 and 3 arcmin) from one set of fov-12 cutouts, so every fov shows the same exposures (up to 6 of the best-ranked per visit, none with `bad` quality):
 
-- `frontend/public/presets/<preset-id>/manifest.json`: **exactly the `/epochs` response shape**, with `synthetic: false`, `target.name` set to the preset name, `diff_url_template: null` and at least the first-versus-last pair in `diffs`.
-- `frontend/public/presets/<preset-id>/frames/<epoch-id>.png` and `.../diff/<a>__<b>.png`, referenced by root-relative URLs (`/presets/<preset-id>/frames/<epoch-id>.png`).
+- `frontend/public/presets/<preset-id>/manifest.json` (fov 12), `.../<preset-id>/fov-6/manifest.json` and `.../<preset-id>/fov-3/manifest.json`: **exactly the `/epochs` response shape**, with `synthetic: false`, `target.name` set to the preset name, `diff_url_template: null` and at least the first-versus-last pair in `diffs`. Each fov has its own `image` size; all three use the fov-12 `stretch` and diff `scale`, so a frame looks the same at every fov.
+- Each manifest's frames and diffs sit next to it: `<folder>/frames/<epoch-id>.png` and `<folder>/diff/<a>__<b>.png`, referenced by root-relative URLs (for example `/presets/barnards-star/frames/<epoch-id>.png` and `/presets/barnards-star/fov-6/frames/<epoch-id>.png`).
+- `frontend/public/presets/index.json` lists the presets, so the frontend never builds paths:
 
-The frontend loads a preset by fetching `/presets/<preset-id>/manifest.json` instead of calling `/epochs`. The preset ids and view settings are:
+```json
+{
+  "credit": "SPHEREx data: NASA/IPAC Infrared Science Archive (IRSA)",
+  "fovs_arcmin": [12.0, 6.0, 3.0],
+  "presets": [
+    {"id": "barnards-star", "name": "Barnard's Star", "ra": 269.4464, "dec": 4.7668, "band": "D2",
+     "default_fov_arcmin": 6.0, "look_for": "Position shift between visits",
+     "manifests": [
+       {"fov_arcmin": 12.0, "url": "/presets/barnards-star/manifest.json", "count": 18, "visits": 3},
+       {"fov_arcmin": 6.0, "url": "/presets/barnards-star/fov-6/manifest.json", "count": 18, "visits": 3},
+       {"fov_arcmin": 3.0, "url": "/presets/barnards-star/fov-3/manifest.json", "count": 18, "visits": 3}
+     ]}
+  ]
+}
+```
+
+The frontend loads a preset by fetching the `url` for the chosen fov from `index.json` instead of calling `/epochs`. The preset ids and view settings are:
 
 | `id` | Name | `ra` (deg) | `dec` (deg) | `band` | `fov` | Look for |
 | --- | --- | --- | --- | --- | --- | --- |
-| `barnards-star` | Barnard's Star | 269.4464 | 4.7668 | D2 | 10 | Position shift between visits |
-| `eps-indi-b` | Epsilon Indi B | 331.0951 | -56.8007 | D2 | 10 | Faint co-moving brown dwarf pair |
-| `wise-0855` | WISE 0855−0714 | 133.7951 | -7.2451 | D6 | 10 | Motion; only visible at long wavelengths |
-| `rw-aur` | RW Aurigae | 76.9564 | 30.4014 | D2 | 10 | Brightness changes |
-| `r-dra` | R Draconis | 248.1674 | 66.7550 | D2 | 10 | Brightness changes (Mira variable) |
+| `barnards-star` | Barnard's Star | 269.4464 | 4.7668 | D2 | 12, 6, 3 | Position shift between visits |
+| `eps-indi-b` | Epsilon Indi B | 331.0951 | -56.8007 | D2 | 12, 6, 3 | Faint co-moving brown dwarf pair |
+| `wise-0855` | WISE 0855−0714 | 133.7609 | -7.2423 | D6 | 12, 6, 3 | Motion; only visible at long wavelengths |
+| `rw-aur` | RW Aurigae | 76.9564 | 30.4014 | D2 | 12, 6, 3 | Brightness changes |
+| `r-dra` | R Draconis | 248.1674 | 66.7550 | D2 | 12, 6, 3 | Brightness changes (Mira variable) |
 
-Coordinate notes: Barnard's Star (J2000 catalogue position 269.4521, +4.6934) and Epsilon Indi B (J2000 331.0438, -56.7827) are centred on their positions propagated to about 2025.5 with their proper motions, because they move 10.4″/yr and 4.7″/yr. WISE 0855 uses the position given in PROJECT_SUMMARY §2; it moves about 8″/yr west. Track B will confirm all five centres when it computes the preset frames.
+Coordinate notes: Barnard's Star (J2000 catalogue position 269.4521, +4.6934), Epsilon Indi B (J2000 331.0438, -56.7827) and WISE 0855 (J2000 133.8189, -7.2471) are centred on their SIMBAD positions propagated to about 2025.5 with their proper motions, because they move 10.4″/yr, 4.7″/yr and 8.1″/yr. Track B checked all five centres against SIMBAD in T-006 (all within 0.03′).
