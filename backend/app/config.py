@@ -10,13 +10,17 @@ first two):
   ``backend/.cache/cutouts/``, git-ignored). On Render's free plan the disk is wiped
   on every restart, so the cache is only a speed-up.
 
+These three are read from the environment whenever a ``Settings`` is created, so
+``Settings()`` and ``Settings.from_env()`` are the same. An explicit argument wins
+over the environment (``Settings(cutout_cache_dir=...)`` in tests).
+
 Everything else is a plain default that code can override (for example in tests).
 """
 
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 DEFAULT_CORS_ORIGINS = ("http://localhost:5173",)  # Vite dev server
@@ -28,10 +32,23 @@ def _split_csv(value: str) -> tuple[str, ...]:
     return tuple(part.strip() for part in value.split(",") if part.strip())
 
 
+def _env_data_mode() -> str:
+    return os.environ.get("DATA_MODE", "mock").strip().lower() or "mock"
+
+
+def _env_cors_origins() -> tuple[str, ...]:
+    return _split_csv(os.environ.get("CORS_ORIGINS", "")) or DEFAULT_CORS_ORIGINS
+
+
+def _env_cutout_cache_dir() -> str:
+    return os.environ.get("CUTOUT_CACHE_DIR", "").strip() or DEFAULT_CUTOUT_CACHE_DIR
+
+
 @dataclass(frozen=True)
 class Settings:
-    data_mode: str = "mock"
-    cors_origins: tuple[str, ...] = DEFAULT_CORS_ORIGINS
+    # Environment-backed (see the module docstring).
+    data_mode: str = field(default_factory=_env_data_mode)
+    cors_origins: tuple[str, ...] = field(default_factory=_env_cors_origins)
     # SPHEREx release labels used in responses. Keeping them here means a new
     # release needs no code change. The order matters: when the same exposure is
     # served by more than one release, the release listed first wins.
@@ -46,12 +63,18 @@ class Settings:
     irsa_sia_url: str = "https://irsa.ipac.caltech.edu/SIA"
     # Seconds allowed for connecting to IRSA and for each read from it.
     irsa_timeout_s: float = 30.0
+    # Largest SIA response accepted (streamed; a bigger one is a 502). Barnard's
+    # Star D2 (61 exposures) is 158 kB, about 2.1 kB per exposure, so 16 MB holds
+    # about 7,500 exposures of one band at one position.
+    irsa_sia_max_bytes: int = 16 * 1024 * 1024
     # SPHEREx cutouts (app.cutouts). The cap counts finished cutout files only.
-    cutout_cache_dir: str = DEFAULT_CUTOUT_CACHE_DIR
+    # The directory is environment-backed (CUTOUT_CACHE_DIR).
+    cutout_cache_dir: str = field(default_factory=_env_cutout_cache_dir)
     cutout_cache_max_mb: float = 512.0
     cutout_workers: int = 4  # parallel downloads in a batch
-    # Whole-request limit for one cutout download (connect, every read, and the
-    # total transfer time). A cold 10' cutout took 11-24 s in T-004's tests.
+    # Time budget for one download attempt: connecting, the response headers and
+    # the whole body share it (app.cutouts.download). A cold 10' cutout took
+    # 11-24 s in T-004's tests.
     cutout_timeout_s: float = 60.0
     cutout_retries: int = 2  # extra attempts after a timeout, 5xx or dropped connection
     # Wait before retry n is about backoff * 2**(n-1) (with +-50 % jitter). IRSA
@@ -79,6 +102,12 @@ class Settings:
     epochs_max_waiters: int = 16
     # Whole-request limit for /frame/{id}.png in irsa mode (504 upstream_timeout).
     frame_deadline_s: float = 60.0
+    # Most /frame renders running at once in irsa mode; more answer 503 unavailable
+    # at once. A render that passed its deadline keeps its slot until it ends.
+    frame_max_concurrent: int = 4
+    # How long a well-formed epoch id that resolved to nothing (404) at a position
+    # is remembered, so repeating it costs no IRSA query and no render.
+    frame_not_found_ttl_s: float = 60.0
 
     # ------------------------------------------------ cleaning pipeline (app.pipeline)
     # FLAGS bits that mask a pixel, by name. Bit numbers are read from each cutout's
@@ -144,10 +173,5 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> Settings:
-        origins = _split_csv(os.environ.get("CORS_ORIGINS", ""))
-        return cls(
-            data_mode=os.environ.get("DATA_MODE", "mock").strip().lower() or "mock",
-            cors_origins=origins or DEFAULT_CORS_ORIGINS,
-            cutout_cache_dir=os.environ.get("CUTOUT_CACHE_DIR", "").strip()
-            or DEFAULT_CUTOUT_CACHE_DIR,
-        )
+        """Same as ``Settings()``: every environment-backed field is read now."""
+        return cls()

@@ -52,3 +52,19 @@ def test_cutout_defaults_and_cache_dir_env(monkeypatch):
     assert Settings.from_env().cutout_cache_dir == "/tmp/sx-cache"
     monkeypatch.setenv("CUTOUT_CACHE_DIR", "  ")
     assert Settings.from_env().cutout_cache_dir == s.cutout_cache_dir
+
+
+def test_default_settings_read_the_environment_like_from_env(monkeypatch):
+    monkeypatch.setenv("DATA_MODE", " IRSA ")
+    monkeypatch.setenv("CORS_ORIGINS", "https://a.example")
+    monkeypatch.setenv("CUTOUT_CACHE_DIR", " /tmp/sx-shared ")
+    plain = Settings()
+    assert plain == Settings.from_env()
+    assert (plain.data_mode, plain.cors_origins, plain.cutout_cache_dir) == (
+        "irsa", ("https://a.example",), "/tmp/sx-shared")
+    # An explicit value still wins over the environment.
+    assert Settings(cutout_cache_dir="/elsewhere").cutout_cache_dir == "/elsewhere"
+    # Code that builds its own Settings() finds the shared cache directory.
+    from app.cutouts import default_cache
+
+    assert default_cache(Settings()).directory == Path("/tmp/sx-shared").resolve()

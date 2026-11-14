@@ -16,6 +16,15 @@ FRONTEND_MOCK = REPO / "frontend" / "public" / "mock"
 BARNARD = {"ra": 269.4464, "dec": 4.7668}
 
 
+@pytest.fixture(autouse=True)
+def _no_mode_from_the_environment(monkeypatch):
+    """``Settings()`` reads DATA_MODE and CORS_ORIGINS, so a developer's shell
+    must not change what the offline tests see. CUTOUT_CACHE_DIR is left alone:
+    tests that touch the cache pass their own directory."""
+    monkeypatch.delenv("DATA_MODE", raising=False)
+    monkeypatch.delenv("CORS_ORIGINS", raising=False)
+
+
 @pytest.fixture(scope="session")
 def provider() -> MockProvider:
     return MockProvider()
