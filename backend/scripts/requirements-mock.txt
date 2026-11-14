@@ -1,0 +1,4 @@
+# Dependencies for backend/scripts/make_mock_data.py only.
+# Pinned so that the generated PNG and JSON bytes stay identical between machines.
+numpy==2.5.4
+pillow==13.0.0

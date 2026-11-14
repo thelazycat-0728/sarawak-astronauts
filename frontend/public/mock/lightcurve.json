@@ -1,0 +1,109 @@
+{
+  "synthetic": true,
+  "target": {
+    "ra": 269.408073,
+    "dec": 4.73555,
+    "name": null,
+    "frame": "ICRS"
+  },
+  "band": {
+    "id": "D2",
+    "wavelength_min_um": 1.1,
+    "wavelength_max_um": 1.62
+  },
+  "aperture_arcsec": 12.0,
+  "unit": "uJy",
+  "method": "aperture photometry, median sky annulus, no aperture correction",
+  "points": [
+    {
+      "epoch_id": "mock_20250514_01_D2",
+      "time_utc": "2025-05-14T03:12:40Z",
+      "mjd": 60809.133796,
+      "release": "DR1",
+      "wavelength_um": 1.496,
+      "flux": 5953.9,
+      "flux_err": 31.8,
+      "quality": "good"
+    },
+    {
+      "epoch_id": "mock_20250514_02_D2",
+      "time_utc": "2025-05-14T16:47:05Z",
+      "mjd": 60809.699363,
+      "release": "DR1",
+      "wavelength_um": 1.484,
+      "flux": 4816.0,
+      "flux_err": 31.8,
+      "quality": "good"
+    },
+    {
+      "epoch_id": "mock_20250515_03_D2",
+      "time_utc": "2025-05-15T06:20:52Z",
+      "mjd": 60810.264491,
+      "release": "DR1",
+      "wavelength_um": 1.278,
+      "flux": 6868.2,
+      "flux_err": 31.8,
+      "quality": "warn"
+    },
+    {
+      "epoch_id": "mock_20251111_04_D2",
+      "time_utc": "2025-11-11T22:05:18Z",
+      "mjd": 60990.920347,
+      "release": "DR1",
+      "wavelength_um": 1.144,
+      "flux": 2068.9,
+      "flux_err": 31.8,
+      "quality": "good"
+    },
+    {
+      "epoch_id": "mock_20251112_05_D2",
+      "time_utc": "2025-11-12T11:39:44Z",
+      "mjd": 60991.485926,
+      "release": "DR1",
+      "wavelength_um": 1.371,
+      "flux": 2683.9,
+      "flux_err": 31.8,
+      "quality": "good"
+    },
+    {
+      "epoch_id": "mock_20251113_06_D2",
+      "time_utc": "2025-11-13T01:14:09Z",
+      "mjd": 60992.051493,
+      "release": "DR1",
+      "wavelength_um": 1.351,
+      "flux": 1759.9,
+      "flux_err": 31.8,
+      "quality": "good"
+    },
+    {
+      "epoch_id": "mock_20260513_07_D2",
+      "time_utc": "2026-05-13T08:31:27Z",
+      "mjd": 61173.355174,
+      "release": "QR3",
+      "wavelength_um": 1.491,
+      "flux": 11323.0,
+      "flux_err": 31.8,
+      "quality": "good"
+    },
+    {
+      "epoch_id": "mock_20260513_08_D2",
+      "time_utc": "2026-05-13T22:05:51Z",
+      "mjd": 61173.920729,
+      "release": "QR3",
+      "wavelength_um": 1.293,
+      "flux": 9499.7,
+      "flux_err": 31.8,
+      "quality": "good"
+    },
+    {
+      "epoch_id": "mock_20260514_09_D2",
+      "time_utc": "2026-05-14T11:40:16Z",
+      "mjd": 61174.486296,
+      "release": "QR3",
+      "wavelength_um": 1.166,
+      "flux": 11935.9,
+      "flux_err": 31.8,
+      "quality": "good"
+    }
+  ]
+}
