@@ -33,6 +33,9 @@ REPO = Path(__file__).resolve().parents[2]
 PUBLIC = REPO / "frontend" / "public"
 MOCK = PUBLIC / "mock"
 API_DOC = REPO / "docs" / "API.md"
+# Byte-identical copies served by the FastAPI mock provider (the app never reads frontend/).
+BACKEND_ASSETS = REPO / "backend" / "app" / "providers" / "mock_assets"
+BACKEND_ASSET_FILES = ("epochs.json", "lightcurve.json")
 MAX_MOCK_BYTES = 1_000_000
 
 SEED = 20250501
@@ -316,9 +319,24 @@ def generate() -> None:
     )
 
     (MOCK / "README.md").write_text(README, encoding="utf-8", newline="\n")
+    copy_to_backend()
     print(
         f"Wrote {len(epochs)} frames, 1 diff and 3 JSON files to {MOCK.relative_to(REPO)}"
+        f" (copied to {BACKEND_ASSETS.relative_to(REPO)})"
     )
+
+
+def copy_to_backend() -> None:
+    """Copy the mock files the API serves into backend/, byte for byte."""
+    for sub in ("frames", "diff"):
+        dest = BACKEND_ASSETS / sub
+        dest.mkdir(parents=True, exist_ok=True)
+        for old in dest.glob("*.png"):
+            old.unlink()
+        for png in sorted((MOCK / sub).glob("*.png")):
+            (dest / png.name).write_bytes(png.read_bytes())
+    for name in BACKEND_ASSET_FILES:
+        (BACKEND_ASSETS / name).write_bytes((MOCK / name).read_bytes())
 
 
 README = """# Mock data (synthetic)
@@ -553,6 +571,24 @@ def check_api_doc(errs: list[str]) -> int:
     return len(blocks)
 
 
+def check_backend_copies() -> list[str]:
+    """The API's mock assets must equal the frontend mocks byte for byte."""
+    names = list(BACKEND_ASSET_FILES)
+    for sub in ("frames", "diff"):
+        names += [f"{sub}/{p.name}" for p in sorted((MOCK / sub).glob("*.png"))]
+        names += [
+            f"{sub}/{p.name}"
+            for p in sorted((BACKEND_ASSETS / sub).glob("*.png"))
+            if not (MOCK / sub / p.name).is_file()
+        ]
+    errs = []
+    for name in names:
+        src, dest = MOCK / name, BACKEND_ASSETS / name
+        if not (src.is_file() and dest.is_file()) or src.read_bytes() != dest.read_bytes():
+            errs.append(f"backend mock asset {name} differs from frontend/public/mock")
+    return errs
+
+
 def check() -> int:
     errs: list[str] = []
     ids: set[str] = set()
@@ -572,6 +608,7 @@ def check() -> int:
             errs.append("explain.json: ai_generated must be true")
     if not (MOCK / "README.md").is_file():
         errs.append("README.md missing")
+    errs.extend(check_backend_copies())
     total = sum(p.stat().st_size for p in MOCK.rglob("*") if p.is_file())
     if total >= MAX_MOCK_BYTES:
         errs.append(f"frontend/public/mock is {total} bytes, limit {MAX_MOCK_BYTES}")
