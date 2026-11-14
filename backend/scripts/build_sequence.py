@@ -7,9 +7,11 @@ any cutout that is not cached yet):
     python backend/scripts/build_sequence.py --ra 269.4464 --dec 4.7668 --band D2 \
         --fov 10 --mode all --out backend/.cache/sequences/barnard-all
 
-``--preset`` fills in ra, dec, band and fov from docs/API.md section 4 (explicit
-options still win) and writes root-relative ``/presets/<id>/frames/<epoch>.png``
-URLs; without a preset the URLs are ``frames/<epoch>.png``. The default output
+``--preset`` fills in ra, dec and band from ``PRESETS`` in irsa_coverage.py
+(explicit options still win); fov defaults to 10 arcmin (the API default). It
+writes root-relative ``/presets/<id>/frames/<epoch>.png`` URLs; without a preset
+the URLs are ``frames/<epoch>.png``. This is a debugging tool: the committed
+presets (fov 12, 6 and 3) come from build_presets.py. The default output
 folder is ``backend/.cache/sequences/<preset or position>-<mode>/``, which git
 ignores. This script never writes into frontend/. Exit code 1 if the IRSA query
 fails or no frame could be built while IRSA listed exposures.
@@ -33,7 +35,7 @@ from app.config import Settings
 from app.errors import ApiError
 from app.models import BAND_IDS, EpochsResponse
 
-DEFAULT_FOV = 10.0  # every preset uses fov=10 (API.md section 4)
+DEFAULT_FOV = 10.0  # the API's default fov (API.md section 1); presets use build_presets.py
 
 
 def _parser() -> argparse.ArgumentParser:

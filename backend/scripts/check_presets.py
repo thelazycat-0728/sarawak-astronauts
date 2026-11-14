@@ -14,7 +14,11 @@ Checks, for every preset in ``PRESETS`` (irsa_coverage.py) and every fov in
 - every ``frame_url`` and diff URL is a root-relative path to a file under
   ``frontend/public/``, and every frame and diff PNG is 8-bit grey of the size in
   ``image``;
+- no frame has ``bad`` quality, and in every frame PNG at least half of the
+  target core (pixels within 2 px of the centre) is valid (grey > 0);
 - there are at least 2 visits, and ``diffs`` holds the first-versus-last pair;
+  variable stars (``VARIABLES``) also hold a second first-visit / last-visit pair;
+- the fovs of a preset share epoch ids, stretch and diff pairs and scales;
 - ``index.json`` lists exactly these presets with matching name, position, band
   and a manifest URL per fov, and the whole folder is under 10 MB.
 
@@ -27,6 +31,7 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
 from PIL import Image
 from pydantic import ValidationError
 
@@ -35,15 +40,17 @@ REPO = BACKEND.parent
 sys.path.insert(0, str(BACKEND))
 sys.path.insert(0, str(BACKEND / "scripts"))
 
-from build_presets import CREDIT, PRESET_FOVS, manifest_url
+from build_presets import CREDIT, MIN_CORE_VALID, PRESET_FOVS, VARIABLES, manifest_url
 from irsa_coverage import PRESETS
 
 from app.models import EpochsResponse
+from app.stretch import NODATA_GRAY
 
 PUBLIC = REPO / "frontend" / "public"
 MAX_FOLDER_BYTES = 10_000_000
 MIN_VISITS = 2
 POSITION_TOLERANCE_DEG = 1e-9
+CORE_RADIUS_PX = 2.0
 
 
 def url_to_file(url: str, public: Path) -> Path | None:
@@ -61,14 +68,28 @@ def url_to_file(url: str, public: Path) -> Path | None:
     return path if path.is_file() else None
 
 
-def _check_png(path: Path, size: tuple[int, int], where: str, errs: list[str]) -> None:
+def _check_png(path: Path, size: tuple[int, int], where: str, errs: list[str],
+               min_core_valid: float | None = None) -> None:
+    """Format, mode and size; with ``min_core_valid``, also the valid (grey > 0)
+    share of the pixels within CORE_RADIUS_PX of the image centre (the target)."""
     try:
         with Image.open(path) as im:
             if im.format != "PNG" or im.mode != "L" or im.size != size:
                 errs.append(f"{where}: {path.name} is {im.format} {im.mode} {im.size}, "
                             f"expected PNG L {size}")
+                return
+            gray = np.asarray(im)
     except OSError as exc:
         errs.append(f"{where}: {path.name} cannot be read ({exc})")
+        return
+    if min_core_valid is not None:
+        ny, nx = gray.shape
+        yy, xx = np.indices(gray.shape)
+        core = np.hypot(xx - (nx - 1) / 2.0, yy - (ny - 1) / 2.0) <= CORE_RADIUS_PX
+        share = float(np.mean(gray[core] != NODATA_GRAY)) if core.any() else 0.0
+        if share < min_core_valid:
+            errs.append(f"{where}: {path.name} target core is {share:.2f} valid, "
+                        f"need {min_core_valid}")
 
 
 def check_manifest(path: Path, preset: tuple, fov: float, public: Path,
@@ -100,12 +121,14 @@ def check_manifest(path: Path, preset: tuple, fov: float, public: Path,
         errs.append(f"{where}: epochs are not in time order")
     size = (doc.image.width_px, doc.image.height_px)
     for e in doc.epochs:
+        if e.quality.status == "bad":
+            errs.append(f"{where}: {e.id} has quality bad")
         png = url_to_file(e.frame_url, public)
         if png is None:
             errs.append(f"{where}: frame_url {e.frame_url!r} does not resolve under "
                         "frontend/public/")
         else:
-            _check_png(png, size, where, errs)
+            _check_png(png, size, where, errs, MIN_CORE_VALID)
     visits = {e.visit for e in doc.epochs}
     if len(visits) < MIN_VISITS:
         errs.append(f"{where}: {len(visits)} visit(s), need at least {MIN_VISITS}")
@@ -120,7 +143,36 @@ def check_manifest(path: Path, preset: tuple, fov: float, public: Path,
             _check_png(png, size, where, errs)
     if ids and not any(d.a == ids[0] and d.b == ids[-1] for d in doc.diffs):
         errs.append(f"{where}: no first-versus-last diff ({ids[0]} -> {ids[-1]})")
+    if preset[0] in VARIABLES and ids:
+        first_v = {e.id for e in doc.epochs if e.visit == min(visits)}
+        last_v = {e.id for e in doc.epochs if e.visit == max(visits)}
+        if not any(d.a in first_v and d.b in last_v and (d.a, d.b) != (ids[0], ids[-1])
+                   for d in doc.diffs):
+            errs.append(f"{where}: no wavelength-matched first/last-visit diff")
     return doc
+
+
+def check_fovs(manifests: dict[tuple[str, float], EpochsResponse], presets: tuple,
+               fovs: tuple[float, ...], errs: list[str]) -> None:
+    """The fovs of a preset hold the same exposures, stretch and diff pairs."""
+    for preset in presets:
+        pid = preset[0]
+        docs = {fov: manifests[(pid, fov)] for fov in fovs if (pid, fov) in manifests}
+        if len(docs) < 2:
+            continue
+        ref_fov = max(docs)
+        ref = docs[ref_fov]
+        for fov, doc in docs.items():
+            if fov == ref_fov:
+                continue
+            where = f"{pid} fov {fov:g} vs {ref_fov:g}"
+            if [e.id for e in doc.epochs] != [e.id for e in ref.epochs]:
+                errs.append(f"{where}: epoch ids differ")
+            if (doc.stretch.vmin, doc.stretch.vmax) != (ref.stretch.vmin, ref.stretch.vmax):
+                errs.append(f"{where}: stretch differs")
+            if ([(d.a, d.b, d.scale) for d in doc.diffs]
+                    != [(d.a, d.b, d.scale) for d in ref.diffs]):
+                errs.append(f"{where}: diff pairs or scales differ")
 
 
 def check_index(root: Path, manifests: dict[tuple[str, float], EpochsResponse],
@@ -194,6 +246,7 @@ def check(root: Path | None = None, public: Path | None = None, presets: tuple =
             doc = check_manifest(path, preset, fov, public, errs)
             if doc is not None:
                 manifests[(preset[0], fov)] = doc
+    check_fovs(manifests, presets, fovs, errs)
     check_index(root, manifests, presets, fovs, public, errs)
     if not (root / "README.md").is_file():
         errs.append("README.md missing")
