@@ -19,6 +19,7 @@ Safety rules:
 from __future__ import annotations
 
 import logging
+import random
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -152,12 +153,15 @@ def download_cutout(
     settings: Settings,
     session: StreamingSession | None = None,
     sleep: Callable[[float], None] = time.sleep,
+    jitter: Callable[[], float] = lambda: random.uniform(0.5, 1.5),
 ) -> int:
     """Stream ``url`` into ``dest``; returns bytes written.
 
     Timeouts, 5xx responses and dropped connections are retried
-    ``settings.cutout_retries`` times with exponential backoff. Raises
-    UpstreamTimeout or UpstreamError when every attempt fails.
+    ``settings.cutout_retries`` times. Retry n waits
+    ``cutout_retry_backoff_s * 2**(n-1)`` times a random factor from 0.5 to 1.5, so
+    parallel workers that hit IRSA's "Server busy" 503 at once do not retry in step.
+    Raises UpstreamTimeout or UpstreamError when every attempt fails.
     """
     check_access_url(url.split("?", 1)[0])
     own_session = session is None
@@ -170,7 +174,7 @@ def download_cutout(
             except _Retryable as exc:
                 if attempt + 1 >= attempts:
                     raise exc.error from exc
-                wait = settings.cutout_retry_backoff_s * (2**attempt)
+                wait = settings.cutout_retry_backoff_s * (2**attempt) * jitter()
                 log.info("IRSA cutout attempt %d failed (%s); retrying in %.1f s",
                          attempt + 1, exc.error.message, wait)
                 sleep(wait)

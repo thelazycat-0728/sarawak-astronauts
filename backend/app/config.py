@@ -52,8 +52,10 @@ class Settings:
     # Whole-request limit for one cutout download (connect, every read, and the
     # total transfer time). A cold 10' cutout took 11-24 s in T-004's tests.
     cutout_timeout_s: float = 60.0
-    cutout_retries: int = 2  # extra attempts after a timeout or 5xx response
-    cutout_retry_backoff_s: float = 2.0  # wait before retry n is backoff * 2**(n-1)
+    cutout_retries: int = 2  # extra attempts after a timeout, 5xx or dropped connection
+    # Wait before retry n is about backoff * 2**(n-1) (with +-50 % jitter). IRSA
+    # answered "503 Server busy" to 14 of 61 cutouts with a 2 s base in T-004.
+    cutout_retry_backoff_s: float = 5.0
     # How long a position query is reused when resolving an epoch id.
     epoch_query_ttl_s: float = 600.0
 

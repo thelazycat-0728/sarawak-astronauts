@@ -254,8 +254,20 @@ def test_backoff_doubles(tmp_path):
     waits: list[float] = []
     with pytest.raises(UpstreamTimeout):
         download_cutout(IRSA_FILE + "?center=1,2d&size=0.1", tmp_path / "x", settings,
-                        session, sleep=waits.append)
+                        session, sleep=waits.append, jitter=lambda: 1.0)
     assert waits == [1.5, 3.0]
+
+
+def test_backoff_has_jitter(tmp_path):
+    settings = make_settings(tmp_path, cutout_retry_backoff_s=4.0, cutout_retries=2)
+    waits: list[float] = []
+    factors = iter([0.5, 1.5])
+    with pytest.raises(UpstreamTimeout):
+        download_cutout(IRSA_FILE + "?center=1,2d&size=0.1", tmp_path / "x", settings,
+                        StreamSession(replies=[requests.ReadTimeout()]),
+                        sleep=waits.append, jitter=lambda: next(factors))
+    assert waits == [2.0, 12.0]
+    assert make_settings(tmp_path).cutout_retry_backoff_s == 0.0  # tests never wait
 
 
 def test_zero_retries_means_one_attempt(tmp_path):
