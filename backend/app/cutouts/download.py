@@ -12,8 +12,9 @@ Safety rules:
   or fragment are fetched; anything else is refused before any request.
 - The query string is built from validated floats only. Redirects are not followed,
   so a response cannot send the client to another host.
-- Downloads are streamed to a file in chunks, with a total time limit and a size
-  limit, and never held in memory as a whole.
+- Downloads are streamed to a file in chunks, with a time budget per attempt
+  (connect, headers and body together; see ``_download_once``) and a size limit,
+  and never held in memory as a whole.
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ from urllib.parse import urlsplit
 import requests
 from astropy.io import fits
 from urllib3.exceptions import ReadTimeoutError
+from urllib3.util import Timeout as Urllib3Timeout
 
 from app.config import Settings
 from app.cutouts.geometry import KEPT_HDUS
@@ -106,7 +108,26 @@ def build_cutout_url(access_url: str, ra: float, dec: float, size_arcmin: float)
     return f"{base}?center={center}&size={size}"
 
 
+def _socket_of(resp: Any) -> Any | None:
+    """The socket under a streamed requests response (urllib3 2.x), or None (for
+    example for a test double)."""
+    raw = getattr(resp, "raw", None)
+    conn = getattr(raw, "connection", None) or getattr(raw, "_connection", None)
+    sock = getattr(conn, "sock", None)
+    return sock if callable(getattr(sock, "settimeout", None)) else None
+
+
 def _download_once(url: str, dest: Path, settings: Settings, session: Any) -> int:
+    """One attempt, bounded by ``cutout_timeout_s`` (T) as a whole.
+
+    Connecting and waiting for the response headers share T (a urllib3
+    ``Timeout(total=T)``). While the body streams, the socket timeout is set to
+    the time left before every chunk, and the deadline is checked after every
+    chunk, so a server that stalls ends the attempt at T. A server that keeps
+    trickling bytes can stretch the chunk being read past T by at most the
+    socket timeout set for it; IRSA's host is fixed, so this is not a concern
+    in practice. See ``download_cutout`` for the bound over all attempts.
+    """
     timeout = settings.cutout_timeout_s
     deadline = _clock() + timeout
     too_slow = UpstreamTimeout(f"IRSA cutout did not arrive within {timeout:g} s")
@@ -114,7 +135,7 @@ def _download_once(url: str, dest: Path, settings: Settings, session: Any) -> in
         resp = session.get(
             url,
             stream=True,
-            timeout=(timeout, timeout),
+            timeout=Urllib3Timeout(connect=timeout, read=timeout, total=timeout),
             headers={"User-Agent": USER_AGENT},
             allow_redirects=False,
         )
@@ -135,9 +156,20 @@ def _download_once(url: str, dest: Path, settings: Settings, session: Any) -> in
         if status != 200:
             raise UpstreamError(f"IRSA cutout returned HTTP {status}")
         total = 0
+        sock = _socket_of(resp)
         try:
             with open(dest, "wb") as out:
-                for chunk in resp.iter_content(chunk_size=CHUNK_BYTES):
+                chunks = resp.iter_content(chunk_size=CHUNK_BYTES)
+                while True:
+                    left = deadline - _clock()
+                    if left <= 0:
+                        raise _Retryable(too_slow)
+                    if sock is not None:
+                        sock.settimeout(left)  # the next read may wait only this long
+                    try:
+                        chunk = next(chunks)
+                    except StopIteration:
+                        break
                     if _clock() > deadline:
                         raise _Retryable(too_slow)
                     total += len(chunk)
@@ -182,6 +214,14 @@ def download_cutout(
     and never less than a numeric Retry-After header (capped at 30 s).
     Each attempt holds one process-wide IRSA slot (``app.cutouts.limit``); the
     wait between attempts does not.
+
+    **Worst case** with the defaults (T = ``cutout_timeout_s`` = 60 s, 2 retries,
+    backoff 5 s): each attempt ends at T (``_download_once``), the waits are at
+    most 7.5 s and 15 s (backoff with the 1.5 jitter) or a Retry-After of up to
+    30 s each, so one exposure takes at most 3 x 60 + 7.5 + 15 = 202.5 s, or
+    3 x 60 + 30 + 30 = 240 s when IRSA sends Retry-After: 30. Time spent waiting
+    for a free IRSA slot comes on top. (Before T-015 a single attempt could run
+    to about 2 x T.)
     Raises UpstreamTimeout or UpstreamError when every attempt fails.
     """
     check_access_url(url.split("?", 1)[0])

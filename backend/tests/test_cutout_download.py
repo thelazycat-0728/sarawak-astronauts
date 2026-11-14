@@ -92,7 +92,8 @@ def test_request_uses_rounded_centre_stream_and_no_redirects(tmp_path):
         "?center=269.4464,4.7668d&size=0.253333"
     )
     assert call["stream"] is True and call["allow_redirects"] is False
-    assert call["timeout"] == (12.0, 12.0)
+    timeout = call["timeout"]  # one budget for connect, headers and body
+    assert (timeout.connect_timeout, timeout.total) == (12.0, 12.0)
     assert "sarawak-astronauts" in call["headers"]["User-Agent"]
 
 
@@ -309,3 +310,97 @@ def test_default_session_is_created_and_closed(tmp_path, monkeypatch):
     monkeypatch.setattr(download.requests, "Session", Factory)
     get_cutout(fixture_exposure(FOV3), RA, DEC, 3, settings=make_settings(tmp_path))
     assert len(created) == 1 and created[0].closed and len(created[0].calls) == 1
+
+
+# ------------------------------------------- T-015: the deadline bounds an attempt
+
+
+class _Sock:
+    def __init__(self):
+        self.timeouts: list[float] = []
+
+    def settimeout(self, value):
+        self.timeouts.append(value)
+
+
+def test_each_read_may_wait_only_for_the_time_left(tmp_path, monkeypatch):
+    now = [100.0]
+
+    def clock():
+        now[0] += 1.0  # every look at the clock costs a second
+        return now[0]
+
+    monkeypatch.setattr(download, "_clock", clock)
+    sock = _Sock()
+    raw = type("Raw", (), {"connection": type("Conn", (), {"sock": sock})()})()
+    body = with_epsf(FOV3)
+    reply = StreamResponse(body, chunk_size=len(body) // 3 + 1, raw=raw)
+    settings = make_settings(tmp_path, cutout_timeout_s=60.0)
+    download_cutout(IRSA_FILE + "?center=1,2d&size=0.1", tmp_path / "x", settings,
+                    StreamSession(replies=[reply]))
+    # Before each of the 3 chunks and the end of the stream, the socket gets the
+    # time left: deadline 161 minus the clock (102, 104, 106, 108).
+    assert sock.timeouts == [59.0, 57.0, 55.0, 53.0]
+
+
+def test_attempt_stops_at_the_deadline_before_another_read(tmp_path, monkeypatch):
+    now = [0.0]
+    monkeypatch.setattr(download, "_clock", lambda: now[0])
+    sock = _Sock()
+    raw = type("Raw", (), {"connection": type("Conn", (), {"sock": sock})()})()
+
+    class Slow(StreamResponse):
+        def iter_content(self, chunk_size=1):
+            for chunk in super().iter_content(chunk_size):
+                now[0] += 4.0  # each chunk takes 4 s to arrive
+                yield chunk
+
+    body = with_epsf(FOV3)
+
+    class OneReply:
+        def get(self, url, **kwargs):
+            return Slow(body, chunk_size=1024, raw=raw)
+
+    settings = make_settings(tmp_path, cutout_timeout_s=10.0, cutout_retries=0)
+    with pytest.raises(UpstreamTimeout, match="within 10 s"):
+        download_cutout(IRSA_FILE + "?center=1,2d&size=0.1", tmp_path / "x", settings,
+                        OneReply())
+    assert sock.timeouts == [10.0, 6.0, 2.0]  # never more than the time left
+
+
+def test_a_stalled_real_server_ends_the_attempt_at_the_deadline(tmp_path):
+    """Real sockets on localhost: headers after 1.2 s, a little body, then a stall.
+    With a 2 s budget the attempt ends at about 2 s (it used to be 1.2 + 2 s)."""
+    import socket
+    import threading
+    import time
+
+    listener = socket.socket()
+    listener.bind(("127.0.0.1", 0))
+    listener.listen(1)
+    port = listener.getsockname()[1]
+    done = threading.Event()
+
+    def serve():
+        conn, _ = listener.accept()
+        with conn:
+            conn.recv(65536)
+            time.sleep(1.2)
+            conn.sendall(b"HTTP/1.1 200 OK\r\nContent-Length: 1000000\r\n\r\n" + b"x" * 1000)
+            done.wait(10)  # stall until the client gives up
+
+    th = threading.Thread(target=serve, daemon=True)
+    th.start()
+    settings = make_settings(tmp_path, cutout_timeout_s=2.0)
+    with requests.Session() as session:
+        session.trust_env = False  # no proxy for localhost
+        started = time.monotonic()
+        with pytest.raises(download._Retryable) as info:
+            download._download_once(f"http://127.0.0.1:{port}/x", tmp_path / "x",
+                                    settings, session)
+        elapsed = time.monotonic() - started
+    done.set()
+    th.join(5)
+    listener.close()
+    assert isinstance(info.value.error, UpstreamTimeout)
+    assert 1.9 <= elapsed < 2.7, elapsed
