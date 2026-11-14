@@ -59,6 +59,55 @@ class Settings:
     # How long a position query is reused when resolving an epoch id.
     epoch_query_ttl_s: float = 600.0
 
+    # ------------------------------------------------ cleaning pipeline (app.pipeline)
+    # FLAGS bits that mask a pixel, by name. Bit numbers are read from each cutout's
+    # FLAGS header (MSKNnnnn = name, MSKDnnnn = description), as IRSA's spherex_intro
+    # tutorial shows; app.pipeline.flags has a fallback table for headers without
+    # them. The set below marks pixels with no usable signal or a known artifact:
+    #   NONFUNC "Permanently unusable", MISSING_DATA "Onboard data lost",
+    #   HOT "Hot pixel", COLD "Anomalously low signal", NONLINEAR "Nonlinearity
+    #   correction cannot be applied reliably", PERSIST "Persistent charge above
+    #   threshold", OUTLIER "Pixel flagged by Detect Outliers", GHOST / GHOST_FPA /
+    #   GHOST_EXT (ghosts of bright sources), STREAK, SNOWBALL and HALO (artifacts).
+    # Deliberately NOT masked:
+    #   SOURCE ("Pixel mapped to a known source"): about 98 % of pixels carry it, and
+    #     masking it would remove every star. It is never masked, even if listed here.
+    #   TRANSIENT, OVERFLOW, SUR_ERROR and BLOOM: in T-005's survey of the 61
+    #     Barnard's Star D2 cutouts these four cover the whole core of the star in
+    #     every exposure (onboard ramp-fit flags on bright, saturating sources).
+    #     Masking them would cut every bright star out of the time-lapse.
+    #   FULLSAMPLE (information only), PHANMISS, DICHROIC and CROSSTALK (the pixel
+    #     still holds a calibrated, if less accurate, value).
+    # IMAGE pixels that are not finite are always treated as masked, except
+    # saturated cores (see pipeline_fill_saturated).
+    pipeline_mask_flags: tuple[str, ...] = (
+        "NONFUNC", "MISSING_DATA", "HOT", "COLD", "NONLINEAR", "PERSIST", "OUTLIER",
+        "GHOST", "GHOST_FPA", "GHOST_EXT", "STREAK", "SNOWBALL", "HALO",
+    )
+    # Saturated star cores are NaN in IMAGE with OVERFLOW set. When True they are
+    # filled, before reprojection, with the brightest finite pixel within 2 px, so a
+    # bright star renders as a white disc instead of a hole. Display only: the
+    # filled value is a lower bound, not a measurement.
+    pipeline_fill_saturated: bool = True
+    # Output grid: north up, east left, centred on the target, side
+    # ceil(fov * 60 / scale) pixels (fov=10 gives 97 px). 6.2" is about SPHEREx native.
+    pipeline_pixel_scale_arcsec: float = 6.2
+    # Shared stretch: asinh between robust percentiles of every valid pixel in the
+    # sequence (MJy/sr, after ZODI subtraction). asinh softening as in astropy's
+    # AsinhStretch (smaller = more contrast in faint parts).
+    stretch_percentiles: tuple[float, float] = (1.0, 99.5)
+    stretch_asinh_a: float = 0.1
+    # PNG grey level for masked, off-detector or empty pixels. Valid pixels are
+    # mapped to 1-255, so 0 always means "no data".
+    png_fill_value: int = 0
+    # Quality status from the flagged fraction of the view (API.md section 3).
+    quality_warn_fraction: float = 0.05
+    quality_bad_fraction: float = 0.25
+    # Per-visit selection (live sequences): candidates tried per visit, and the
+    # minimum view coverage a candidate needs to be accepted.
+    per_visit_max_candidates: int = 3
+    per_visit_min_coverage: float = 0.9
+
     def collection_for(self, release: str) -> str:
         """IRSA collection name for a release label; ValueError if unmapped."""
         for label, collection in self.spherex_collections:
