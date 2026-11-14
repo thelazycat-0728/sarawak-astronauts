@@ -30,7 +30,7 @@ Hackathon simplifications to the [TECH_STACK.md](TECH_STACK.md):
 - No Redis or background job queue. Slow requests fall back to the pre-computed frames.
 - No Supabase unless the accounts Stretch item is reached. Guest progress uses `localStorage` only.
 - The frontend is hosted on **Netlify** (configured in `netlify.toml`). If Netlify fails, use Cloudflare Pages or a Render static site, or run the built site from a laptop with `npx serve -s dist`.
-- The API can run on a single Render/Railway container. If hosting fails, the demo runs on the pre-computed frames alone.
+- The API runs on **Render**'s free tier with the native Python runtime (`render.yaml`, no Docker). If Render fails, run the API on a laptop, behind a tunnel if the Netlify site needs it (see TECH_STACK §7). If all hosting fails, the demo runs on the pre-computed frames alone.
 
 ## 2. Hour 0–1: shared contracts (everyone together)
 
@@ -82,7 +82,7 @@ Also in hour 0–1: whoever has `spherex_blink.py` and `time_machine.py` (listed
 
 | When                               | Tasks                                                                                                                                                                           |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Day 1 AM** (Must)                | Repo scaffold and layout; GitHub Actions (lint and build); Netlify deploy for the frontend (`netlify.toml`, see TECH_STACK §7); Dockerfile and API deploy on Render/Railway; CORS and secrets                        |
+| **Day 1 AM** (Must)                | Repo scaffold and layout; GitHub Actions (lint and build); Netlify deploy for the frontend (`netlify.toml`, see TECH_STACK §7); API deploy on Render (`render.yaml`, see TECH_STACK §7); CORS and secrets                        |
 | **Day 1 PM** (Should)              | `glossary.json` with plain-language labels and "?" tooltip text, each checked against its source definition; tooltip component for A to drop in; draft the pitch outline        |
 | **Day 2 AM** (Should)              | AI explainer: `POST /explain` calling an LLM with the glossary and current frame metadata as context, rate-limited, answers labelled "AI-generated"; chat panel in the frontend |
 | **Day 2 PM** (Stretch, then pitch) | Supabase magic-link login and a simple `submissions` table with a submit form, if time allows; **from 14:00, slides, demo script and backup screen recording**                  |

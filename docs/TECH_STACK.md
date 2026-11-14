@@ -12,7 +12,7 @@ Browser (React + Vite, hosted on Netlify)
    │ sign-in, progress,      │ images, spectra, overlays,
    │ points, submissions     │ AI explainer, AI ranking
    ▼                         ▼
-Supabase (Auth + Postgres)     Python API (FastAPI in Docker)
+Supabase (Auth + Postgres)     Python API (FastAPI on Render)
                                   │
                                   ▼
         IRSA (SPHEREx, 2MASS, WISE) · ESA Gaia · SIMBAD · SkyBoT · LLM API
@@ -114,7 +114,7 @@ Supabase (Auth + Postgres)     Python API (FastAPI in Docker)
 | Piece | Platform |
 | --- | --- |
 | Frontend | **Netlify**, deployed from GitHub with a deploy preview for every pull request |
-| Python API | **Docker** container on Render, Railway, Fly.io, Google Cloud Run or Hugging Face Spaces, with a persistent disk for the cutout cache |
+| Python API | **Render** web service on the native Python runtime (no Docker), configured in `render.yaml`. Fallbacks: a local laptop, optionally behind a tunnel (see below) |
 | Auth and database | **Supabase** (hosted) |
 | Source control and CI | **GitHub** + **GitHub Actions** (lint, tests, build) |
 | Secrets | Environment variables on Netlify and the API host; never in the frontend bundle |
@@ -149,7 +149,64 @@ Setup steps:
 
 **Fallbacks if Netlify is unavailable:** Cloudflare Pages or a Render static site (same build settings, with a `/*` → `/index.html` rewrite). As a last resort for a demo, run `npm run build && npx serve -s dist` on a laptop.
 
-**Why the Python API is not on Netlify:** Netlify Functions are short-lived serverless functions with tight execution time limits and no persistent disk between requests. The FITS pipelines need large scientific libraries, slow archive queries and a cutout cache, which fit better in a long-running container.
+**Why the Python API is not on Netlify or Supabase:** neither hosts Python servers or containers. Netlify Functions are short-lived JavaScript/TypeScript/Go functions with tight time limits and no persistent disk, and Supabase Edge Functions run TypeScript on Deno. The FITS pipelines need large Python libraries, slow archive queries and a cutout cache, so they run on a long-lived Python server.
+
+### Render configuration (Python API)
+
+Render runs the API with its native Python runtime, so no Dockerfile is needed. Add `render.yaml` (a Render *Blueprint*) at the repo root:
+
+```yaml
+services:
+  - type: web
+    name: sarawak-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true                 # redeploy on every push to main
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: DATA_MODE
+        value: mock
+      - key: CORS_ORIGINS
+        sync: false                  # set in the dashboard: https://<site>.netlify.app
+```
+
+Setup steps:
+
+1. In Render, choose **New → Blueprint**, select the GitHub repo, and Render creates the service from `render.yaml`.
+2. Fill in `CORS_ORIGINS` when prompted, then check `https://<service>.onrender.com/health`.
+3. Set Netlify's `VITE_API_URL` to the Render URL and redeploy the frontend.
+4. After that, every merge to `main` redeploys both the frontend (Netlify) and the API (Render).
+
+**Free-tier limits:** the service sleeps after about 15 minutes without traffic, and the first request after that takes up to a minute while it wakes. The disk is also wiped on every restart or deploy, so the cutout cache is temporary. Before judging, open `/health` to wake it, and rely on the pre-computed preset frames in `frontend/public/` for the demo.
+
+**Render CLI (optional):** the [Render CLI](https://render.com/docs/cli) (`render login`) can trigger deploys, list services and stream logs from the terminal (`render deploys create`, `render logs`). Creating the service itself is done once through the Blueprint above.
+
+### Running the API locally
+
+During development, and as the demo-day backup, the API can run on a laptop:
+
+```
+# from backend/
+.venv/Scripts/python -m uvicorn app.main:app --port 8000
+# from frontend/ (VITE_API_URL=http://localhost:8000)
+npm run dev
+```
+
+`http://localhost:5173` is already an allowed CORS origin, so no extra setup is needed.
+
+To let the **Netlify site** call a laptop API, expose it with a tunnel, which provides the HTTPS URL that browsers require:
+
+| Tool | Command | Notes |
+| --- | --- | --- |
+| Cloudflare Tunnel | `cloudflared tunnel --url http://localhost:8000` | No account needed; random URL each run |
+| ngrok | `ngrok http 8000` | Free account includes one fixed domain |
+
+Then start the API with `CORS_ORIGINS=https://<site>.netlify.app`, set `VITE_API_URL` on Netlify to the tunnel URL, and redeploy. The laptop must stay awake, and a random tunnel URL means a Netlify redeploy every time it changes. Close the tunnel when it's not in use.
 
 ## 8. Security and privacy
 
