@@ -10,6 +10,7 @@ This is the contract between the frontend and the FastAPI science backend. Mock 
 - T-014: `/diff` and `/lightcurve` answer `503 unavailable` from the live API; `/health` sends an `X-Data-Mode` header (`mock` or `irsa`), readable through CORS.
 - T-015: `/frame` answers `503 unavailable` from the live API when every render slot stays busy for the few seconds a request waits for one.
 - T-006: presets at fov 12, 6 and 3 (`<id>/manifest.json`, `<id>/fov-6/`, `<id>/fov-3/`), listed in `presets/index.json`; up to 6 exposures per visit; a wavelength-matched diff for variable stars; WISE 0855 re-centred to 133.7609, −7.2423.
+- T-016: optional `stacks` in every preset manifest (one mean image per visit plus a last-minus-first stack diff) and `stacks` per entry in `presets/index.json`; new `look_for` texts for `eps-indi-b` and `wise-0855`.
 
 ## 1. Conventions
 
@@ -246,6 +247,26 @@ Pre-computed demo data for the five test targets lives in static files so the de
 
 - `frontend/public/presets/<preset-id>/manifest.json` (fov 12), `.../<preset-id>/fov-6/manifest.json` and `.../<preset-id>/fov-3/manifest.json`: **exactly the `/epochs` response shape**, with `synthetic: false`, `target.name` set to the preset name, `diff_url_template: null` and the first-versus-last pair as the first entry in `diffs`. **Variable-star presets** (`rw-aur`, `r-dra`) also carry a second, wavelength-matched pair: an exposure from the first visit and one from the last visit at the closest `wavelength_um`, so the difference shows a change in time rather than in colour. Each fov has its own `image` size; all three use the fov-12 `stretch` and diff `scale`s, so a frame looks the same at every fov. The presets' `stretch.note` adds that each frame is at a slightly different wavelength.
 - Each manifest's frames and diffs sit next to it: `<folder>/frames/<epoch-id>.png` and `<folder>/diff/<a>__<b>.png`, referenced by root-relative URLs (for example `/presets/barnards-star/frames/<epoch-id>.png` and `/presets/barnards-star/fov-6/frames/<epoch-id>.png`).
+- **Visit stacks** (optional, additive field `stacks`, presets only; the live `/epochs` has none). Each preset manifest also carries one stacked image per visit: the per-pixel mean of that visit's cleaned frames over their valid pixels (a pixel with no valid frame is no data, grey 0), rendered with the manifest's own `stretch`, so frames and stacks share one brightness scale. Stacks show faint sources and ~1 px shifts better than single frames. The frames of a visit are at slightly different wavelengths, so a stack is a broadband average over the detector array, **not** a colour or brightness measurement. Files sit at `<folder>/stacks/visit-<n>.png`; `stacks.diff` is the last visit stack minus the first (`<folder>/stacks/diff/visit-<a>__visit-<b>.png`, `/diff` grey convention) with its own `scale`: the 99.5th percentile of `|b − a|` over the stacks' measured pixels (filled saturated cores left out) at fov 12, shared by all three fovs. `quality` has the frame shape: `flagged_fraction` is the share of no-data stack pixels and `flags` the union of the frames' flags. In `index.json`, each `manifests` entry gives `stacks`, the number of visit stacks (0 or absent means none).
+
+```json
+{"stacks": {
+  "method": "mean",
+  "note": "Each visit stack is the mean of that visit's frames over their valid pixels, ...",
+  "visits": [
+    {"visit": 1, "n_frames": 6, "epoch_ids": ["sx_dr1_2025W35_1A_0146_1_D2", "..."],
+     "time_utc": "2025-08-26T05:41:39Z", "mjd": 60913.237262,
+     "wavelength_min_um": 1.23823, "wavelength_max_um": 1.62887, "wavelength_mean_um": 1.46594,
+     "url": "/presets/barnards-star/stacks/visit-1.png",
+     "quality": {"status": "good", "flagged_fraction": 0.0001,
+                 "flags": ["NONFUNC", "COLD", "PERSIST", "OUTLIER", "HALO"]}}
+  ],
+  "diff": {"a_visit": 1, "b_visit": 3, "url": "/presets/barnards-star/stacks/diff/visit-1__visit-3.png",
+           "scale": 2.9192}
+}}
+```
+
+`time_utc` and `mjd` are the mean of the stacked frames' times (MJD to 6 decimals, UTC to the second).
 - `frontend/public/presets/index.json` lists the presets, so the frontend never builds paths:
 
 ```json
@@ -256,9 +277,9 @@ Pre-computed demo data for the five test targets lives in static files so the de
     {"id": "barnards-star", "name": "Barnard's Star", "ra": 269.4464, "dec": 4.7668, "band": "D2",
      "default_fov_arcmin": 6.0, "look_for": "Position shift between visits",
      "manifests": [
-       {"fov_arcmin": 12.0, "url": "/presets/barnards-star/manifest.json", "count": 18, "visits": 3},
-       {"fov_arcmin": 6.0, "url": "/presets/barnards-star/fov-6/manifest.json", "count": 18, "visits": 3},
-       {"fov_arcmin": 3.0, "url": "/presets/barnards-star/fov-3/manifest.json", "count": 18, "visits": 3}
+       {"fov_arcmin": 12.0, "url": "/presets/barnards-star/manifest.json", "count": 18, "visits": 3, "stacks": 3},
+       {"fov_arcmin": 6.0, "url": "/presets/barnards-star/fov-6/manifest.json", "count": 18, "visits": 3, "stacks": 3},
+       {"fov_arcmin": 3.0, "url": "/presets/barnards-star/fov-3/manifest.json", "count": 18, "visits": 3, "stacks": 3}
      ]}
   ]
 }
@@ -269,8 +290,8 @@ The frontend loads a preset by fetching the `url` for the chosen fov from `index
 | `id` | Name | `ra` (deg) | `dec` (deg) | `band` | `fov` | Look for |
 | --- | --- | --- | --- | --- | --- | --- |
 | `barnards-star` | Barnard's Star | 269.4464 | 4.7668 | D2 | 12, 6, 3 | Position shift between visits |
-| `eps-indi-b` | Epsilon Indi B | 331.0951 | -56.8007 | D2 | 12, 6, 3 | Faint brown dwarf that moves about one pixel a year; easiest to see in the difference image. |
-| `wise-0855` | WISE 0855−0714 | 133.7609 | -7.2423 | D6 | 12, 6, 3 | Too faint to see in single SPHEREx snapshots at 4–5 µm; it only shows up when a visit's exposures are stacked. It moves about one pixel (8″) west per year. |
+| `eps-indi-b` | Epsilon Indi B | 331.0951 | -56.8007 | D2 | 12, 6, 3 | Faint brown dwarf that moves about one pixel a year; compare the first and last visit stacks, or see the stack difference, where it shows as a dark and bright pair. |
+| `wise-0855` | WISE 0855−0714 | 133.7609 | -7.2423 | D6 | 12, 6, 3 | Too faint to see in single SPHEREx snapshots at 4–5 µm. In the visit stacks it is at best a faint smudge at the centre, clearest in the last visit; its motion (about one pixel, 8″, west per year) is too small to see here. |
 | `rw-aur` | RW Aurigae | 76.9564 | 30.4014 | D2 | 12, 6, 3 | Young star whose brightness changes between visits. Part of the frame-to-frame change is colour, because each frame is at a slightly different wavelength. |
 | `r-dra` | R Draconis | 248.1674 | 66.7550 | D2 | 12, 6, 3 | Mira variable whose brightness changes between visits. Part of the frame-to-frame change is colour, because each frame is at a slightly different wavelength. |
 
