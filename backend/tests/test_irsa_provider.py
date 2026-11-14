@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import inspect
+import logging
 import os
 import subprocess
 import sys
@@ -26,6 +28,7 @@ from app.providers.mock import MockProvider
 from tests.conftest import BARNARD, assert_error, png_info
 from tests.cutout_helpers import (
     FOV10,
+    StreamResponse,
     StreamSession,
     fixture_exposure,
     make_settings,
@@ -170,10 +173,14 @@ def test_upstream_errors_are_502_and_not_cached(tmp_path):
     assert len(t.provider._cache) == 0
 
 
-def test_no_coverage_is_an_empty_200(tmp_path):
+def test_no_coverage_is_an_empty_200_and_is_cached(tmp_path):
     t = live(tmp_path, sia=FakeSession(response=FakeResponse(fixture_bytes("empty.xml"))))
-    doc = EpochsResponse.model_validate(t.client.get("/epochs", params=VIEW).json())
-    assert doc.count == 0 and doc.epochs == [] and doc.synthetic is False
+    for _ in range(2):
+        resp = t.client.get("/epochs", params=VIEW)
+        assert resp.status_code == 200, resp.text
+        doc = EpochsResponse.model_validate(resp.json())
+        assert doc.count == 0 and doc.epochs == [] and doc.synthetic is False
+    assert len(t.sia.calls) == 1 and t.cutouts.calls == []
 
 
 def test_ttl_cache_caps_entries():
@@ -275,3 +282,201 @@ def test_startup_does_not_import_the_pipeline(tmp_path, mode):
                          capture_output=True, text=True, timeout=120)
     assert out.returncode == 0, out.stderr
     assert out.stdout.strip() == f"{mode or 'mock'} []"
+
+
+# ------------------------------------------------- fix-1: failures are not "no data"
+
+
+def _busy():
+    return StreamResponse(b"Server busy", status_code=503, headers={"Retry-After": "0"})
+
+
+def test_all_downloads_failing_is_502_not_cached_and_recovers(tmp_path):
+    irsa_up = [False]
+
+    def reply(url):
+        return ok(FOV10) if irsa_up[0] else _busy()
+
+    t = live(tmp_path, cutouts=StreamSession(replies=[reply]))
+    resp = t.client.get("/epochs", params=VIEW)
+    assert_error(resp, 502, "upstream_error")
+    assert "preset" in resp.json()["error"]["message"]
+    # 3 visits x 3 candidates x (1 + 2 retries), and nothing was cached.
+    assert len(t.cutouts.calls) == 27 and len(t.provider._cache) == 0
+    irsa_up[0] = True
+    resp = t.client.get("/epochs", params=VIEW)
+    assert resp.status_code == 200 and resp.json()["count"] == 3
+    assert len(t.sia.calls) == 2  # rebuilt, not served from the cache
+
+
+def test_all_downloads_timing_out_is_504(tmp_path):
+    t = live(tmp_path, cutouts=StreamSession(replies=[requests.ReadTimeout()]))
+    assert_error(t.client.get("/epochs", params=VIEW), 504, "upstream_timeout")
+    assert len(t.provider._cache) == 0
+
+
+def test_partial_sequence_is_cached_only_briefly(tmp_path):
+    now = [1000.0]
+    visit2_up = [False]
+
+    def reply(url):  # visit 2 holds the 2026W11 and 2026W12 exposures
+        visit2 = "level2_2026W11_" in url or "level2_2026W12_" in url
+        return _busy() if visit2 and not visit2_up[0] else ok(FOV10)
+
+    t = live(tmp_path, cutouts=StreamSession(replies=[reply]), clock=lambda: now[0])
+    assert t.settings.epochs_cache_degraded_ttl_s == 30.0
+    doc = t.client.get("/epochs", params=VIEW).json()
+    assert [e["visit"] for e in doc["epochs"]] == [1, 3]
+    now[0] += 29.0
+    assert t.client.get("/epochs", params=VIEW).json() == doc  # still a hit
+    assert len(t.sia.calls) == 1
+    visit2_up[0] = True
+    now[0] += 2.0  # past the 30 s degraded TTL
+    doc = t.client.get("/epochs", params=VIEW).json()
+    assert [e["visit"] for e in doc["epochs"]] == [1, 2, 3] and len(t.sia.calls) == 2
+    now[0] += 60.0  # a full sequence keeps the normal TTL
+    t.client.get("/epochs", params=VIEW)
+    assert len(t.sia.calls) == 2
+
+
+# ------------------------------------------------- fix-1: waiters and deadlines
+
+
+def _get_in_thread(client, params):
+    out = {}
+    th = threading.Thread(target=lambda: out.setdefault("r", client.get("/epochs",
+                                                                         params=params)))
+    th.start()
+    return th, out
+
+
+def _wait_for(cond, timeout=10.0):
+    end = time.monotonic() + timeout
+    while not cond():
+        assert time.monotonic() < end, "condition never became true"
+        time.sleep(0.01)
+
+
+def test_waiter_cap_answers_503_at_once(tmp_path):
+    gate = threading.Event()
+    sia = GatedSession(gate, response=FakeResponse(fixture_bytes("barnard_d2.xml")))
+    t = live(tmp_path, sia=sia, epochs_max_waiters=1)
+    th, out = _get_in_thread(t.client, VIEW)
+    try:
+        _wait_for(lambda: t.provider.waiting == 1)
+        started = time.monotonic()
+        resp = t.client.get("/epochs", params={**VIEW, "ra": 10.0})
+        assert time.monotonic() - started < 2
+        assert_error(resp, 503, "unavailable")
+        assert "preset" in resp.json()["error"]["message"]
+    finally:
+        gate.set()
+        th.join(30)
+    assert out["r"].status_code == 200 and t.provider.waiting == 0
+
+
+def test_frame_deadline_returns_504(tmp_path):
+    gate = threading.Event()
+    cutouts = StreamSession(replies=[ok(FOV10)], gate=gate)
+    t = live(tmp_path, cutouts=cutouts, frame_deadline_s=0.3)
+    try:
+        started = time.monotonic()
+        resp = t.client.get("/frame/sx_dr1_2025W35_1A_0146_4_D2.png", params=VIEW)
+        assert time.monotonic() - started < 5
+        assert_error(resp, 504, "upstream_timeout")
+        assert "0.3 s" in resp.json()["error"]["message"]
+    finally:
+        gate.set()
+    # The render finished in the background, so the retry is a cache hit.
+    _wait_for(lambda: any((tmp_path / "cache").glob("*.fits")))
+    for _ in range(50):
+        resp = t.client.get("/frame/sx_dr1_2025W35_1A_0146_4_D2.png", params=VIEW)
+        if resp.status_code == 200:
+            break
+    assert resp.status_code == 200 and resp.headers["content-type"] == "image/png"
+
+
+def test_second_waiter_keeps_a_queued_build_alive(tmp_path):
+    t = live(tmp_path, epochs_deadline_s=4.0)
+    slots = t.provider._build_slots
+    slots.acquire()
+    slots.acquire()  # both build slots busy: the next build is queued
+    released = False
+    try:
+        th_a, out_a = _get_in_thread(t.client, VIEW)
+        _wait_for(lambda: t.provider.waiting == 1)
+        time.sleep(2.0)
+        th_b, out_b = _get_in_thread(t.client, VIEW)
+        _wait_for(lambda: t.provider.waiting == 2)
+        th_a.join(10)
+        assert_error(out_a["r"], 504, "upstream_timeout")
+        (future,) = t.provider._inflight.values()
+        assert not future.cancelled()  # B still waits on it
+        slots.release()
+        slots.release()
+        released = True
+        th_b.join(30)
+    finally:
+        if not released:
+            slots.release()
+            slots.release()
+    assert out_b["r"].status_code == 200, out_b["r"].text
+    assert out_b["r"].json()["count"] == 3
+
+
+def test_last_waiter_cancels_a_queued_build(tmp_path):
+    t = live(tmp_path, epochs_deadline_s=0.2)
+    slots = t.provider._build_slots
+    slots.acquire()
+    slots.acquire()
+    try:
+        assert_error(t.client.get("/epochs", params=VIEW), 504, "upstream_timeout")
+        assert t.provider._inflight == {} and t.provider.waiting == 0
+    finally:
+        slots.release()
+        slots.release()
+    time.sleep(0.2)
+    assert t.sia.calls == []  # the cancelled build never ran
+
+
+class _Abort(BaseException):
+    pass
+
+
+def test_base_exception_in_a_build_does_not_stick_in_flight(tmp_path):
+    t = live(tmp_path)
+    calls = []
+
+    def boom(q):
+        calls.append(q)
+        raise _Abort()
+
+    t.provider._build = boom
+    for _ in range(2):
+        assert_error(t.client.get("/epochs", params=VIEW), 500, "internal_error")
+        assert t.provider.waiting == 0
+        _wait_for(lambda: t.provider._inflight == {})
+    assert len(calls) == 2  # the second request started a new build
+
+
+# ------------------------------------------------- fix-1: health, CORS, logging
+
+
+def test_health_is_async_and_cors_exposes_the_data_mode(client):
+    from app.routers import health
+
+    assert inspect.iscoroutinefunction(health.health)
+    resp = client.get("/health", headers={"Origin": "http://localhost:5173"})
+    assert resp.json() == {"status": "ok"}
+    exposed = resp.headers["access-control-expose-headers"].lower()
+    assert "x-data-mode" in [h.strip() for h in exposed.split(",")]
+
+
+def test_irsa_mode_logs_app_info(tmp_path):
+    live(tmp_path)
+    logger = logging.getLogger("app")
+    assert logger.getEffectiveLevel() <= logging.INFO
+    names = [h.get_name() for h in logger.handlers]
+    assert names.count("app-irsa-info") == 1
+    live(tmp_path)  # a second app adds no second handler
+    assert [h.get_name() for h in logger.handlers].count("app-irsa-info") == 1
