@@ -7,7 +7,7 @@ This document lists the technologies used to build the features in [PROJECT_SUMM
 ## 1. Architecture overview
 
 ```
-Browser (React + Vite, hosted on Vercel)
+Browser (React + Vite, hosted on Netlify)
    │                         │
    │ sign-in, progress,      │ images, spectra, overlays,
    │ points, submissions     │ AI explainer, AI ranking
@@ -18,7 +18,7 @@ Supabase (Auth + Postgres)     Python API (FastAPI in Docker)
         IRSA (SPHEREx, 2MASS, WISE) · ESA Gaia · SIMBAD · SkyBoT · LLM API
 ```
 
-- The **frontend** is a single-page React app on Vercel. Everything except submitting works without logging in.
+- The **frontend** is a single-page React app on Netlify. Everything except submitting works without logging in.
 - The **science API** does all FITS processing in Python, because the astronomy libraries live there. The browser never calls IRSA directly (avoids CORS issues and heavy FITS handling in JavaScript).
 - **Supabase** handles accounts and stores progress, submissions, reviews and points.
 
@@ -26,7 +26,7 @@ Supabase (Auth + Postgres)     Python API (FastAPI in Docker)
 
 | Need | Technology | Used for |
 | --- | --- | --- |
-| Framework and build | **React + Vite** | Whole app; Vercel detects Vite automatically |
+| Framework and build | **React + Vite** | Whole app; Netlify detects Vite automatically |
 | Screens | **React Router** | `/explore`, `/learn`, `/play`, `/time-machine`, `/submit`, `/review`, `/profile` |
 | Styling and UI components | **Tailwind CSS** + **shadcn/ui** (Radix UI) | Consistent controls, dialogs and the "?" tooltips for plain-language labels |
 | Shared state | **Zustand** | Current target, band, selected epochs, Beginner/Expert mode |
@@ -113,19 +113,49 @@ Supabase (Auth + Postgres)     Python API (FastAPI in Docker)
 
 | Piece | Platform |
 | --- | --- |
-| Frontend | **Vercel**, deployed from GitHub with a preview deployment for every pull request |
+| Frontend | **Netlify**, deployed from GitHub with a deploy preview for every pull request |
 | Python API | **Docker** container on Render, Railway, Fly.io, Google Cloud Run or Hugging Face Spaces, with a persistent disk for the cutout cache |
 | Auth and database | **Supabase** (hosted) |
 | Source control and CI | **GitHub** + **GitHub Actions** (lint, tests, build) |
-| Secrets | Environment variables on Vercel and the API host; never in the frontend bundle |
+| Secrets | Environment variables on Netlify and the API host; never in the frontend bundle |
 
-**Why the Python API is not on Vercel:** Vercel Python functions are limited to 300 seconds on the Hobby plan, a 500 MB bundle, a 4.5 MB response body and no persistent storage between requests. The FITS pipelines and the cutout cache fit better in a long-running container.
+### Netlify configuration
+
+The frontend is a static Vite build, so Netlify only needs the build settings and a fallback rule for client-side routes. Add `netlify.toml` at the repo root:
+
+```toml
+[build]
+  base    = "frontend"
+  command = "npm run lint && npm run build"
+  publish = "dist"          # relative to base
+  ignore  = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../netlify.toml"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# React Router: serve index.html for /explore, /learn, etc.
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
+```
+
+Setup steps:
+
+1. In Netlify, choose **Add new site → Import an existing project**, select the GitHub repo, and keep the settings from `netlify.toml`.
+2. Under **Site configuration → Environment variables**, set `VITE_API_URL` to the Python API's public URL. Vite bakes it into the bundle at build time, so trigger a redeploy after changing it.
+3. Add the Netlify domain (`https://<site>.netlify.app`, plus the deploy-preview pattern if previews must call the API) to the FastAPI **CORS allow-list**.
+4. Deploy previews are created automatically for every pull request.
+
+**Fallbacks if Netlify is unavailable:** Cloudflare Pages or a Render static site (same build settings, with a `/*` → `/index.html` rewrite). As a last resort for a demo, run `npm run build && npx serve -s dist` on a laptop.
+
+**Why the Python API is not on Netlify:** Netlify Functions are short-lived serverless functions with tight execution time limits and no persistent disk between requests. The FITS pipelines need large scientific libraries, slow archive queries and a cutout cache, which fit better in a long-running container.
 
 ## 8. Security and privacy
 
 - **Validate every input** with Pydantic. User values are converted to numbers and never pasted into ADQL queries as text.
 - **Rate-limit** submissions and the AI explainer, per user and per IP address.
-- **Lock CORS** to the Vercel domain.
+- **Lock CORS** to the Netlify domain.
 - **Enforce the scientist role in the database** (row-level security), not just by hiding UI.
 - **Collect minimal personal data** (username and email), publish a privacy policy, and follow Malaysia's Personal Data Protection Act (PDPA).
 

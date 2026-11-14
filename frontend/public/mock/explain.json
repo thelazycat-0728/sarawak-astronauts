@@ -1,0 +1,10 @@
+{
+  "synthetic": true,
+  "answer": "This is a mock answer. The bright dot near the centre is Barnard's Star. It is one of the closest stars to the Sun, so it moves across the sky fast enough to see between snapshots taken months apart. The other stars are much farther away and look fixed.",
+  "ai_generated": true,
+  "model": "mock",
+  "glossary_terms": [
+    "proper-motion",
+    "epoch"
+  ]
+}

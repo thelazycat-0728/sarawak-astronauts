@@ -1,0 +1,5 @@
+fastapi>=0.115
+uvicorn
+pydantic>=2.7
+numpy
+pillow
