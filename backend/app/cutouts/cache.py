@@ -27,9 +27,13 @@ import uuid
 from collections.abc import Callable
 from pathlib import Path
 
+from app.models import BAND_IDS
+
 log = logging.getLogger("app.cutouts")
 
 _KEY_RE = re.compile(r"^[A-Za-z0-9_.+-]{1,160}$")
+_RELEASE_RE = re.compile(r"^[A-Za-z0-9]{1,16}$")
+_OBS_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,56}$")  # as app.irsa accepts
 STALE_TEMP_S = 3600.0
 
 
@@ -37,6 +41,10 @@ def cutout_key(
     release: str, obs_id: str, band: str, ra: float, dec: float, size_arcmin: float
 ) -> str:
     """Cache key from already rounded values; ValueError if unsafe as a file name."""
+    if not (
+        _RELEASE_RE.match(release) and _OBS_ID_RE.match(obs_id) and band in BAND_IDS
+    ):
+        raise ValueError(f"unusable cache key parts: {release!r}, {obs_id!r}, {band!r}")
     key = f"{release.lower()}_{obs_id}_{band}_{ra:.4f}_{dec:+.4f}_{size_arcmin:.1f}"
     if not _KEY_RE.match(key) or ".." in key:
         raise ValueError(f"unusable cache key: {key!r}")

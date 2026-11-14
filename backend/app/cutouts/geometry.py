@@ -26,13 +26,12 @@ from __future__ import annotations
 
 import math
 import numbers
-import warnings
 from typing import Any
 
 import astropy.units as u
 import numpy as np
 from astropy.io import fits
-from astropy.wcs import WCS, FITSFixedWarning
+from astropy.wcs import WCS
 
 from app.errors import InvalidParameter
 
@@ -73,12 +72,12 @@ def round_position(ra: float, dec: float) -> tuple[float, float]:
 
 
 # ------------------------------------------------------------ WCS measurements
+# These run in the batch thread pool, so they avoid warnings.catch_warnings (not
+# thread-safe). SPHEREx headers parse without warnings (checked in T-004).
 
 
 def _celestial_wcs(header: fits.Header) -> WCS:
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", FITSFixedWarning)
-        return WCS(header)
+    return WCS(header)
 
 
 def _array_shape(header: fits.Header) -> tuple[int, int]:
@@ -102,8 +101,7 @@ def _inside(x: Any, y: Any, shape: tuple[int, int]) -> Any:
 def _sky_to_pixel(wcs: WCS, ra: Any, dec: Any) -> tuple[np.ndarray, np.ndarray]:
     """0-based pixel coordinates (numpy convention) of sky positions in degrees."""
     world = np.column_stack([np.atleast_1d(ra), np.atleast_1d(dec)])
-    with warnings.catch_warnings(), np.errstate(all="ignore"):
-        warnings.simplefilter("ignore")
+    with np.errstate(all="ignore"):
         pix = wcs.all_world2pix(world, 0, quiet=True)
     return pix[:, 0], pix[:, 1]
 
@@ -133,9 +131,7 @@ def wavelength_at(
     # warns about it (the tutorial sets ``sip = None`` after building the WCS).
     for key in [k for k in header if k.startswith(_SIP_PREFIXES)]:
         del header[key]
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", FITSFixedWarning)
-        spectral = WCS(header, fobj=hdul, key="W")
+    spectral = WCS(header, fobj=hdul, key="W")
     wavelength = spectral.pixel_to_world(*pixel)[0]
     value = float(u.Quantity(wavelength).to_value(u.um))
     return round(value, 5) if math.isfinite(value) else None

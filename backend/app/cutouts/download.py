@@ -40,6 +40,7 @@ IRSA_HOST = "irsa.ipac.caltech.edu"
 CHUNK_BYTES = 64 * 1024
 # A 30' cutout is about 7 MB with EPSF; anything far larger is not a cutout.
 MAX_CUTOUT_BYTES = 64 * 1024 * 1024
+_clock = time.monotonic  # replaced in tests
 
 
 class StreamingSession(Protocol):
@@ -89,7 +90,7 @@ def build_cutout_url(access_url: str, ra: float, dec: float, size_arcmin: float)
 
 def _download_once(url: str, dest: Path, settings: Settings, session: Any) -> int:
     timeout = settings.cutout_timeout_s
-    deadline = time.monotonic() + timeout
+    deadline = _clock() + timeout
     too_slow = UpstreamTimeout(f"IRSA cutout did not arrive within {timeout:g} s")
     try:
         resp = session.get(
@@ -118,7 +119,7 @@ def _download_once(url: str, dest: Path, settings: Settings, session: Any) -> in
         try:
             with open(dest, "wb") as out:
                 for chunk in resp.iter_content(chunk_size=CHUNK_BYTES):
-                    if time.monotonic() > deadline:
+                    if _clock() > deadline:
                         raise _Retryable(too_slow)
                     total += len(chunk)
                     if total > MAX_CUTOUT_BYTES:
@@ -186,14 +187,18 @@ def strip_cutout(raw: Path, dest: Path) -> None:
     Raises UpstreamError if ``raw`` is not a FITS file or lacks a kept HDU.
     """
     try:
-        with fits.open(raw, memmap=False, do_not_scale_image_data=True) as hdul:
-            names = [hdu.name for hdu in hdul]
-            missing = [name for name in KEPT_HDUS if name not in names]
-            if missing:
-                raise UpstreamError(f"IRSA cutout lacks HDUs: {', '.join(missing)}")
-            kept = fits.HDUList([hdul[0], *(hdul[name] for name in KEPT_HDUS)])
-            kept.writeto(dest, output_verify="exception")
+        _write_kept_hdus(raw, dest)
     except UpstreamError:
         raise
     except Exception as exc:  # astropy raises many types for a malformed file
         raise UpstreamError("IRSA returned an unreadable cutout") from exc
+
+
+def _write_kept_hdus(raw: Path, dest: Path) -> None:
+    with fits.open(raw, memmap=False, do_not_scale_image_data=True) as hdul:
+        names = [hdu.name for hdu in hdul]
+        missing = [name for name in KEPT_HDUS if name not in names]
+        if missing:
+            raise UpstreamError(f"IRSA cutout lacks HDUs: {', '.join(missing)}")
+        kept = fits.HDUList([hdul[0], *(hdul[name] for name in KEPT_HDUS)])
+        kept.writeto(dest, output_verify="exception")
