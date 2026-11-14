@@ -131,6 +131,9 @@ class ImageInfo(BaseModel):
     pixel_scale_arcsec: float
     orientation: Literal["north-up-east-left"] = "north-up-east-left"
     format: Literal["png-gray8"] = "png-gray8"
+    # Grey level of pixels with no data (masked, off the detector or empty). Valid
+    # pixels use 1-255 (see app.stretch and API.md section 3).
+    nodata_gray: Literal[0]
 
 
 class Stretch(BaseModel):
@@ -138,6 +141,8 @@ class Stretch(BaseModel):
     method: str
     vmin: float
     vmax: float
+    # Softening of the asinh stretch (dimensionless), needed to invert grey levels.
+    asinh_a: float = Field(gt=0, allow_inf_nan=False)
     unit: Literal["MJy/sr"] = "MJy/sr"
     note: str
 

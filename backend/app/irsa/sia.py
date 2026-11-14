@@ -30,7 +30,7 @@ from pyvo.dal.exceptions import DALQueryError
 from app.config import Settings
 from app.errors import InvalidParameter, UpstreamError, UpstreamTimeout
 from app.irsa.epochs import build_epochs
-from app.irsa.records import EpochQueryResult, Exposure
+from app.irsa.records import EpochQueryResult, Exposure, parse_s_region
 from app.models import BAND_IDS, BAND_RANGES_UM
 
 log = logging.getLogger("app.irsa")
@@ -172,6 +172,7 @@ def parse_sia_votable(content: bytes, band: str, settings: Settings) -> list[Exp
             _float_or_none(_cell(row, "t_exptime")) if "t_exptime" in table.colnames else None
         )
         did = _cell(row, "obs_publisher_did") if "obs_publisher_did" in table.colnames else None
+        region = _cell(row, "s_region") if "s_region" in table.colnames else None
         exposures.append(
             Exposure(
                 obs_id=obs_id,
@@ -185,6 +186,7 @@ def parse_sia_votable(content: bytes, band: str, settings: Settings) -> list[Exp
                 wavelength_min_um=round(em_min * 1e6, 4) if em_min is not None else None,
                 wavelength_max_um=round(em_max * 1e6, 4) if em_max is not None else None,
                 access_url=url,
+                footprint=parse_s_region(str(region)) if region is not None else None,
             )
         )
     if skipped:

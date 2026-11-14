@@ -14,7 +14,7 @@ This is the contract between the frontend and the FastAPI science backend. Mock 
 - **Times:** every time is given twice: `time_utc` (ISO 8601, UTC, seconds precision, `Z` suffix, mid-exposure) and `mjd` (Modified Julian Date, UTC, 6 decimals).
 - **Epoch ids:** opaque strings matching `^[A-Za-z0-9_-]{1,80}$` (no dots, so `{id}.png` is unambiguous). Unique within a response and stable across calls for the same exposure and band. Never parse them.
 - **URLs:** responses carry ready-to-use URLs (`frame_url`, `diffs[].url`, `diff_url_template`). Use them verbatim as `<img src>`; the frontend never builds paths. The live API returns absolute URLs; mocks and presets return root-relative paths (`/mock/...`, `/presets/...`). Both work in `<img src>`.
-- **Images:** 8-bit greyscale PNG, square, **north up, east left**, the requested position at the image centre. Every frame in a sequence has the same size and the same stretch.
+- **Images:** 8-bit greyscale PNG, square, **north up, east left**, the requested position at the image centre. Every frame in a sequence has the same size and the same stretch. In frames, grey **0** (`image.nodata_gray`) means no data (masked, off the detector or empty); valid pixels use grey 1–255 (see `stretch` in section 3 for the mapping and its inverse). Difference images use their own scale (see `/diff`).
 - **Provenance:** `/epochs` and `/lightcurve` responses carry `synthetic` (boolean). It is `true` only for mock data; the UI should label such data.
 
 ### Errors
@@ -82,15 +82,22 @@ Response fields (all required unless marked nullable):
 | `synthetic` | `true` for mock data only |
 | `target` | `{ra, dec, name, frame}`: the resolved cutout centre. `name` is nullable (a preset name or SIMBAD name when known). `frame` is `"ICRS"` |
 | `fov_arcmin`, `band` | The applied FOV and `{id, wavelength_min_um, wavelength_max_um}` |
-| `image` | `{width_px, height_px, pixel_scale_arcsec, orientation, format}`. The live API uses about 6.2″/px (SPHEREx native) |
-| `stretch` | `{shared, method, vmin, vmax, unit, note}`. One stretch is shared by the whole sequence, so frame-to-frame brightness changes are real |
+| `image` | `{width_px, height_px, pixel_scale_arcsec, orientation, format, nodata_gray}`. The live API uses about 6.2″/px (SPHEREx native). `nodata_gray` is the grey level of pixels with no data, always `0` |
+| `stretch` | `{shared, method, vmin, vmax, asinh_a, unit, note}`. One stretch is shared by the whole sequence, so frame-to-frame brightness changes are real. `asinh_a` is the dimensionless asinh softening (the mock uses `0.03`, the live API `0.1`; always read it from the response). The mapping is given below the table |
 | `releases` | Data releases present, for example `["DR1", "QR3"]` |
 | `duplicates_removed` | Exposures served by both DR1 and QR3 that were dropped |
 | `count` | Length of `epochs` |
 | `epochs[]` | `id`, `time_utc`, `mjd`, `visit` (survey pass, 1-based, about every 6 months), `release` (`DR1` or `QR3`), `obs_id` (IRSA exposure id, nullable), `band`, `wavelength_um`, `quality`, `frame_url` |
-| `epochs[].quality` | `{status, flagged_fraction, flags}`. `status` is `good` (<5 % of cutout pixels flagged), `warn` (<25 %) or `bad`. `flags` lists the SPHEREx `FLAGS` bit names present, never `SOURCE` |
+| `epochs[].quality` | `{status, flagged_fraction, flags}`. `flagged_fraction` is the share of the frame's pixels rendered as no-data (grey 0): masked pixels and pixels off the detector. `status` is `good` (`flagged_fraction` < 5 %), `warn` (< 25 %) or `bad`. `flags` lists the names of the **masked** SPHEREx `FLAGS` bits present in the view, never `SOURCE` (which is never masked). Informational bits that do not mask a pixel are not listed |
 | `diff_url_template` | Nullable string containing `{a}` and `{b}`. Replace them with two epoch ids to get a difference image URL. `null` for static mocks and presets |
 | `diffs[]` | Pre-rendered differences `{a, b, url, scale}`. May be empty from the live API |
+
+**Grey levels.** A frame pixel with value `v` (MJy/sr) is drawn as
+
+- `x = clip((v − vmin) / (vmax − vmin), 0, 1)`
+- `gray = 1 + round(254 · asinh(x / asinh_a) / asinh(1 / asinh_a))`, so valid pixels are 1–255; pixels with no data are `nodata_gray` (0).
+
+To turn a grey level `g` back into MJy/sr: if `g = 0` there is no value; otherwise `v = vmin + (vmax − vmin) · asinh_a · sinh((g − 1) / 254 · asinh(1 / asinh_a))`. Values below `vmin` come back as `vmin` and values above `vmax` as `vmax`; in between, the error is at most half a grey-level step.
 
 To show a difference of epochs `a` and `b`: use the matching `diffs[]` entry if there is one; otherwise substitute into `diff_url_template` if it is not `null`; otherwise subtraction is unavailable for that pair.
 
@@ -103,8 +110,8 @@ Example (live API, shortened to two epochs; the full mock is `frontend/public/mo
   "fov_arcmin": 10.0,
   "band": {"id": "D2", "wavelength_min_um": 1.1, "wavelength_max_um": 1.62},
   "image": {"width_px": 97, "height_px": 97, "pixel_scale_arcsec": 6.2,
-            "orientation": "north-up-east-left", "format": "png-gray8"},
-  "stretch": {"shared": true, "method": "asinh", "vmin": 0.0079, "vmax": 1.9739, "unit": "MJy/sr",
+            "orientation": "north-up-east-left", "format": "png-gray8", "nodata_gray": 0},
+  "stretch": {"shared": true, "method": "asinh", "vmin": 0.0079, "vmax": 1.9739, "asinh_a": 0.1, "unit": "MJy/sr",
               "note": "One stretch is shared by every frame in this sequence, so brightness changes between frames are real."},
   "releases": ["DR1", "QR3"],
   "duplicates_removed": 1,
@@ -131,7 +138,7 @@ Example (live API, shortened to two epochs; the full mock is `frontend/public/mo
       "obs_id": "2026W20_2A_0412_3",
       "band": "D2",
       "wavelength_um": 1.166,
-      "quality": {"status": "warn", "flagged_fraction": 0.071, "flags": ["TRANSIENT"]},
+      "quality": {"status": "warn", "flagged_fraction": 0.071, "flags": ["PERSIST"]},
       "frame_url": "<API_BASE>/frame/sx_2026W20_0412_D2.png?ra=269.4464&dec=4.7668&fov=10&band=D2&vmin=0.0079&vmax=1.9739"
     }
   ],

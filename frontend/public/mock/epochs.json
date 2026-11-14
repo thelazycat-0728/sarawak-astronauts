@@ -17,13 +17,15 @@
     "height_px": 96,
     "pixel_scale_arcsec": 6.25,
     "orientation": "north-up-east-left",
-    "format": "png-gray8"
+    "format": "png-gray8",
+    "nodata_gray": 0
   },
   "stretch": {
     "shared": true,
     "method": "asinh",
     "vmin": 0.0079,
     "vmax": 1.9739,
+    "asinh_a": 0.03,
     "unit": "MJy/sr",
     "note": "One stretch is shared by every frame in this sequence, so brightness changes between frames are real."
   },
@@ -79,7 +81,7 @@
         "status": "warn",
         "flagged_fraction": 0.071,
         "flags": [
-          "TRANSIENT"
+          "PERSIST"
         ]
       },
       "frame_url": "/mock/frames/mock_20250515_03_D2.png"

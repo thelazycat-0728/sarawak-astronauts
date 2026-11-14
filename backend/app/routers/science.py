@@ -37,6 +37,10 @@ _PNG: dict[int | str, dict] = {
     404: {"model": ErrorResponse, "description": "Unknown epoch id"},
     **_ERRORS,
 }
+# /diff and /lightcurve are not available yet with DATA_MODE=irsa.
+_UNAVAILABLE: dict[int | str, dict] = {
+    503: {"model": ErrorResponse, "description": "Not available for live data yet"},
+}
 
 
 def get_provider(request: Request) -> DataProvider:
@@ -115,12 +119,14 @@ def get_frame(
     return _png(provider.frame_png(id, q))
 
 
-@router.get("/diff", response_class=Response, responses=_PNG, name="get_diff")
+@router.get("/diff", response_class=Response, responses=_PNG | _UNAVAILABLE,
+            name="get_diff")
 def get_diff(q: Annotated[DiffQuery, Query()], provider: Provider) -> Response:
     return _png(provider.diff_png(q))
 
 
-@router.get("/lightcurve", response_model=LightcurveResponse, responses=_ERRORS)
+@router.get("/lightcurve", response_model=LightcurveResponse,
+            responses=_ERRORS | _UNAVAILABLE)
 def get_lightcurve(
     q: Annotated[LightcurveQuery, Query()], provider: Provider
 ) -> LightcurveResponse:

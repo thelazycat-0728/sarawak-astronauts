@@ -102,7 +102,7 @@ async function fetchField(p) {
   });
 
   return {
-    nx, ny, ...displayRange(stacks), fov: p.fov, arrayIdx: p.arrayIdx, channel: p.channel,
+    nx, ny, pxScale: j.image?.pixel_scale_arcsec ?? PX, ...displayRange(stacks), fov: p.fov, arrayIdx: p.arrayIdx, channel: p.channel,
     epochs, stacks, frames, stars: [], object: null, posAt: () => null, visibleAt: () => false,
     live: true, synthetic: Boolean(j.synthetic),
   };
@@ -216,7 +216,7 @@ export function vet({ marks, field, preset, note }) {
   checks.push({ id: 'signal', label: 'Seen in both snapshots', ok: present,
     detail: present ? `Signal-to-noise ${snr.toFixed(1)} at the weaker mark.` : 'No clear source at one of your marks.' });
 
-  const shift = Math.hypot(b.x - a.x, b.y - a.y) * PX;
+  const shift = Math.hypot(b.x - a.x, b.y - a.y) * (field.pxScale ?? PX);
   const moved = shift > 3;
   checks.push({ id: 'motion', label: 'Position changed', ok: moved,
     detail: moved ? `${shift.toFixed(1)}″ between ${epochs[a.epoch].label} and ${epochs[b.epoch].label}.` : `Only ${shift.toFixed(1)}″: within measurement error.` });

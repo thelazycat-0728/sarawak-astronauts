@@ -26,6 +26,12 @@ All URLs in the JSON are root-relative (`/mock/...`), as Vite serves `public/` a
 `diff_url_template` is `null` because static files cannot build arbitrary pairs; use
 the pre-rendered pair in `diffs`.
 
+Frames use the grey-level convention in `docs/API.md` section 3: grey 0
+(`image.nodata_gray`) means no data, and valid pixels are 1-255 from the asinh
+stretch with `stretch.vmin`, `stretch.vmax` and `stretch.asinh_a`. The mock's
+`asinh_a` is 0.03; real SPHEREx frames use 0.1, so always read it from the JSON.
+The mock has no masked pixels, so grey 0 does not occur in these frames.
+
 ## Regenerate
 
 From the repo root (output is deterministic with the pinned versions):

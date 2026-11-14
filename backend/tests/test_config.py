@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from app.config import Settings
@@ -24,8 +26,8 @@ def test_env_overrides(monkeypatch):
 
 
 def test_unknown_data_mode_fails_fast():
-    with pytest.raises(ValueError, match="only 'mock'"):
-        make_provider(Settings(data_mode="irsa"))
+    with pytest.raises(ValueError, match="unknown DATA_MODE"):
+        make_provider(Settings(data_mode="dr2"))
 
 
 def test_irsa_defaults_and_release_mapping():
@@ -37,3 +39,16 @@ def test_irsa_defaults_and_release_mapping():
     assert s.release_for("spherex_dr1_deep") is None
     with pytest.raises(ValueError, match="no IRSA collection"):
         s.collection_for("DR2")
+
+
+def test_cutout_defaults_and_cache_dir_env(monkeypatch):
+    monkeypatch.delenv("CUTOUT_CACHE_DIR", raising=False)
+    s = Settings.from_env()
+    backend = Path(__file__).resolve().parents[1]
+    assert Path(s.cutout_cache_dir) == backend / ".cache" / "cutouts"
+    assert (s.cutout_workers, s.cutout_timeout_s, s.cutout_retries) == (4, 60.0, 2)
+    assert s.cutout_cache_max_mb == 512.0 and s.epoch_query_ttl_s == 600.0
+    monkeypatch.setenv("CUTOUT_CACHE_DIR", " /tmp/sx-cache ")
+    assert Settings.from_env().cutout_cache_dir == "/tmp/sx-cache"
+    monkeypatch.setenv("CUTOUT_CACHE_DIR", "  ")
+    assert Settings.from_env().cutout_cache_dir == s.cutout_cache_dir

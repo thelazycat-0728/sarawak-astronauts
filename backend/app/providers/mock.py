@@ -32,17 +32,17 @@ from app.models import (
     ViewQuery,
 )
 from app.providers.base import EpochSequence, PrerenderedDiff
+from app.stretch import gray_to_value, value_to_gray
 
 ASSETS = Path(__file__).resolve().parent / "mock_assets"
-# Must match STRETCH_ASINH_A in backend/scripts/make_mock_data.py (used to undo the stretch).
-STRETCH_ASINH_A = 0.03
 _ID_RE = re.compile(r"^(mock_\d{8}_\d{2})_(D[1-6])$")
 _SAME_TARGET_DEG = 1e-6
 
 
 def _decode(png: bytes) -> np.ndarray:
+    """Raw grey levels 0-255 as float64."""
     with Image.open(io.BytesIO(png)) as im:
-        return np.asarray(im.convert("L"), dtype=np.float64) / 255.0
+        return np.asarray(im.convert("L"), dtype=np.float64)
 
 
 def _encode(data: np.ndarray) -> bytes:
@@ -98,17 +98,13 @@ class MockProvider:
         return round(lo + (wl_um - lo0) / (hi0 - lo0) * (hi - lo), 3)
 
     def _to_mjysr(self, png: bytes) -> np.ndarray:
-        """Undo the mock asinh stretch (approximate: 8-bit, clipped at vmin/vmax)."""
+        """Undo the mock asinh stretch with the documented inverse (app.stretch,
+        using the mock's own stretch.asinh_a). Grey 0 (no data) becomes NaN."""
         s = self._doc.stretch
-        y = _decode(png)
-        x = STRETCH_ASINH_A * np.sinh(y * np.arcsinh(1.0 / STRETCH_ASINH_A))
-        return s.vmin + x * (s.vmax - s.vmin)
+        return gray_to_value(_decode(png), s.vmin, s.vmax, s.asinh_a)
 
-    @staticmethod
-    def _stretch(img: np.ndarray, vmin: float, vmax: float) -> np.ndarray:
-        x = np.clip((img - vmin) / (vmax - vmin), 0.0, 1.0)
-        y = np.arcsinh(x / STRETCH_ASINH_A) / np.arcsinh(1.0 / STRETCH_ASINH_A)
-        return np.round(y * 255.0)
+    def _stretch(self, img: np.ndarray, vmin: float, vmax: float) -> np.ndarray:
+        return value_to_gray(img, vmin, vmax, self._doc.stretch.asinh_a)
 
     def _target(self, ra: float, dec: float) -> Target:
         t = self._doc.target
@@ -167,6 +163,7 @@ class MockProvider:
         if pre is not None and (q.scale is None or math.isclose(q.scale, pre[0])):
             return pre[1]
         d = self._to_mjysr(self._frames[b]) - self._to_mjysr(self._frames[a])
+        d = np.nan_to_num(d, nan=0.0)  # no data in either frame: shown as no change
         scale = q.scale or float(np.percentile(np.abs(d), 99.5)) or 1.0
         return _encode(np.round(128.0 + 127.0 * np.clip(d / scale, -1.0, 1.0)))
 

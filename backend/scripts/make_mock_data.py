@@ -55,13 +55,14 @@ SKY_MJYSR = 0.02
 NOISE_MJYSR = 0.01
 PSF_SIGMA_PX = 1.0
 N_STATIC_STARS = 45
-STRETCH_ASINH_A = 0.03
+STRETCH_ASINH_A = 0.03  # the mock's own softening; real frames use 0.1 (app/config.py)
+NODATA_GRAY = 0  # grey level for pixels with no data (API.md image.nodata_gray)
 
 # (time_utc, release, visit, flagged_fraction, flags). Visits are about 6 months apart.
 EXPOSURES = [
     ("2025-05-14T03:12:40Z", "DR1", 1, 0.004, []),
     ("2025-05-14T16:47:05Z", "DR1", 1, 0.006, []),
-    ("2025-05-15T06:20:52Z", "DR1", 1, 0.071, ["TRANSIENT"]),
+    ("2025-05-15T06:20:52Z", "DR1", 1, 0.071, ["PERSIST"]),
     ("2025-11-11T22:05:18Z", "DR1", 2, 0.003, []),
     ("2025-11-12T11:39:44Z", "DR1", 2, 0.005, []),
     ("2025-11-13T01:14:09Z", "DR1", 2, 0.009, ["PERSIST"]),
@@ -137,9 +138,12 @@ def add_star(img: np.ndarray, x: float, y: float, amp: float) -> None:
 
 
 def asinh_stretch(img: np.ndarray, vmin: float, vmax: float) -> np.ndarray:
-    x = np.clip((img - vmin) / (vmax - vmin), 0.0, 1.0)
+    """API.md stretch convention: valid pixels to grey 1-255, NODATA_GRAY (0) for
+    non-finite pixels (the mock has none). Same formula as backend/app/stretch.py."""
+    valid = np.isfinite(img)
+    x = np.clip((np.where(valid, img, vmin) - vmin) / (vmax - vmin), 0.0, 1.0)
     y = np.arcsinh(x / STRETCH_ASINH_A) / np.arcsinh(1.0 / STRETCH_ASINH_A)
-    return np.round(y * 255.0).astype(np.uint8)
+    return np.where(valid, 1.0 + np.round(y * 254.0), NODATA_GRAY).astype(np.uint8)
 
 
 def diff_to_png(d: np.ndarray, scale: float) -> np.ndarray:
@@ -180,7 +184,13 @@ def aperture_flux(img: np.ndarray, x: float, y: float) -> tuple[float, float]:
 # ---------------------------------------------------------------- generate
 
 
-def generate() -> None:
+def simulate() -> tuple[np.random.Generator, list[float], list[np.ndarray], float, float]:
+    """The synthetic frames in MJy/sr and their shared stretch.
+
+    Returns (rng, mjds, frames, vmin, vmax); ``rng`` continues where the frames
+    stopped, so ``generate`` draws the same wavelengths as before. Tests use the
+    frames to check the documented grey-level inverse.
+    """
     rng = np.random.default_rng(SEED)
     stars = static_stars(rng)
     mjds = [iso_to_mjd(t) for t, *_ in EXPOSURES]
@@ -202,7 +212,11 @@ def generate() -> None:
     pooled = np.stack(frames)
     vmin = round(float(np.percentile(pooled, 10.0)), 4)
     vmax = round(float(np.percentile(pooled, 99.98)), 4)
+    return rng, mjds, frames, vmin, vmax
 
+
+def generate() -> None:
+    rng, mjds, frames, vmin, vmax = simulate()
     for sub in ("frames", "diff"):
         (MOCK / sub).mkdir(parents=True, exist_ok=True)
         for old in (MOCK / sub).glob("*.png"):
@@ -255,12 +269,14 @@ def generate() -> None:
                 "pixel_scale_arcsec": PIXEL_SCALE_ARCSEC,
                 "orientation": "north-up-east-left",
                 "format": "png-gray8",
+                "nodata_gray": NODATA_GRAY,
             },
             "stretch": {
                 "shared": True,
                 "method": "asinh",
                 "vmin": vmin,
                 "vmax": vmax,
+                "asinh_a": STRETCH_ASINH_A,
                 "unit": "MJy/sr",
                 "note": STRETCH_NOTE,
             },
@@ -367,6 +383,12 @@ All URLs in the JSON are root-relative (`/mock/...`), as Vite serves `public/` a
 `diff_url_template` is `null` because static files cannot build arbitrary pairs; use
 the pre-rendered pair in `diffs`.
 
+Frames use the grey-level convention in `docs/API.md` section 3: grey 0
+(`image.nodata_gray`) means no data, and valid pixels are 1-255 from the asinh
+stretch with `stretch.vmin`, `stretch.vmax` and `stretch.asinh_a`. The mock's
+`asinh_a` is 0.03; real SPHEREx frames use 0.1, so always read it from the JSON.
+The mock has no masked pixels, so grey 0 does not occur in these frames.
+
 ## Regenerate
 
 From the repo root (output is deterministic with the pinned versions):
@@ -412,12 +434,14 @@ EPOCHS_SPEC = {
         "pixel_scale_arcsec": NUM,
         "orientation": str,
         "format": str,
+        "nodata_gray": int,
     },
     "stretch": {
         "shared": bool,
         "method": str,
         "vmin": NUM,
         "vmax": NUM,
+        "asinh_a": NUM,
         "unit": str,
         "note": str,
     },
@@ -524,6 +548,10 @@ def check_epochs(doc: dict, errs: list[str]) -> set[str]:
     if mjds != sorted(mjds):
         errs.append("epochs.json: epochs are not sorted by time")
     size = (doc["image"]["width_px"], doc["image"]["height_px"])
+    if doc["image"]["nodata_gray"] != NODATA_GRAY:
+        errs.append(f"epochs.json: image.nodata_gray must be {NODATA_GRAY}")
+    if not doc["stretch"]["asinh_a"] > 0:
+        errs.append("epochs.json: stretch.asinh_a must be > 0")
     for i, e in enumerate(doc["epochs"]):
         where = f"epochs.json $.epochs[{i}]"
         if not EPOCH_ID_RE.match(e["id"]):
@@ -541,6 +569,8 @@ def check_epochs(doc: dict, errs: list[str]) -> set[str]:
                     errs.append(
                         f"{where}: PNG is {im.size} {im.mode}, expected {size} L"
                     )
+                elif im.getextrema()[0] == NODATA_GRAY:
+                    errs.append(f"{where}: mock frame has no-data pixels (grey 0)")
     for i, dpair in enumerate(doc["diffs"]):
         where = f"epochs.json $.diffs[{i}]"
         if dpair["a"] not in ids or dpair["b"] not in ids:
