@@ -8,6 +8,7 @@ This is the contract between the frontend and the FastAPI science backend. Mock 
 - T-005 fix-1: `image.nodata_gray` (always 0) and `stretch.asinh_a`; frames use grey 1–255 for data and 0 for no data, with the documented inverse; `quality.flags` lists masked bits only.
 - T-014 (live API, `DATA_MODE=irsa`): `/epochs` returns one exposure per visit, `target.name: null`, `diff_url_template: null` and `diffs: []`; `502`/`504` when no cutout could be downloaded; `503` when too many requests wait.
 - T-014: `/diff` and `/lightcurve` answer `503 unavailable` from the live API; `/health` sends an `X-Data-Mode` header (`mock` or `irsa`), readable through CORS.
+- T-015: `/frame` answers `503 unavailable` from the live API when too many frames are being rendered at once.
 - T-006: presets at fov 12, 6 and 3 (`<id>/manifest.json`, `<id>/fov-6/`, `<id>/fov-3/`), listed in `presets/index.json`; up to 6 exposures per visit; a wavelength-matched diff for variable stars; WISE 0855 re-centred to 133.7609, −7.2423.
 
 ## 1. Conventions
@@ -38,7 +39,7 @@ Every error, including errors from the PNG endpoints, returns JSON in one shape:
 | 429 | `rate_limited` | Too many requests (mainly `/explain`) |
 | 500 | `internal_error` | Unexpected server error |
 | 502 | `upstream_error` | IRSA or another archive returned an error |
-| 503 | `unavailable` | A service is not configured (for example no LLM key for `/explain`), a feature is not available from the live API yet (`/diff` and `/lightcurve` with `DATA_MODE=irsa`), or too many live requests are already waiting (`/epochs`). The frontend should fall back to preset frames |
+| 503 | `unavailable` | A service is not configured (for example no LLM key for `/explain`), a feature is not available from the live API yet (`/diff` and `/lightcurve` with `DATA_MODE=irsa`), or the live API is busy: too many requests are already waiting (`/epochs`) or too many frames are being rendered (`/frame`). The frontend should fall back to preset frames, or retry a frame a moment later |
 | 504 | `upstream_timeout` | An archive did not answer in time. The frontend should fall back to preset frames |
 
 No SPHEREx coverage at a position is **not** an error: `/epochs` returns `200` with `"count": 0` and an empty `epochs` list. When IRSA lists exposures but none of their cutouts could be downloaded, the live API returns `502 upstream_error` (or `504 upstream_timeout` if every download timed out), not `count: 0`.
@@ -167,7 +168,7 @@ Returns one cleaned frame as `image/png` (8-bit grey, `image.width_px` × `image
 | `ra`, `dec`, `fov`, `band` | as `/epochs` | | required | Same values as the sequence |
 | `vmin`, `vmax` | float | MJy/sr | per-frame stretch | Pass both or neither; `frame_url` always passes the shared stretch |
 
-Example: `200`, `Content-Type: image/png`, body is the PNG. Errors (JSON): `400 invalid_parameter`, `404 not_found`, `502 upstream_error`, `504 upstream_timeout`.
+Example: `200`, `Content-Type: image/png`, body is the PNG. Errors (JSON): `400 invalid_parameter`, `404 not_found`, `502 upstream_error`, `503 unavailable` (live API: too many frames are being rendered at once, 4 by default; retry a moment later), `504 upstream_timeout`.
 
 ### `GET /diff?a&b`
 
