@@ -1,0 +1,3742 @@
+<?xml version="1.0" encoding="utf-8"?>
+<VOTABLE version="1.3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.ivoa.net/xml/VOTable/v1.3" xmlns:stc="http://www.ivoa.net/xml/STC/v1.30" xsi:schemaLocation="http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/STC/v1.30 http://www.ivoa.net/xml/STC/v1.30">
+  <RESOURCE type="meta" utype="adhoc:this">
+    <DESCRIPTION>Self description and list of supported parameters</DESCRIPTION>
+    <GROUP name="inputParams">
+      <PARAM name="BAND" datatype="double" arraysize="2" unit="m" value="" xtype="interval">
+        <DESCRIPTION>Specify energy bounds</DESCRIPTION>
+      </PARAM>
+      <PARAM name="CALIB" datatype="int" arraysize="*" value="">
+        <DESCRIPTION>Specify calibration level</DESCRIPTION>
+        <VALUES type="actual">
+          <OPTION value="1"/>
+          <OPTION value="2"/>
+          <OPTION value="3"/>
+          <OPTION value="4"/>
+        </VALUES>
+      </PARAM>
+      <PARAM name="CLOSEST" datatype="char" arraysize="*" value="">
+        <DESCRIPTION>specify grouping columns</DESCRIPTION>
+        <VALUES type="actual">
+          <OPTION value="collection"/>
+          <OPTION value="facility"/>
+          <OPTION value="instrument"/>
+          <OPTION value="dptype"/>
+          <OPTION value="target"/>
+          <OPTION value="format"/>
+        </VALUES>
+      </PARAM>
+      <PARAM name="COLLECTION" datatype="char" arraysize="*" value="">
+        <DESCRIPTION>Specify collection name</DESCRIPTION>
+        <VALUES type="actual">
+          <OPTION value="akari_allskymaps"/>
+          <OPTION value="blast"/>
+          <OPTION value="bolocam_gps"/>
+          <OPTION value="bolocam_lh"/>
+          <OPTION value="bolocam_planck_sz"/>
+          <OPTION value="champ"/>
+          <OPTION value="euclid_DpdMerBksMosaic"/>
+          <OPTION value="euclid_DpdNirCalibratedFrame"/>
+          <OPTION value="euclid_DpdVisCalibratedQuadFrame"/>
+          <OPTION value="euclid_dr1_deep_DpdMerBksMosaic"/>
+          <OPTION value="euclid_dr1_DpdNirStackedFrame"/>
+          <OPTION value="euclid_dr1_DpdVisStackedFrame"/>
+          <OPTION value="euclid_dr1_wide_DpdMerBksMosaic"/>
+          <OPTION value="euclid_ero"/>
+          <OPTION value="euclid_q2"/>
+          <OPTION value="goals"/>
+          <OPTION value="gpips"/>
+          <OPTION value="heron"/>
+          <OPTION value="herschel_acmc"/>
+          <OPTION value="herschel_coldcores"/>
+          <OPTION value="herschel_cooltnos"/>
+          <OPTION value="herschel_dunes"/>
+          <OPTION value="herschel_dustpedia"/>
+          <OPTION value="herschel_goods"/>
+          <OPTION value="herschel_gotcplus"/>
+          <OPTION value="herschel_hatlas"/>
+          <OPTION value="herschel_helga"/>
+          <OPTION value="herschel_heritage"/>
+          <OPTION value="herschel_herm33es"/>
+          <OPTION value="herschel_hermes"/>
+          <OPTION value="herschel_hevics"/>
+          <OPTION value="herschel_hgbs"/>
+          <OPTION value="herschel_hhli"/>
+          <OPTION value="herschel_hhpdp"/>
+          <OPTION value="herschel_hops"/>
+          <OPTION value="herschel_localgroup"/>
+          <OPTION value="herschel_mess"/>
+          <OPTION value="herschel_pep"/>
+          <OPTION value="herschel_phpdp"/>
+          <OPTION value="herschel_sag4"/>
+          <OPTION value="herschel_shpdp"/>
+          <OPTION value="herschel_v838mon"/>
+          <OPTION value="herschel_vngs"/>
+          <OPTION value="herschel_z0mgs_dust"/>
+          <OPTION value="iras_eiga"/>
+          <OPTION value="iras_iga"/>
+          <OPTION value="iras_iris"/>
+          <OPTION value="iras_issa"/>
+          <OPTION value="iras_miga"/>
+          <OPTION value="irts"/>
+          <OPTION value="isogal"/>
+          <OPTION value="msx"/>
+          <OPTION value="musyc"/>
+          <OPTION value="neowiser"/>
+          <OPTION value="p60grb"/>
+          <OPTION value="sofia_fifils"/>
+          <OPTION value="sofia_fireplace"/>
+          <OPTION value="sofia_flitecam"/>
+          <OPTION value="sofia_forcast"/>
+          <OPTION value="sofia_fpi"/>
+          <OPTION value="sofia_hawc"/>
+          <OPTION value="spherex_dr1"/>
+          <OPTION value="spherex_dr1_cube"/>
+          <OPTION value="spherex_dr1_deep"/>
+          <OPTION value="spherex_qr3"/>
+          <OPTION value="spherex_qr3_deep"/>
+          <OPTION value="spitzer_abell1763"/>
+          <OPTION value="spitzer_clash"/>
+          <OPTION value="spitzer_cosmic_dawn"/>
+          <OPTION value="spitzer_cygx"/>
+          <OPTION value="spitzer_deepdrill"/>
+          <OPTION value="spitzer_dustings"/>
+          <OPTION value="spitzer_elflock"/>
+          <OPTION value="spitzer_feps"/>
+          <OPTION value="spitzer_fidel"/>
+          <OPTION value="spitzer_frontier"/>
+          <OPTION value="spitzer_glimpse"/>
+          <OPTION value="spitzer_goods"/>
+          <OPTION value="spitzer_iudf"/>
+          <OPTION value="spitzer_lvl"/>
+          <OPTION value="spitzer_m31irac"/>
+          <OPTION value="spitzer_mipsgal"/>
+          <OPTION value="spitzer_mips_lg"/>
+          <OPTION value="spitzer_s4g"/>
+          <OPTION value="spitzer_safires"/>
+          <OPTION value="spitzer_sage"/>
+          <OPTION value="spitzer_sagesmc"/>
+          <OPTION value="spitzer_scandels"/>
+          <OPTION value="spitzer_sdwfs"/>
+          <OPTION value="spitzer_seip"/>
+          <OPTION value="spitzer_sep"/>
+          <OPTION value="spitzer_servs"/>
+          <OPTION value="spitzer_sha"/>
+          <OPTION value="spitzer_shela"/>
+          <OPTION value="spitzer_simla"/>
+          <OPTION value="spitzer_simple"/>
+          <OPTION value="spitzer_sings"/>
+          <OPTION value="spitzer_smclast"/>
+          <OPTION value="spitzer_smuvs"/>
+          <OPTION value="spitzer_spies"/>
+          <OPTION value="spitzer_spuds"/>
+          <OPTION value="spitzer_srelics"/>
+          <OPTION value="spitzer_ssdf"/>
+          <OPTION value="spitzer_swire"/>
+          <OPTION value="spitzer_taurus"/>
+          <OPTION value="thrumms"/>
+          <OPTION value="twomass_allsky"/>
+          <OPTION value="twomass_calibration"/>
+          <OPTION value="twomass_extsrc"/>
+          <OPTION value="twomass_full"/>
+          <OPTION value="twomass_lga"/>
+          <OPTION value="twomass_lh"/>
+          <OPTION value="twomass_sixdeg"/>
+          <OPTION value="twomass_sixxcat"/>
+          <OPTION value="twomass_sixxfull"/>
+          <OPTION value="wise_2bandcryo"/>
+          <OPTION value="wise_3bandcryo"/>
+          <OPTION value="wise_allsky"/>
+          <OPTION value="wise_allwise"/>
+          <OPTION value="wise_fdepa"/>
+          <OPTION value="wise_prelim"/>
+          <OPTION value="wise_prelim_2bandcryo"/>
+          <OPTION value="wise_unwise"/>
+          <OPTION value="wise_z0mgs"/>
+        </VALUES>
+      </PARAM>
+      <PARAM name="DPTYPE" datatype="char" arraysize="*" value="">
+        <DESCRIPTION>Specify value of dataproduct_type field</DESCRIPTION>
+        <VALUES type="actual">
+          <OPTION value="cube"/>
+          <OPTION value="image"/>
+        </VALUES>
+      </PARAM>
+      <PARAM name="EXPTIME" datatype="double" arraysize="2" unit="sec" value="" xtype="interval">
+        <DESCRIPTION>Specify exposure duration</DESCRIPTION>
+      </PARAM>
+      <PARAM name="FACILITY" datatype="char" arraysize="*" value="">
+        <DESCRIPTION>Specify telescope name</DESCRIPTION>
+        <VALUES type="actual">
+          <OPTION value="1.83 m Perkins"/>
+          <OPTION value="2.54m Isaac Newton Telescope (INT) at Observatorio del Roque de los Muchachos"/>
+          <OPTION value="2.5m Sloan Digital Sky Survey (SDSS) Telescope at Apache Point Observatory"/>
+          <OPTION value="2m Liverpool Telescope Observatorio del Roque de los Muchachos"/>
+          <OPTION value="4m Nicholas U. Mayall Telescope at Kitt Peak National Observatory"/>
+          <OPTION value="4m Victor M. Blanco Telescope Cerro Tololo Inter-American Observatory"/>
+          <OPTION value="AKARI"/>
+          <OPTION value="ATNF/CSIRO 22m Mopra Radio Telescope"/>
+          <OPTION value="Balloon-borne Large Aperture Submillimeter Telescope"/>
+          <OPTION value="Blanco"/>
+          <OPTION value="California Institute of Technology 5.1m (200inch) Hale Telescope at Palomar Observatory"/>
+          <OPTION value="Caltech Submillimeter Observatory"/>
+          <OPTION value="CFHT"/>
+          <OPTION value="DESI Legacy Imaging Surveys"/>
+          <OPTION value="DSS1"/>
+          <OPTION value="DSS2"/>
+          <OPTION value="ESO 3.6m New Technology Telescope La Silla Observatory"/>
+          <OPTION value="ESO 3.6m New Techology Telescope at La Silla Observatory"/>
+          <OPTION value="ESO/MPG 2.2m Telescope at La Silla Observatory"/>
+          <OPTION value="Euclid"/>
+          <OPTION value="Galaxy Evolution Explorer"/>
+          <OPTION value="Herschel Space Observatory"/>
+          <OPTION value="Hubble Space Telescope"/>
+          <OPTION value="InfraRed Astronomical Satellite"/>
+          <OPTION value="Infrared Space Observatory"/>
+          <OPTION value="Infrared Telescope in Space"/>
+          <OPTION value="Jeanne Rich Telescope"/>
+          <OPTION value="Palomar 60 inch Telescope"/>
+          <OPTION value="Pan-STARRS"/>
+          <OPTION value="Planck"/>
+          <OPTION value="see docs"/>
+          <OPTION value="Sloan Digital Sky Survey"/>
+          <OPTION value="SOFIA"/>
+          <OPTION value="SPHEREx"/>
+          <OPTION value="SPIRIT III"/>
+          <OPTION value="Spitzer"/>
+          <OPTION value="Spitzer Space Telescope"/>
+          <OPTION value="Stratospheric Observatory For Infrared Astronomy"/>
+          <OPTION value="Subaru Telescope"/>
+          <OPTION value="The 2 Micron All Sky Survey"/>
+          <OPTION value="The 2 Micron All Sky Survey 1.3m Telescope at Cerro Tololo Inter-American Observatory"/>
+          <OPTION value="The 2 Micron All Sky Survey 1.3m Telescope at Fred Lawrence Whipple Observatory"/>
+          <OPTION value="Wide-field Infrared Survey Explorer"/>
+          <OPTION value="WISE"/>
+        </VALUES>
+      </PARAM>
+      <PARAM name="FORMAT" datatype="char" arraysize="*" value="">
+        <DESCRIPTION>Specify content type</DESCRIPTION>
+        <VALUES type="actual">
+          <OPTION value="application/fits"/>
+          <OPTION value="application/x-gzip"/>
+          <OPTION value="cube/fits"/>
+          <OPTION value="image/fits"/>
+          <OPTION value="image/png"/>
+          <OPTION value="plain/text"/>
+          <OPTION value="text/plain"/>
+        </VALUES>
+      </PARAM>
+      <PARAM name="FOV" datatype="double" arraysize="2" unit="deg" value="" xtype="interval">
+        <DESCRIPTION>Specify field of view</DESCRIPTION>
+      </PARAM>
+      <PARAM name="ID" datatype="char" arraysize="*" value="">
+        <DESCRIPTION>Specify observation ID</DESCRIPTION>
+      </PARAM>
+      <PARAM name="INSTRUMENT" datatype="char" arraysize="*" value="">
+        <DESCRIPTION>Specify instrument name</DESCRIPTION>
+        <VALUES type="actual">
+          <OPTION value="2MASS Survey Camera"/>
+          <OPTION value="ACS"/>
+          <OPTION value="BLAST"/>
+          <OPTION value="Bolocam"/>
+          <OPTION value="BOLOCAM"/>
+          <OPTION value="column density"/>
+          <OPTION value="DECam"/>
+          <OPTION value="DSS"/>
+          <OPTION value="dust temp"/>
+          <OPTION value="EFOSC2"/>
+          <OPTION value="FIFI-LS"/>
+          <OPTION value="FILM"/>
+          <OPTION value="FIRP"/>
+          <OPTION value="FIS"/>
+          <OPTION value="FLI09000"/>
+          <OPTION value="FLITECAM"/>
+          <OPTION value="FORCAST"/>
+          <OPTION value="FPI_PLUS"/>
+          <OPTION value="GALEX"/>
+          <OPTION value="GRBCam"/>
+          <OPTION value="HAWC_PLUS"/>
+          <OPTION value="HFI"/>
+          <OPTION value="HIFI"/>
+          <OPTION value="Hyper Suprime-Cam"/>
+          <OPTION value="IRAC"/>
+          <OPTION value="IRAS"/>
+          <OPTION value="IRS"/>
+          <OPTION value="ISOCAM"/>
+          <OPTION value="ISPI"/>
+          <OPTION value="LFC"/>
+          <OPTION value="LFI"/>
+          <OPTION value="MegaCam"/>
+          <OPTION value="Mimir"/>
+          <OPTION value="MIPS"/>
+          <OPTION value="MIRS"/>
+          <OPTION value="MOPS"/>
+          <OPTION value="Mosaic-1"/>
+          <OPTION value="Mosaic-II"/>
+          <OPTION value="NISP"/>
+          <OPTION value="none"/>
+          <OPTION value="Optical-Infrared IO:O Camera"/>
+          <OPTION value="PACS"/>
+          <OPTION value="Pan-STARRS"/>
+          <OPTION value="SDSS"/>
+          <OPTION value="see docs"/>
+          <OPTION value="SHARC-II"/>
+          <OPTION value="SofI"/>
+          <OPTION value="SPHEREx"/>
+          <OPTION value="SPIRE"/>
+          <OPTION value="SPIRIT III"/>
+          <OPTION value="STL11000m"/>
+          <OPTION value="Suprime-Cam"/>
+          <OPTION value="VIS"/>
+          <OPTION value="WFC"/>
+          <OPTION value="WFI"/>
+          <OPTION value="WIRC"/>
+          <OPTION value="WISE"/>
+        </VALUES>
+      </PARAM>
+      <PARAM name="POL" datatype="char" arraysize="*" value="">
+        <DESCRIPTION>Specify polarization states</DESCRIPTION>
+      </PARAM>
+      <PARAM name="POS" datatype="char" arraysize="*" value="" xtype="polygon">
+        <DESCRIPTION>Specify polygon of interest</DESCRIPTION>
+      </PARAM>
+      <PARAM name="POS" datatype="char" arraysize="*" value="" xtype="range">
+        <DESCRIPTION>Specify range of interest</DESCRIPTION>
+      </PARAM>
+      <PARAM name="POS" datatype="char" arraysize="*" value="" xtype="circle">
+        <DESCRIPTION>Specify circle of interest</DESCRIPTION>
+      </PARAM>
+      <PARAM name="RESPONSEFORMAT" datatype="char" arraysize="*" value="">
+        <DESCRIPTION>specify format of response</DESCRIPTION>
+        <VALUES type="actual">
+          <OPTION value="csv"/>
+          <OPTION value="db"/>
+          <OPTION value="fits"/>
+          <OPTION value="hdf5"/>
+          <OPTION value="html"/>
+          <OPTION value="ipac_table"/>
+          <OPTION value="json"/>
+          <OPTION value="json5"/>
+          <OPTION value="oracle"/>
+          <OPTION value="postgres"/>
+          <OPTION value="sqlite"/>
+          <OPTION value="text"/>
+          <OPTION value="tsv"/>
+          <OPTION value="votable"/>
+          <OPTION value="xml"/>
+        </VALUES>
+      </PARAM>
+      <PARAM name="SPATRES" datatype="double" arraysize="2" unit="arcsec" value="" xtype="interval">
+        <DESCRIPTION>Specify position resolution</DESCRIPTION>
+      </PARAM>
+      <PARAM name="SPECRP" datatype="double" arraysize="2" value="" xtype="interval">
+        <DESCRIPTION>Specify energy resolving power</DESCRIPTION>
+      </PARAM>
+      <PARAM name="TARGET" datatype="char" arraysize="*" value="">
+        <DESCRIPTION>Specify target name</DESCRIPTION>
+      </PARAM>
+      <PARAM name="TIME" datatype="double" arraysize="2" unit="d" value="" xtype="interval">
+        <DESCRIPTION>Specify time bounds</DESCRIPTION>
+      </PARAM>
+      <PARAM name="TIMERES" datatype="double" arraysize="2" unit="sec" value="" xtype="interval">
+        <DESCRIPTION>Specify time resolution</DESCRIPTION>
+      </PARAM>
+    </GROUP>
+    <PARAM name="standardID" datatype="char" arraysize="*" value="ivo://ivoa.net/std/SIA#query-2.0"/>
+    <PARAM name="accessURL" datatype="char" arraysize="*" value="https://irsa.ipac.caltech.edu/SIA"/>
+    <PARAM name="resourceIdentifier" datatype="char" arraysize="*" value="ivo://irsa.ipac/SIA"/>
+  </RESOURCE>
+  <RESOURCE type="results">
+    <INFO name="QUERY_STATUS" value="OK"/>
+    <TABLE>
+      <FIELD name="s_ra" datatype="double" ID="col_0" ucd="pos.eq.ra" unit="deg" utype="obscore:char.spatialaxis.coverage.location.coord.position2d.value2.c1">
+        <DESCRIPTION>Central Spatial Position in ICRS Right ascension</DESCRIPTION>
+      </FIELD>
+      <FIELD name="s_dec" datatype="double" ID="col_1" ucd="pos.eq.dec" unit="deg" utype="obscore:char.spatialaxis.coverage.location.coord.position2d.value2.c2">
+        <DESCRIPTION>Central Spatial Position in ICRS Declination</DESCRIPTION>
+      </FIELD>
+      <FIELD name="facility_name" datatype="char" arraysize="*" ID="col_2" ucd="meta.id;instr.tel" utype="obscore:provenance.obsconfig.facility.name">
+        <DESCRIPTION>Name of telescope used to acquire observation</DESCRIPTION>
+      </FIELD>
+      <FIELD name="instrument_name" datatype="char" arraysize="*" ID="col_3" ucd="meta.id;instr" utype="obscore:provenance.obsconfig.instrument.name">
+        <DESCRIPTION>Name of instrument used to acquire observation</DESCRIPTION>
+      </FIELD>
+      <FIELD name="dataproduct_subtype" datatype="char" arraysize="*" ID="col_4" ucd="meta.code" utype="caom2:artifact.producttype">
+        <DESCRIPTION>Product type (e.g. science, calibration, auxiliary, preview, info)</DESCRIPTION>
+      </FIELD>
+      <FIELD name="calib_level" datatype="short" ID="col_5" ucd="meta.code;obs.calib" utype="obscore:obsdataset.caliblevel">
+        <DESCRIPTION>Calibration level of the observation: in {0, 1, 2, 3, 4}</DESCRIPTION>
+      </FIELD>
+      <FIELD name="dataproduct_type" datatype="char" arraysize="*" ID="col_6" ucd="meta.id" utype="obscore:obsdataset.dataproducttype">
+        <DESCRIPTION>Data product (file content) primary type</DESCRIPTION>
+      </FIELD>
+      <FIELD name="energy_bandpassname" datatype="char" arraysize="*" ID="col_7" utype="caom2:Energy.bandpassName">
+        <DESCRIPTION>Collection-specific name for energy band (e.g. filter name)</DESCRIPTION>
+      </FIELD>
+      <FIELD name="energy_emband" datatype="char" arraysize="*" ID="col_8" utype="caom2:Energy.emBand">
+        <DESCRIPTION>Generic name for energy band (Radio,Millimeter,Infrared,Optical,...)</DESCRIPTION>
+      </FIELD>
+      <FIELD name="obs_id" datatype="char" arraysize="*" ID="col_9" ucd="meta.id" utype="obscore:dataid.observationid">
+        <DESCRIPTION>Internal ID given by the ObsTAP service</DESCRIPTION>
+      </FIELD>
+      <FIELD name="s_resolution" datatype="double" ID="col_10" irsa_format="12.6f" precision="F6" ucd="pos.angResolution" unit="arcsec" utype="obscore:char.spatialaxis.resolution.refval.value">
+        <DESCRIPTION>Spatial resolution (FWHM)</DESCRIPTION>
+      </FIELD>
+      <FIELD name="em_min" datatype="double" ID="col_11" irsa_format="10.5e" precision="E5" ucd="em.wl;stat.min" unit="m" utype="obscore:char.spectralaxis.coverage.bounds.limits.lolimit">
+        <DESCRIPTION>Lower bound on energy axis (barycentric wavelength)</DESCRIPTION>
+      </FIELD>
+      <FIELD name="em_max" datatype="double" ID="col_12" irsa_format="10.5e" precision="E5" ucd="em.wl;stat.max" unit="m" utype="obscore:char.spectralaxis.coverage.bounds.limits.hilimit">
+        <DESCRIPTION>Upper bound on energy axis (barycentric wavelength)</DESCRIPTION>
+      </FIELD>
+      <FIELD name="em_res_power" datatype="double" ID="col_13" irsa_format="12.6f" precision="F6" ucd="spect.resolution" utype="obscore:char.spectralaxis.resolution.resolpower.refval">
+        <DESCRIPTION>Spectral resolving power (R)</DESCRIPTION>
+      </FIELD>
+      <FIELD name="proposal_title" datatype="char" arraysize="*" ID="col_14" utype="caom2:Proposal.title">
+        <DESCRIPTION>Proposal title</DESCRIPTION>
+      </FIELD>
+      <FIELD name="access_url" datatype="char" arraysize="*" ID="col_15" ucd="meta.ref.url" utype="obscore:access.reference">
+        <DESCRIPTION>URI for the physical artifact</DESCRIPTION>
+      </FIELD>
+      <FIELD name="access_format" datatype="char" arraysize="*" ID="col_16" ucd="meta.code.mime" utype="obscore:access.format">
+        <DESCRIPTION>Content-Type of the representation at uri</DESCRIPTION>
+      </FIELD>
+      <FIELD name="access_estsize" datatype="long" ID="col_17" ucd="phys.size;meta.file" unit="kbyte" utype="obscore:access.size">
+        <DESCRIPTION>Estimated size of the download at uri</DESCRIPTION>
+      </FIELD>
+      <FIELD name="t_exptime" datatype="double" ID="col_18" irsa_format="12.6f" precision="F6" ucd="time.duration;obs.exposure" unit="s" utype="obscore:char.timeaxis.coverage.support.extent">
+        <DESCRIPTION>Exposure time per pixel</DESCRIPTION>
+      </FIELD>
+      <FIELD name="s_region" datatype="char" arraysize="*" ID="col_19" ucd="pos.outline;obs.field" unit="deg" utype="obscore:char.spatialaxis.coverage.support.area">
+        <DESCRIPTION>AstroCoordArea Region covered in STC</DESCRIPTION>
+      </FIELD>
+      <FIELD name="obs_collection" datatype="char" arraysize="*" ID="col_20" ucd="meta.id" utype="obscore:dataid.collection">
+        <DESCRIPTION>Data collection this observation belongs to</DESCRIPTION>
+      </FIELD>
+      <FIELD name="obs_intent" datatype="char" arraysize="*" ID="col_21" utype="caom2:ObservationIntentType">
+        <DESCRIPTION>Intended purpose of data (one of: science, calibration)</DESCRIPTION>
+      </FIELD>
+      <FIELD name="algorithm_name" datatype="char" arraysize="*" ID="col_22" utype="caom2:Algorithm">
+        <DESCRIPTION>Algorithm that defines the observation</DESCRIPTION>
+      </FIELD>
+      <FIELD name="facility_keywords" datatype="char" arraysize="*" ID="col_23" utype="caom2:Telescope.keywords">
+        <DESCRIPTION>Telescope keywords formatted as a JSON string</DESCRIPTION>
+      </FIELD>
+      <FIELD name="instrument_keywords" datatype="char" arraysize="*" ID="col_24" utype="caom2:Instrument.keywords">
+        <DESCRIPTION>Instrument keywords formatted as a JSON string</DESCRIPTION>
+      </FIELD>
+      <FIELD name="environment_photometric" datatype="boolean" ID="col_25" utype="caom2:Environment.photometric">
+        <DESCRIPTION>Conditions were photometric (0=false, 1=true)</DESCRIPTION>
+      </FIELD>
+      <FIELD name="proposal_id" datatype="char" arraysize="*" ID="col_26" ucd="meta.id;obs.proposal" utype="obscore:provenance.proposal.identifier">
+        <DESCRIPTION>Collection-specific unique proposal identifier</DESCRIPTION>
+      </FIELD>
+      <FIELD name="proposal_pi" datatype="char" arraysize="*" ID="col_27" utype="caom2:Proposal.pi">
+        <DESCRIPTION>Proposal principal investigator</DESCRIPTION>
+      </FIELD>
+      <FIELD name="proposal_project" datatype="char" arraysize="*" ID="col_28" utype="caom2:Proposal.project">
+        <DESCRIPTION>Project that created/acquired the observation</DESCRIPTION>
+      </FIELD>
+      <FIELD name="target_name" datatype="char" arraysize="*" ID="col_29" ucd="meta.id;src" utype="obscore:target.name">
+        <DESCRIPTION>Name of intended target</DESCRIPTION>
+      </FIELD>
+      <FIELD name="target_type" datatype="char" arraysize="*" ID="col_30" utype="caom2:Target.type">
+        <DESCRIPTION>Classification of intended target (&apos;object&apos; or &apos;field&apos;)</DESCRIPTION>
+      </FIELD>
+      <FIELD name="target_standard" datatype="boolean" ID="col_31" utype="caom2:Target.standard">
+        <DESCRIPTION>Intended target is a standard (0=false, 1=true)</DESCRIPTION>
+      </FIELD>
+      <FIELD name="target_moving" datatype="boolean" ID="col_32" utype="caom2:Target.moving">
+        <DESCRIPTION>Intended target is moving (0=false, 1=true)</DESCRIPTION>
+      </FIELD>
+      <FIELD name="target_keywords" datatype="char" arraysize="*" ID="col_33" utype="caom2:Target.keywords">
+        <DESCRIPTION>Target keywords formatted as a JSON string</DESCRIPTION>
+      </FIELD>
+      <FIELD name="obs_release_date" datatype="char" arraysize="*" ID="col_34" ucd="time.release" utype="obscore:Curation.releaseDate" xtype="timestamp">
+        <DESCRIPTION>Timestamp of date the data becomes publicly available</DESCRIPTION>
+      </FIELD>
+      <FIELD name="s_xel1" datatype="long" ID="col_35" ucd="meta.number" utype="obscore:char.spatialaxis.numbins1">
+        <DESCRIPTION>Dimensions (number of pixels) along first spatial axis</DESCRIPTION>
+      </FIELD>
+      <FIELD name="s_xel2" datatype="long" ID="col_36" ucd="meta.number" utype="obscore:char.spatialaxis.numbins2">
+        <DESCRIPTION>Dimensions (number of pixels) along second spatial axis</DESCRIPTION>
+      </FIELD>
+      <FIELD name="s_pixel_scale" datatype="double" ID="col_37" irsa_format="7.3f" precision="F3" unit="arcsec" utype="phys.angSize;instr.pixel">
+        <DESCRIPTION>Sample (pixel) size on spatial axes</DESCRIPTION>
+      </FIELD>
+      <FIELD name="position_timedependent" datatype="boolean" ID="col_38" utype="caom2:Position.timeDependent">
+        <DESCRIPTION>Position is time-dependent (0=false, 1=true)</DESCRIPTION>
+      </FIELD>
+      <FIELD name="t_min" datatype="double" ID="col_39" irsa_format="12.6f" precision="F6" ucd="time.start;obs.exposure" unit="d" utype="obscore:char.timeaxis.coverage.bounds.limits.starttime">
+        <DESCRIPTION>Lower bound on time axis (Modified Julian Day)</DESCRIPTION>
+      </FIELD>
+      <FIELD name="t_max" datatype="double" ID="col_40" irsa_format="12.6f" precision="F6" ucd="time.end;obs.exposure" unit="d" utype="obscore:char.timeaxis.coverage.bounds.limits.stoptime">
+        <DESCRIPTION>Upper bound on time axis (Modified Julian Day)</DESCRIPTION>
+      </FIELD>
+      <FIELD name="t_resolution" datatype="double" ID="col_41" irsa_format="12.6f" precision="F6" ucd="time.resolution" unit="s" utype="obscore:char.timeaxis.resolution.refval.value">
+        <DESCRIPTION>Resolution on the time axis</DESCRIPTION>
+      </FIELD>
+      <FIELD name="t_xel" datatype="long" ID="col_42" ucd="meta.number" utype="obscore:char.timeaxis.numbins">
+        <DESCRIPTION>Dimensions (number of pixels) along the time axis</DESCRIPTION>
+      </FIELD>
+      <FIELD name="obs_publisher_did" datatype="char" arraysize="*" ID="col_43" ucd="meta.ref.uri;meta.curation" utype="obscore:curation.publisherdid">
+        <DESCRIPTION>IVOA Dataset ID given by the publisher</DESCRIPTION>
+      </FIELD>
+      <FIELD name="s_fov" datatype="double" ID="col_44" irsa_format="6.3e" precision="E3" ucd="phys.angSize;instr.fov" unit="deg" utype="obscore:char.spatialaxis.coverage.bounds.extent.diameter">
+        <DESCRIPTION>Estimated size of the covered region as the diameter of a containing circle</DESCRIPTION>
+      </FIELD>
+      <FIELD name="em_xel" datatype="long" ID="col_45" ucd="meta.number" utype="obscore:char.spectralaxis.numbins">
+        <DESCRIPTION>Dimensions (number of pixels) along the energy axis</DESCRIPTION>
+      </FIELD>
+      <FIELD name="pol_states" datatype="char" arraysize="*" ID="col_46" ucd="meta.code;phys.polarization" utype="obscore:char.polarizationaxis.statelist">
+        <DESCRIPTION>List of polarization states present in the data file</DESCRIPTION>
+      </FIELD>
+      <FIELD name="pol_xel" datatype="long" ID="col_47" ucd="meta.number" utype="obscore:char.polarizationaxis.numbins">
+        <DESCRIPTION>Dimensions (number of pixels) along the polarization axis</DESCRIPTION>
+      </FIELD>
+      <FIELD name="cloud_access" datatype="char" arraysize="*" ID="col_48">
+        <DESCRIPTION>URI for the enclouded artifact</DESCRIPTION>
+      </FIELD>
+      <FIELD name="o_ucd" datatype="char" arraysize="*" ID="col_49" ucd="meta.ucd" utype="obscore:char.observableaxis.ucd">
+        <DESCRIPTION>UCD describing the observable axis (pixel values)</DESCRIPTION>
+      </FIELD>
+      <FIELD name="upload_row_id" datatype="long" ID="col_50"/>
+      <DATA>
+        <TABLEDATA>
+          <TR>
+            <TD>269.23591182840505</TD>
+            <TD>6.4025556739922402</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2025W34_2B_0090_4</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/2/level2_2025W34_2B_0090_4D2_spx_l2b-v27-2026-229.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61627</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.5218890263455 8.161020395014317 271.01847123030115 8.091032468593632 270.95129526825747 4.607805160603428 267.4503797391832 4.678203887179611 267.5218890263455 8.161020395014317</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086985_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-04 05:45:39</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>60908.981929</TD>
+            <TD>60908.983261</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2025W34_2B_0090_4/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2025W34_2B/l2b-v27-2026-229/2/level2_2025W34_2B_0090_4D2_spx_l2b-v27-2026-229.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.23980122245001</TD>
+            <TD>6.2062980026674763</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2025W34_2B_0557_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/2/level2_2025W34_2B_0557_1D2_spx_l2b-v27-2026-229.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61189</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.52655373911136 7.964868738530955 271.0215968833768 7.89491184323295 270.954812541505 4.411649014130012 267.4547790783313 4.48201334210594 267.52655373911136 7.964868738530955</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086984_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-04 05:45:39</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>60911.490604</TD>
+            <TD>60911.491937</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2025W34_2B_0557_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2025W34_2B/l2b-v27-2026-229/2/level2_2025W34_2B_0557_1D2_spx_l2b-v27-2026-229.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.23613391126179</TD>
+            <TD>6.0094737762455317</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2025W34_2B_0557_2</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/2/level2_2025W34_2B_0557_2D2_spx_l2b-v27-2026-229.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61094</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.52372261200037 7.768119674265462 271.0170273328277 7.69816207234725 270.9506453943079 4.2149573960317905 267.45155643638554 4.28531124180263 267.52372261200037 7.768119674265462</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086983_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-04 05:45:39</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>60911.492097</TD>
+            <TD>60911.493429</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2025W34_2B_0557_2/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2025W34_2B/l2b-v27-2026-229/2/level2_2025W34_2B_0557_2D2_spx_l2b-v27-2026-229.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.23321919976496</TD>
+            <TD>5.8127622994325581</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2025W34_2B_0557_3</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/2/level2_2025W34_2B_0557_3D2_spx_l2b-v27-2026-229.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61105</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.5215829465016 7.571518127266778 271.0133708659661 7.501518115485514 270.94737910007217 4.018319075419724 267.4490948725655 4.088665125876905 267.5215829465016 7.571518127266778</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086982_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-04 05:45:39</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>60911.493589</TD>
+            <TD>60911.494921</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2025W34_2B_0557_3/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2025W34_2B/l2b-v27-2026-229/2/level2_2025W34_2B_0557_3D2_spx_l2b-v27-2026-229.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.23094306082749</TD>
+            <TD>5.6159936305389131</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2025W34_2B_0557_4</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W34_2B/l2b-v27-2026-229/2/level2_2025W34_2B_0557_4D2_spx_l2b-v27-2026-229.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61080</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.52007460568365 7.374816412274691 271.01020874120076 7.3048974707874095 270.94474510028067 3.8216865467459673 267.4472893383872 3.891976740894526 267.52007460568365 7.374816412274691</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086981_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-04 05:45:39</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>60911.495081</TD>
+            <TD>60911.496414</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2025W34_2B_0557_4/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2025W34_2B/l2b-v27-2026-229/2/level2_2025W34_2B_0557_4D2_spx_l2b-v27-2026-229.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>270.82876736605266</TD>
+            <TD>3.7842150442908093</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2025W35_1A_0146_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0146_1D2_spx_l2b-v27-2026-230.fits</TD>
+            <TD>image/fits</TD>
+            <TD>59144</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 269.1021308417109 5.522286142578705 272.5803754740893 5.4960859690754225 272.56214741626826 2.0122481126206275 269.06987669603575 2.038915306170176 269.1021308417109 5.522286142578705</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_085305_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-04 05:45:39</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>60912.714147</TD>
+            <TD>60912.715479</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2025W35_1A_0146_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0146_1D2_spx_l2b-v27-2026-230.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>270.82760407303101</TD>
+            <TD>3.587300527115695</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2025W35_1A_0146_2</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0146_2D2_spx_l2b-v27-2026-230.fits</TD>
+            <TD>image/fits</TD>
+            <TD>59032</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 269.1014687423048 5.3255473909240125 272.57849838936346 5.299226970311676 272.5608016883139 1.8153879420236696 269.0688607476873 1.8421404204001164 269.1014687423048 5.3255473909240125</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_085304_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-04 05:45:39</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>60912.715639</TD>
+            <TD>60912.716971</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2025W35_1A_0146_2/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0146_2D2_spx_l2b-v27-2026-230.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>270.82716327909213</TD>
+            <TD>3.3905039978628695</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2025W35_1A_0146_3</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0146_3D2_spx_l2b-v27-2026-230.fits</TD>
+            <TD>image/fits</TD>
+            <TD>59058</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 269.1015942686408 5.128720462308128 272.577561595233 5.102471373379657 272.5601661798099 1.6186874743748774 269.0686332594901 1.6454238224370399 269.1015942686408 5.128720462308128</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_085303_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-04 05:45:39</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>60912.717131</TD>
+            <TD>60912.718463</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2025W35_1A_0146_3/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0146_3D2_spx_l2b-v27-2026-230.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>270.82740121683196</TD>
+            <TD>3.1937042204361461</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2025W35_1A_0146_4</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0146_4D2_spx_l2b-v27-2026-230.fits</TD>
+            <TD>image/fits</TD>
+            <TD>59372</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 269.1023124863232 4.932110703065775 272.5771979987826 4.905782247675328 272.56023095101745 1.4219571511038522 269.069037973593 1.4487295216440705 269.1023124863232 4.932110703065775</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_085302_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-04 05:45:39</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>60912.718623</TD>
+            <TD>60912.719956</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2025W35_1A_0146_4/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0146_4D2_spx_l2b-v27-2026-230.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.23530173386087</TD>
+            <TD>5.4195037702919722</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2025W35_1A_0444_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_1A/l2b_retry-v27-2026-230/2/level2_2025W35_1A_0444_1D2_spx_l2b_retry-v27-2026-230.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60725</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.52512014524314 7.178459931888884 271.01375432065765 7.108448179031147 270.9486092400241 3.6252912248751157 267.45211630607116 3.6957736917869903 267.52512014524314 7.178459931888884</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086980_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-04 05:45:39</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>60914.276271</TD>
+            <TD>60914.277603</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2025W35_1A_0444_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2025W35_1A/l2b_retry-v27-2026-230/2/level2_2025W35_1A_0444_1D2_spx_l2b_retry-v27-2026-230.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.23173185164484</TD>
+            <TD>5.2226543979199338</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2025W35_1A_0444_2</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0444_2D2_spx_l2b-v27-2026-230.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60702</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.52230755445913 6.981566224242199 271.00950415459386 6.911652575299397 270.94477372133656 3.4285347650682936 267.4488200872054 3.4989156654806286 267.52230755445913 6.981566224242199</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086979_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-04 05:45:39</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>60914.277763</TD>
+            <TD>60914.279096</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2025W35_1A_0444_2/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0444_2D2_spx_l2b-v27-2026-230.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.22902298574132</TD>
+            <TD>5.0258345615089457</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2025W35_1A_0444_3</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0444_3D2_spx_l2b-v27-2026-230.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60748</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.5203911781486 6.784880232330557 271.00608825345495 6.715022375923978 270.9416647135983 3.231822507410965 267.4465300654247 3.30214868629187 267.5203911781486 6.784880232330557</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086978_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-04 05:45:39</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>60914.279255</TD>
+            <TD>60914.280588</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2025W35_1A_0444_3/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0444_3D2_spx_l2b-v27-2026-230.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.22680164194139</TD>
+            <TD>4.8290013506954308</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2025W35_1A_0444_4</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0444_4D2_spx_l2b-v27-2026-230.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60996</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.5188364820932 6.588193244680961 271.003118358263 6.518232582297359 270.93917516542894 3.0350519921166015 267.44466641541885 3.105404792539123 267.5188364820932 6.588193244680961</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086977_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-04 05:45:39</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>60914.280748</TD>
+            <TD>60914.282080</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2025W35_1A_0444_4/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2025W35_1A/l2b-v27-2026-230/2/level2_2025W35_1A_0444_4D2_spx_l2b-v27-2026-230.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.23080973388187</TD>
+            <TD>4.6330818863718832</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2025W35_2A_0221_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_2A/l2b-v27-2026-231/2/level2_2025W35_2A_0221_1D2_spx_l2b-v27-2026-231.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60426</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.52340627047266 6.392180682102271 271.00643379998445 6.322498407138829 270.9429170192481 2.8392580430344845 267.4490304839348 2.909501799680026 267.52340627047266 6.392180682102271</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086976_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-04 14:04:49</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>60916.656062</TD>
+            <TD>60916.657394</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2025W35_2A_0221_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2025W35_2A/l2b-v27-2026-231/2/level2_2025W35_2A_0221_1D2_spx_l2b-v27-2026-231.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.22721070973307</TD>
+            <TD>4.4361706371703065</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2025W35_2A_0221_2</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_2A/l2b-v27-2026-231/2/level2_2025W35_2A_0221_2D2_spx_l2b-v27-2026-231.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60495</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.5204735618114 6.195530286430619 271.0021851107558 6.125611727868871 270.9390333403942 2.642449718190334 267.44565553626995 2.7128334836470316 267.5204735618114 6.195530286430619</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086975_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-04 14:04:49</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>60916.657572</TD>
+            <TD>60916.658904</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2025W35_2A_0221_2/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2025W35_2A/l2b-v27-2026-231/2/level2_2025W35_2A_0221_2D2_spx_l2b-v27-2026-231.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.22450567970242</TD>
+            <TD>4.2393449953177695</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2025W35_2A_0221_3</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_2A/l2b-v27-2026-231/2/level2_2025W35_2A_0221_3D2_spx_l2b-v27-2026-231.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60584</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.51850097115266 5.9986588579620586 270.99879685080634 5.92882581761093 270.93599562371594 2.445765679049839 267.44325297202914 2.5161388884979003 267.51850097115266 5.9986588579620586</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086974_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-04 14:04:49</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>60916.659064</TD>
+            <TD>60916.660397</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2025W35_2A_0221_3/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2025W35_2A/l2b-v27-2026-231/2/level2_2025W35_2A_0221_3D2_spx_l2b-v27-2026-231.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.22235314593001</TD>
+            <TD>4.042517714702635</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2025W35_2A_0221_4</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_2A/l2b-v27-2026-231/2/level2_2025W35_2A_0221_4D2_spx_l2b-v27-2026-231.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60731</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.5169071377861 5.80193714902281 270.99596760041135 5.732101019784012 270.9336371824117 2.2489494272692494 267.4413561375986 2.319373858971083 267.5169071377861 5.80193714902281</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086973_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-04 14:04:49</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>60916.660556</TD>
+            <TD>60916.661889</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2025W35_2A_0221_4/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2025W35_2A/l2b-v27-2026-231/2/level2_2025W35_2A_0221_4D2_spx_l2b-v27-2026-231.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.22615343286765</TD>
+            <TD>3.8466209676060843</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2025W35_2A_0418_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_2A/l2b-v27-2026-231/2/level2_2025W35_2A_0418_1D2_spx_l2b-v27-2026-231.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60135</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.52123983950224 5.60608891274527 270.9991721122191 5.536336052258308 270.93718613866173 2.0531931832200567 267.4453625852519 2.1234368919757722 267.52123983950224 5.60608891274527</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086972_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-04 14:04:49</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>60917.673940</TD>
+            <TD>60917.675272</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2025W35_2A_0418_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2025W35_2A/l2b-v27-2026-231/2/level2_2025W35_2A_0418_1D2_spx_l2b-v27-2026-231.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>267.85198719347164</TD>
+            <TD>3.8966102830735507</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W39_1A_0371_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W39_1A/l2b-v27-2026-268/2/level2_2026W39_1A_0371_1D2_spx_l2b-v27-2026-268.fits</TD>
+            <TD>image/fits</TD>
+            <TD>62560</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 266.1660536551423 5.674380549021603 269.64339121472426 5.567263234832558 269.5436467943314 2.0848407445298416 266.05270406365975 2.1926734152636422 266.1660536551423 5.674380549021603</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_085288_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-28 22:18:56</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61305.628021</TD>
+            <TD>61305.629353</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W39_1A_0371_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W39_1A/l2b-v27-2026-268/2/level2_2026W39_1A_0371_1D2_spx_l2b-v27-2026-268.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.16191087148968</TD>
+            <TD>5.4169547397130833</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W11_2A_0501_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0501_1D2_spx_l2b-v27-2026-234.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61353</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 270.86257362371214 3.6532863939775955 267.39327108254633 3.7223534064639296 267.43784196055424 7.206427211118457 270.95550810053754 7.136011184485237 270.86257362371214 3.6532863939775955</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_015648_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-08 21:02:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61114.032003</TD>
+            <TD>61114.033336</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2026W11_2A_0501_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0501_1D2_spx_l2b-v27-2026-234.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.16313248114216</TD>
+            <TD>5.6138819869735794</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W11_2A_0501_2</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0501_2D2_spx_l2b-v27-2026-234.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61399</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 270.8640850357882 3.8500628545523647 267.3940120239985 3.919275506389986 267.4383105920549 7.403319812479979 270.95750197710584 7.332808600658896 270.8640850357882 3.8500628545523647</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_015649_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-08 21:02:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61114.033496</TD>
+            <TD>61114.034828</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2026W11_2A_0501_2/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0501_2D2_spx_l2b-v27-2026-234.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.16432612885831</TD>
+            <TD>5.810785066990845</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W11_2A_0501_3</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0501_3D2_spx_l2b-v27-2026-234.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61474</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 270.8657843865777 4.046818991109191 267.3948157345162 4.116103636713344 267.4387382079902 7.60009819135146 270.9594934301634 7.529590449620408 270.8657843865777 4.046818991109191</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_015650_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-08 21:02:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61114.034988</TD>
+            <TD>61114.036320</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2026W11_2A_0501_3/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0501_3D2_spx_l2b-v27-2026-234.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.16553633471199</TD>
+            <TD>6.0076462137765718</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W11_2A_0501_4</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0501_4D2_spx_l2b-v27-2026-234.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61584</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 270.8673968814785 4.2436087291392015 267.39556237407896 4.3127793009501065 267.43924519058754 7.79685704620029 270.96151153795284 7.726451731720375 270.8673968814785 4.2436087291392015</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_015651_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-08 21:02:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61114.036480</TD>
+            <TD>61114.037813</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2026W11_2A_0501_4/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0501_4D2_spx_l2b-v27-2026-234.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.15221398174646</TD>
+            <TD>3.8434485418909961</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W11_2A_0513_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0513_1D2_spx_l2b-v27-2026-234.fits</TD>
+            <TD>image/fits</TD>
+            <TD>62030</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 270.85057729276247 2.0803717347672652 267.38603416634805 2.149613790986456 267.4334343647862 5.6336153245380975 270.9402984519575 5.563283680235211 270.85057729276247 2.0803717347672652</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_015640_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-08 21:02:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61114.099563</TD>
+            <TD>61114.100896</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2026W11_2A_0513_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0513_1D2_spx_l2b-v27-2026-234.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.15326185525674</TD>
+            <TD>4.0403937144882232</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W11_2A_0513_2</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0513_2D2_spx_l2b-v27-2026-234.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61520</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 270.8517887315259 2.2771966465046356 267.3869209509439 2.346472088316304 267.4339561666823 5.830510122900085 270.941878232904 5.760158010660199 270.8517887315259 2.2771966465046356</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_015641_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-08 21:02:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61114.101056</TD>
+            <TD>61114.102388</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2026W11_2A_0513_2/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0513_2D2_spx_l2b-v27-2026-234.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.15434797058299</TD>
+            <TD>4.2373365147964046</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W11_2A_0513_3</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0513_3D2_spx_l2b-v27-2026-234.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61313</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 270.85309644344153 2.4741202307692376 267.38768845005717 2.543332455775663 267.43440995409384 6.027355740759184 270.94359880149455 5.957058952667971 270.85309644344153 2.4741202307692376</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_015642_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-08 21:02:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61114.102548</TD>
+            <TD>61114.103880</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2026W11_2A_0513_3/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0513_3D2_spx_l2b-v27-2026-234.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.15553723581002</TD>
+            <TD>4.4342902059673497</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W11_2A_0513_4</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0513_4D2_spx_l2b-v27-2026-234.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61396</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 270.8545266869674 2.670935731307429 267.3885829851529 2.7402113399334955 267.43495360055755 6.224277109438487 270.9454654034883 6.153865462013455 270.8545266869674 2.670935731307429</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_015643_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-08 21:02:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61114.104040</TD>
+            <TD>61114.105373</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2026W11_2A_0513_4/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0513_4D2_spx_l2b-v27-2026-234.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.15655277470006</TD>
+            <TD>4.6302605969134794</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W12_1A_0311_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W12_1A/l2b-v27-2026-235/2/level2_2026W12_1A_0311_1D2_spx_l2b-v27-2026-235.fits</TD>
+            <TD>image/fits</TD>
+            <TD>62666</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 270.85585446809415 2.8668336152321285 267.389301050461 2.936085486672961 267.43534647346996 6.420174656384633 270.947153193043 6.349739334283285 270.85585446809415 2.8668336152321285</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_015644_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-08 21:02:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61116.680151</TD>
+            <TD>61116.681484</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2026W12_1A_0311_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2026W12_1A/l2b-v27-2026-235/2/level2_2026W12_1A_0311_1D2_spx_l2b-v27-2026-235.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.15779032781222</TD>
+            <TD>4.8271529564743814</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W12_1A_0311_2</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W12_1A/l2b-v27-2026-235/2/level2_2026W12_1A_0311_2D2_spx_l2b-v27-2026-235.fits</TD>
+            <TD>image/fits</TD>
+            <TD>62214</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 270.8573917342578 3.0637031334675178 267.39025514430045 3.132810072150316 267.43589227142763 6.616909551140181 270.9490579366831 6.546545937919149 270.8573917342578 3.0637031334675178</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_015645_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-08 21:02:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61116.681643</TD>
+            <TD>61116.682976</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2026W12_1A_0311_2/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2026W12_1A/l2b-v27-2026-235/2/level2_2026W12_1A_0311_2D2_spx_l2b-v27-2026-235.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.15896858723841</TD>
+            <TD>5.0241030307773729</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W12_1A_0311_3</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W12_1A/l2b-v27-2026-235/2/level2_2026W12_1A_0311_3D2_spx_l2b-v27-2026-235.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61897</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 270.8588313626158 3.2605086621368384 267.3910448447421 3.329697669648828 267.43641897373635 6.813728152072384 270.95099996125026 6.743425323148447 270.8588313626158 3.2605086621368384</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_015646_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-08 21:02:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61116.683136</TD>
+            <TD>61116.684468</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2026W12_1A_0311_3/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2026W12_1A/l2b-v27-2026-235/2/level2_2026W12_1A_0311_3D2_spx_l2b-v27-2026-235.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.16721746033744</TD>
+            <TD>6.2041278824016484</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W11_2A_0550_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0550_1D2_spx_l2b-v27-2026-234.fits</TD>
+            <TD>image/fits</TD>
+            <TD>63283</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 270.8695239199168 4.4401135414034885 267.39684040667925 4.50918655641021 267.4400374262529 7.993238421568979 270.96400777271 7.922881259633719 270.8695239199168 4.4401135414034885</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_015652_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-08 21:02:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61114.304091</TD>
+            <TD>61114.305424</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2026W11_2A_0550_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0550_1D2_spx_l2b-v27-2026-234.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.16004068496198</TD>
+            <TD>5.2210666409729294</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W12_1A_0311_4</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W12_1A/l2b-v27-2026-235/2/level2_2026W12_1A_0311_4D2_spx_l2b-v27-2026-235.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61886</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 270.8603046060019 3.4574729863812514 267.3918277848564 3.526636598154138 267.43672526174254 7.010621501532377 270.9528169576381 6.940257687932503 270.8603046060019 3.4574729863812514</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_015647_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-08 21:02:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61116.684628</TD>
+            <TD>61116.685960</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2026W12_1A_0311_4/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2026W12_1A/l2b-v27-2026-235/2/level2_2026W12_1A_0311_4D2_spx_l2b-v27-2026-235.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.16831048790317</TD>
+            <TD>6.4010268966338133</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W11_2A_0550_2</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0550_2D2_spx_l2b-v27-2026-234.fits</TD>
+            <TD>image/fits</TD>
+            <TD>62733</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 270.8709934734894 4.636826583980084 267.3972907033008 4.706009612357502 267.44031862617487 8.190055816029611 270.96600103168817 8.11964201224374 270.8709934734894 4.636826583980084</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_015653_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-08 21:02:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61114.305583</TD>
+            <TD>61114.306916</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2026W11_2A_0550_2/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2026W11_2A/l2b-v27-2026-234/2/level2_2026W11_2A_0550_2D2_spx_l2b-v27-2026-234.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>270.75817451105979</TD>
+            <TD>3.1904108298459715</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W12_2A_0371_2</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W12_2A/l2b-v27-2026-235/2/level2_2026W12_2A_0371_2D2_spx_l2b-v27-2026-235.fits</TD>
+            <TD>image/fits</TD>
+            <TD>62016</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 272.4777990368383 1.4488968757256282 269.0139808727989 1.474988778142942 269.01900776198596 4.959337306624053 272.52271274848545 4.932657947135617 272.4777990368383 1.4488968757256282</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_013970_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-08 21:02:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61120.550580</TD>
+            <TD>61120.551912</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2026W12_2A_0371_2/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2026W12_2A/l2b-v27-2026-235/2/level2_2026W12_2A_0371_2D2_spx_l2b-v27-2026-235.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>270.75689373127346</TD>
+            <TD>3.3872839756197815</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W12_2A_0371_3</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W12_2A/l2b-v27-2026-235/2/level2_2026W12_2A_0371_3D2_spx_l2b-v27-2026-235.fits</TD>
+            <TD>image/fits</TD>
+            <TD>62188</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 272.47664138684746 1.645755632345219 269.0126543861582 1.6717824141489237 269.0172629357285 5.1560980267087615 272.5219165416724 5.12945581107425 272.47664138684746 1.645755632345219</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_013971_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-08 21:02:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61120.552072</TD>
+            <TD>61120.553404</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2026W12_2A_0371_3/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2026W12_2A/l2b-v27-2026-235/2/level2_2026W12_2A_0371_3D2_spx_l2b-v27-2026-235.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>270.75568625823496</TD>
+            <TD>3.5841537994889192</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W12_2A_0371_4</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W12_2A/l2b-v27-2026-235/2/level2_2026W12_2A_0371_4D2_spx_l2b-v27-2026-235.fits</TD>
+            <TD>image/fits</TD>
+            <TD>63974</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 272.4755838688542 1.8425332756941715 269.0111233374867 1.8686221488715775 269.015400370908 5.3528903115602455 272.52128359418197 5.3261638751510745 272.4755838688542 1.8425332756941715</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_013972_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-08 21:02:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61120.553564</TD>
+            <TD>61120.554897</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2026W12_2A_0371_4/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2026W12_2A/l2b-v27-2026-235/2/level2_2026W12_2A_0371_4D2_spx_l2b-v27-2026-235.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>270.75522436084208</TD>
+            <TD>3.7799750904418268</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W12_2A_0496_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W12_2A/l2b-v27-2026-235/2/level2_2026W12_2A_0496_1D2_spx_l2b-v27-2026-235.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60302</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 272.4753891135243 2.0382752612843267 269.01052001449546 2.0642293215662666 269.01438712905616 5.54862161232452 272.52136524427743 5.522046476656043 272.4753891135243 2.0382752612843267</TD>
+            <TD>spherex_dr1</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_013973_S12</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-08 21:02:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61121.228205</TD>
+            <TD>61121.229538</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_dr1?2026W12_2A_0496_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;dr1/level2/2026W12_2A/l2b-v27-2026-235/2/level2_2026W12_2A_0496_1D2_spx_l2b-v27-2026-235.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.43567111848978</TD>
+            <TD>6.4994562343744215</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_2A_0178_2</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0178_2D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61143</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.7184662229661 8.255288263465333 271.21613079569397 8.190655899784813 271.1541573406663 4.707342860724401 267.6525004715614 4.77241528132263 267.7184662229661 8.255288263465333</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086985_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61273.380179</TD>
+            <TD>61273.381512</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_2A_0178_2/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0178_2D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.43457961891448</TD>
+            <TD>6.3026680305198068</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_2A_0178_3</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0178_3D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61149</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.7181780559915 8.058612900219694 271.21415025563886 7.993828060914895 271.15250718525584 4.5106117622552775 267.65190664931544 4.575671479907985 267.7181780559915 8.058612900219694</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086984_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61273.381672</TD>
+            <TD>61273.383004</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_2A_0178_3/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0178_3D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.43345831773485</TD>
+            <TD>6.1059645988181632</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_2A_0178_4</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0178_4D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61307</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.71790103381267 7.861912183352848 271.2121445978642 7.797265742727145 271.151013340304 4.313983909383344 267.65135360979406 4.379103189938062 267.71790103381267 7.861912183352848</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086983_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61273.383164</TD>
+            <TD>61273.384496</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_2A_0178_4/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0178_4D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.43233911289826</TD>
+            <TD>5.9103433004381012</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_2A_0206_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0206_1D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60884</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.7176396435522 7.666416176772907 271.21028823990304 7.601779376215023 271.14946729884576 4.118466338794419 267.6505527405906 4.18355838014261 267.7176396435522 7.666416176772907</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086982_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61273.513363</TD>
+            <TD>61273.514695</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_2A_0206_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0206_1D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.43153877558893</TD>
+            <TD>5.7133470847822192</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_2A_0206_2</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0206_2D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60760</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.7176138376173 7.469497731753205 271.20869900546927 7.404918987429616 271.14822368122213 3.9215712935247624 267.6502733778572 3.98654556344721 267.7176138376173 7.469497731753205</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086981_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61273.514855</TD>
+            <TD>61273.516188</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_2A_0206_2/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0206_2D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.43064901850312</TD>
+            <TD>5.5164781525727813</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_2A_0206_3</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0206_3D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60852</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.7173940998221 7.272679325359713 271.20688501036415 7.208146462181403 271.14697178122066 3.7248573095266977 267.6498499869114 3.7898728478184553 267.7173940998221 7.272679325359713</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086980_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61273.516348</TD>
+            <TD>61273.517680</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_2A_0206_3/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0206_3D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.42954191504225</TD>
+            <TD>5.3196800828956539</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_2A_0206_4</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0206_4D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60743</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.71707419776254 7.075993067178281 271.2050628419134 7.0113747428172255 271.14563151376836 3.5280964082282154 267.64919037265315 3.5931280764423983 267.71707419776254 7.075993067178281</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086979_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61273.517840</TD>
+            <TD>61273.519172</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_2A_0206_4/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0206_4D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.42869822924956</TD>
+            <TD>5.1233307974632778</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_2A_0233_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0233_1D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60339</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.716985858683 6.879816959544871 271.2034675313388 6.815179919496658 271.1442842166119 3.3318147916549483 267.64864776202813 3.3968787529408373 267.716985858683 6.879816959544871</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086978_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61273.649318</TD>
+            <TD>61273.650650</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_2A_0233_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0233_1D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.42780459983851</TD>
+            <TD>4.9265000522785867</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_2A_0233_2</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0233_2D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60521</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.7166629692607 6.682969200469196 271.20186483480126 6.618427704166008 271.14311332001137 3.1351019011642216 267.6481261941247 3.2001144754236264 267.7166629692607 6.682969200469196</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086977_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61273.650810</TD>
+            <TD>61273.652143</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_2A_0233_2/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0233_2D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.42678573941987</TD>
+            <TD>4.7296322414120242</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_2A_0233_3</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0233_3D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60463</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.716351463678 6.486141835373749 271.20015896281507 6.421674916811149 271.1418088540484 2.938404476440178 267.6474288182367 3.0032942755931935 267.716351463678 6.486141835373749</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086976_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61273.652303</TD>
+            <TD>61273.653635</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_2A_0233_3/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0233_3D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.42575839924291</TD>
+            <TD>4.5328817918396522</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_2A_0233_4</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0233_4D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60446</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.7160285452082 6.289538114515099 271.1983905269584 6.225064210055805 271.140483507416 2.7417331205284796 267.64680054642105 2.806672769074532 267.7160285452082 6.289538114515099</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086975_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61273.653795</TD>
+            <TD>61273.655127</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_2A_0233_4/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0233_4D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.42440136577687</TD>
+            <TD>4.3376389395222139</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_2A_0249_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0249_1D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60120</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.7151856726333 6.094301907750151 271.1963608852242 6.0298824738427825 271.13889568054793 2.5465854157707777 267.6456672354276 2.611513237421178 267.7151856726333 6.094301907750151</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086974_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61273.719685</TD>
+            <TD>61273.721017</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_2A_0249_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0249_1D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.42354065502241</TD>
+            <TD>4.1406629255814593</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_2A_0249_2</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0249_2D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60429</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.71496319315787 5.897396310692015 271.1949417466274 5.832968658673178 271.1377908158323 2.349673806673079 267.645023261398 2.4146665273046195 267.71496319315787 5.897396310692015</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086973_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61273.721177</TD>
+            <TD>61273.722510</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_2A_0249_2/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0249_2D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>269.42266147520041</TD>
+            <TD>3.9436930375679373</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_2A_0249_3</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0249_3D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>60319</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 267.7147218391619 5.700613024441613 271.1934001117522 5.6360595530258335 271.1366814723233 2.152727216869286 267.6444659647343 2.2178571157890645 267.7147218391619 5.700613024441613</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_086972_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61273.722670</TD>
+            <TD>61273.724002</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_2A_0249_3/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0249_3D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>271.02018450957928</TD>
+            <TD>3.8840355447594348</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_2A_0264_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0264_1D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>58871</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 269.2905810454616 5.619502975582092 272.7694155765424 5.598377707795475 272.75633115451717 2.1146522351527883 269.2637392095619 2.1361050903223577 269.2905810454616 5.619502975582092</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_085305_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61273.788222</TD>
+            <TD>61273.789555</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_2A_0264_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0264_1D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>271.0217868209441</TD>
+            <TD>3.6871259918763557</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_2A_0264_2</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0264_2D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>59242</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 269.2927193346556 5.422709332975701 272.77046427927064 5.40158988217796 272.7577852706461 1.9178146082457337 269.2655617169902 1.9392909586026106 269.2927193346556 5.422709332975701</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_085304_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61273.789714</TD>
+            <TD>61273.791047</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_2A_0264_2/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_2A/l2b-v27-2026-243/2/level2_2026W34_2A_0264_2D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>267.84625373265834</TD>
+            <TD>3.8976553410751227</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_1A_0363_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_1A/l2b-v27-2026-243/2/level2_2026W34_1A_0363_1D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61175</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 266.16032454845964 5.675383871177582 269.63756893531684 5.568154739797188 269.53800662989164 2.0858104272522757 266.04697133494744 2.1937076928920045 266.16032454845964 5.675383871177582</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_085288_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61270.867116</TD>
+            <TD>61270.868448</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_1A_0363_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_1A/l2b-v27-2026-243/2/level2_2026W34_1A_0363_1D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>267.84282652812738</TD>
+            <TD>3.7008240258534655</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_1A_0363_2</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_1A/l2b-v27-2026-243/2/level2_2026W34_1A_0363_2D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61290</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 266.157501736663 5.478649936325608 269.6336272524188 5.3715249957350375 269.5343979238209 1.8890622355978306 266.04378548800486 1.9969658491455367 266.157501736663 5.478649936325608</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_085287_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61270.868608</TD>
+            <TD>61270.869940</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_1A_0363_2/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_1A/l2b-v27-2026-243/2/level2_2026W34_1A_0363_2D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>267.83935888875163</TD>
+            <TD>3.5040320778464298</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_1A_0363_3</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_1A/l2b-v27-2026-243/2/level2_2026W34_1A_0363_3D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>62661</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 266.1544989055218 5.281921783098887 269.62956837881507 5.174821515287977 269.53072635991583 1.6923985356160518 266.0404438633554 1.8002691836761864 266.1544989055218 5.281921783098887</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_085286_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61270.870100</TD>
+            <TD>61270.871432</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_1A_0363_3/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_1A/l2b-v27-2026-243/2/level2_2026W34_1A_0363_3D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>267.83621941174118</TD>
+            <TD>3.3078887118471911</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_1A_0456_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_1A/l2b-v27-2026-243/2/level2_2026W34_1A_0456_1D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61022</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 266.15188455943735 5.085878387861164 269.6258562124789 4.978861229714806 269.5274662785161 1.496394334569895 266.0376066992032 1.604171273382133 266.15188455943735 5.085878387861164</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_085285_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61271.342061</TD>
+            <TD>61271.343394</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_1A_0456_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_1A/l2b-v27-2026-243/2/level2_2026W34_1A_0456_1D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>267.8327279669864</TD>
+            <TD>3.1109065588593316</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W34_1A_0456_2</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_1A/l2b-v27-2026-243/2/level2_2026W34_1A_0456_2D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>61226</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 266.1488586065413 4.8889363905526775 269.6217997426196 4.7819478539437785 269.52383572961793 1.29948405343053 266.034266049362 1.4072301338510693 266.1488586065413 4.8889363905526775</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_085284_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-09-30 04:29:46</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61271.343553</TD>
+            <TD>61271.344886</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W34_1A_0456_2/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W34_1A/l2b-v27-2026-243/2/level2_2026W34_1A_0456_2D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>271.0229839555011</TD>
+            <TD>3.4903566343837151</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W35_1A_0038_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W35_1A/l2b-v27-2026-243/2/level2_2026W35_1A_0038_1D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>59104</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 269.2945033429833 5.226056633536107 272.77107523787197 5.204904243942366 272.75874872515226 1.7211336039172076 269.2669833338917 1.7427400198079468 269.2945033429833 5.226056633536107</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_085303_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-07 21:27:11</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61276.166290</TD>
+            <TD>61276.167622</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W35_1A_0038_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W35_1A/l2b-v27-2026-243/2/level2_2026W35_1A_0038_1D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>271.02365510017211</TD>
+            <TD>3.2936679241690325</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W35_1A_0092_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W35_1A/l2b-v27-2026-243/2/level2_2026W35_1A_0092_1D2_spx_l2b-v27-2026-243.fits</TD>
+            <TD>image/fits</TD>
+            <TD>58885</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 269.29569948852054 5.029398679123325 272.77123759896045 5.008285022754511 272.7592318246093 1.524544359943412 269.2678329249379 1.5461370799894227 269.29569948852054 5.029398679123325</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_085302_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-07 21:27:11</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61276.437685</TD>
+            <TD>61276.439017</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W35_1A_0092_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W35_1A/l2b-v27-2026-243/2/level2_2026W35_1A_0092_1D2_spx_l2b-v27-2026-243.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+          <TR>
+            <TD>271.02659080554645</TD>
+            <TD>3.0967957676947653</TD>
+            <TD>SPHEREx</TD>
+            <TD>SPHEREx</TD>
+            <TD>science</TD>
+            <TD>2</TD>
+            <TD>image</TD>
+            <TD>SPHEREx-D2</TD>
+            <TD>Infrared</TD>
+            <TD>2026W35_2A_0126_1</TD>
+            <TD>3.075000</TD>
+            <TD>1.10330e-06</TD>
+            <TD>1.64990e-06</TD>
+            <TD>41.400000</TD>
+            <TD>SPHEREx LVF Survey Data</TD>
+            <TD>https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W35_2A/l2b-v27-2026-246/2/level2_2026W35_2A_0126_1D2_spx_l2b-v27-2026-246.fits</TD>
+            <TD>image/fits</TD>
+            <TD>58280</TD>
+            <TD>113.582600</TD>
+            <TD>POLYGON ICRS 269.29913207493746 4.832645264579292 272.773592710179 4.811575924684898 272.76205818471954 1.3277679791995969 269.27094404747913 1.349290573658288 269.29913207493746 4.832645264579292</TD>
+            <TD>spherex_qr3</TD>
+            <TD>science</TD>
+            <TD>exposure</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>SPHEREx</TD>
+            <TD>SPS_085301_S34</TD>
+            <TD>field</TD>
+            <TD>0</TD>
+            <TD>0</TD>
+            <TD></TD>
+            <TD>2026-10-07 21:27:11</TD>
+            <TD>2040</TD>
+            <TD>2040</TD>
+            <TD>6.150</TD>
+            <TD>0</TD>
+            <TD>61280.166261</TD>
+            <TD>61280.167594</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>ivo://irsa.ipac/spherex_qr3?2026W35_2A_0126_1/D2</TD>
+            <TD>3.485e+00</TD>
+            <TD></TD>
+            <TD></TD>
+            <TD></TD>
+            <TD>{&quot;aws&quot;: {&quot;bucket_name&quot;: &quot;nasa-irsa-spherex&quot;, &quot;key&quot;:&quot;qr3/level2/2026W35_2A/l2b-v27-2026-246/2/level2_2026W35_2A_0126_1D2_spx_l2b-v27-2026-246.fits&quot;, &quot;region&quot;: &quot;us-east-1&quot;}}</TD>
+            <TD></TD>
+            <TD>1</TD>
+          </TR>
+        </TABLEDATA>
+      </DATA>
+    </TABLE>
+  </RESOURCE>
+</VOTABLE>
