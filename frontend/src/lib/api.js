@@ -2,8 +2,8 @@
 // otherwise the app runs on simulated demo frames with the same shape.
 import { useEffect, useMemo, useState } from 'react';
 import { simulate, aperture, PX } from './sim';
-import { PRESET_BY_ID, SURVEYS, GLOSSARY, ARRAYS, customObject } from './data';
-import { hashString } from './util';
+import { PRESET_BY_ID, SURVEYS, GLOSSARY, ARRAYS, DAY0, customObject } from './data';
+import { hashString, parseRA, parseDec } from './util';
 
 export const API_URL = import.meta.env.VITE_API_URL || '';
 export const IS_LIVE = Boolean(API_URL);
@@ -24,28 +24,87 @@ export function demoField({ targetId, raDeg, decDeg, fov, arrayIdx, channel }) {
   });
 }
 
-function decodeF32(b64) {
-  const bin = atob(b64);
-  const buf = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-  return new Float32Array(buf.buffer);
+// ---------------------------------------------------------------- live API (docs/API.md)
+// Frames arrive as 8-bit asinh-stretched PNGs. Undoing the stretch gives linear
+// brightness, scaled so it lands in the same units as the simulator (noise ≈ 0.5),
+// which keeps Blink / Difference / Stack and the submission checks working unchanged.
+const STRETCH_ASINH_A = 0.03; // softening of the backend's asinh stretch (backend/app/providers/mock.py)
+const LINEAR_SCALE = 100; // linear stretch fraction 0–1 → 0–100
+
+async function getJson(url) {
+  let r;
+  try { r = await fetch(url); } catch { throw new Error('The data service could not be reached.'); }
+  const body = await r.json().catch(() => null);
+  if (!r.ok) throw new Error(body?.error?.message ? `The data service said: ${body.error.message}.` : `The data service answered ${r.status}.`);
+  return body;
+}
+
+/** Fetches one frame PNG and returns its pixels as linear brightness (row-major, north up). */
+async function loadFrame(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`A snapshot failed to load (${r.status}).`);
+  const bmp = await createImageBitmap(await r.blob(), { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
+  const canvas = document.createElement('canvas');
+  canvas.width = bmp.width; canvas.height = bmp.height;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(bmp, 0, 0);
+  bmp.close();
+  const px = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  const k = Math.asinh(1 / STRETCH_ASINH_A);
+  const out = new Float32Array(canvas.width * canvas.height);
+  for (let i = 0; i < out.length; i++) out[i] = STRETCH_ASINH_A * Math.sinh((px[i * 4] / 255) * k) * LINEAR_SCALE;
+  return { nx: canvas.width, ny: canvas.height, data: out };
+}
+
+/** Display range for the whole field, matching the simulator's choice. */
+function displayRange(stacks) {
+  const sample = [];
+  for (const s of stacks) for (let i = 0; i < s.length; i += 2) sample.push(s[i]);
+  sample.sort((a, b) => a - b);
+  const q = (p) => sample[Math.min(sample.length - 1, Math.floor(p * sample.length))];
+  const vmin = q(0.04);
+  return { vmin, vmax: Math.max(q(0.997), vmin + 6) };
 }
 
 /**
- * Backend contract, GET /api/frames?ra&dec&fov&array[&channel] →
- * { nx, ny, vmin, vmax, epochs: [{ label, date, release, t, flags: {NAME: count}, data: base64 float32 (row-major, north up) }] }
+ * GET /epochs, then every frame_url. Exposures from the same survey visit are
+ * averaged into one snapshot, like the demo frames; the single exposures stay in `frames`.
  */
 async function fetchField(p) {
-  const q = new URLSearchParams({ ra: p.raDeg, dec: p.decDeg, fov: p.fov, array: p.arrayIdx });
-  if (p.channel != null) q.set('channel', p.channel);
-  const r = await fetch(`${API_URL}/api/frames?${q}`);
-  if (!r.ok) throw new Error(`The data service answered ${r.status}.`);
-  const j = await r.json();
+  const q = new URLSearchParams({ ra: p.raDeg, dec: p.decDeg, fov: p.fov, band: `D${p.arrayIdx}` });
+  const j = await getJson(`${API_URL}/epochs?${q}`);
+  if (!j.count) throw new Error('No SPHEREx coverage at this position yet.');
+
+  const shots = await Promise.all(j.epochs.map((e) => loadFrame(e.frame_url)));
+  const { nx, ny } = shots[0];
+  const visits = [...new Set(j.epochs.map((e) => e.visit))].sort((a, b) => a - b);
+  const epochs = [], stacks = [], frames = [];
+
+  visits.forEach((visit, ei) => {
+    const members = j.epochs.map((e, i) => ({ e, shot: shots[i] })).filter(({ e }) => e.visit === visit);
+    const acc = new Float32Array(nx * ny);
+    members.forEach(({ e, shot }, x) => {
+      frames.push({ epoch: ei, exp: x, id: e.id, data: shot.data });
+      for (let i = 0; i < acc.length; i++) acc[i] += shot.data[i] / members.length;
+    });
+    stacks.push(acc);
+    const first = members[0].e;
+    epochs.push({
+      label: `Visit ${visit}`,
+      date: first.time_utc.slice(0, 10),
+      release: first.release,
+      t: (Date.parse(first.time_utc) - DAY0) / (365.25 * 864e5),
+      ids: members.map(({ e }) => e.id),
+      exposures: members.length,
+      flaggedFraction: Math.max(...members.map(({ e }) => e.quality?.flagged_fraction ?? 0)),
+      flags: [...new Set(members.flatMap(({ e }) => e.quality?.flags ?? []))],
+    });
+  });
+
   return {
-    nx: j.nx, ny: j.ny, vmin: j.vmin, vmax: j.vmax, fov: p.fov, arrayIdx: p.arrayIdx, channel: p.channel,
-    epochs: j.epochs.map(({ data, ...rest }) => rest),
-    stacks: j.epochs.map((e) => decodeF32(e.data)),
-    stars: [], object: null, posAt: () => null, visibleAt: () => false, live: true,
+    nx, ny, ...displayRange(stacks), fov: p.fov, arrayIdx: p.arrayIdx, channel: p.channel,
+    epochs, stacks, frames, stars: [], object: null, posAt: () => null, visibleAt: () => false,
+    live: true, synthetic: Boolean(j.synthetic),
   };
 }
 
@@ -76,9 +135,16 @@ export function useField(params) {
 export async function explain(question, context) {
   if (IS_LIVE) {
     try {
-      const r = await fetch(`${API_URL}/api/explain`, {
+      const ra = parseRA(context.ra), dec = parseDec(context.dec);
+      const r = await fetch(`${API_URL}/explain`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, context }),
+        body: JSON.stringify({
+          question: question.slice(0, 500),
+          context: {
+            ...(ra != null && dec != null ? { ra, dec } : {}),
+            fov_arcmin: context.fov, band: `D${context.arrayIdx ?? 3}`, target_name: context.preset?.name,
+          },
+        }),
       });
       if (r.ok) return (await r.json()).answer;
     } catch { /* fall back to local answers */ }

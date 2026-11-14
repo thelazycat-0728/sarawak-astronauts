@@ -25,7 +25,9 @@ export default function TimeMachine() {
     },
   }), [targetId, preset, cfg, epochs]);
 
-  useEffect(() => { setI(0); setThenNow(false); }, [targetId]);
+  // Restart from the first frame when the target changes (adjusting state during render).
+  const [shownTarget, setShownTarget] = useState(targetId);
+  if (shownTarget !== targetId) { setShownTarget(targetId); setI(0); setThenNow(false); }
   useEffect(() => {
     if (!playing || thenNow) return undefined;
     const id = setTimeout(() => setI((k) => (k + 1) % epochs.length), i === epochs.length - 1 ? 2200 : 750);

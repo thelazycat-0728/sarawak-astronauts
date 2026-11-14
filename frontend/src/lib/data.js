@@ -13,7 +13,7 @@ export const ARRAYS = [
 ];
 export const CHANNELS_PER_ARRAY = 17;
 
-const DAY0 = Date.UTC(2025, 4, 24);
+export const DAY0 = Date.UTC(2025, 4, 24);
 const epoch = (label, date, release) => ({
   label, date, release, t: (Date.parse(`${date}T00:00:00Z`) - DAY0) / (365.25 * 864e5),
 });

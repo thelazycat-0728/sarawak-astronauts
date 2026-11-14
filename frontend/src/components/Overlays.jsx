@@ -5,31 +5,7 @@ import { useUi, useAuth, useViewer } from '../store';
 import { explain } from '../lib/api';
 import { PRESET_BY_ID, ARRAYS } from '../lib/data';
 import { cn } from '../lib/util';
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-export const HAS_SUPABASE = Boolean(SUPABASE_URL && SUPABASE_KEY);
-
-let clientPromise = null;
-export function supabase() {
-  if (!HAS_SUPABASE) return null;
-  clientPromise ??= import('@supabase/supabase-js').then(({ createClient }) => createClient(SUPABASE_URL, SUPABASE_KEY));
-  return clientPromise;
-}
-
-/** Keeps the local user in step with a real Supabase session, when configured. */
-export function useSupabaseSession() {
-  useEffect(() => {
-    const p = supabase();
-    if (!p) return undefined;
-    let sub;
-    p.then((client) => {
-      client.auth.getSession().then(({ data }) => useAuth.getState().setFromSupabase(data.session?.user ?? null));
-      sub = client.auth.onAuthStateChange((_e, session) => useAuth.getState().setFromSupabase(session?.user ?? null)).data.subscription;
-    });
-    return () => sub?.unsubscribe();
-  }, []);
-}
+import { HAS_SUPABASE, supabase } from '../lib/supabase';
 
 export function SignInDialog() {
   const open = useUi((s) => s.signInOpen);
@@ -101,7 +77,7 @@ export function Assistant() {
     setInput('');
     setMessages((m) => [...m, { role: 'user', text: question }]);
     setBusy(true);
-    const answer = await explain(question, { preset, mode: v.mode, arrayIdx: v.arrayIdx, ra: v.ra, dec: v.dec });
+    const answer = await explain(question, { preset, mode: v.mode, arrayIdx: v.arrayIdx, fov: v.fov, ra: v.ra, dec: v.dec });
     setMessages((m) => [...m, { role: 'ai', text: answer }]);
     setBusy(false);
   };

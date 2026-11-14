@@ -69,7 +69,7 @@ export default function Play() {
   const misses = guesses.filter((g) => !g.ok).length;
   const lastE = epochs.length - 1;
 
-  const finish = useCallback((won, dist, missCount) => {
+  const finish = (won, dist, missCount) => {
     let points = 0, stars = 0;
     if (won) {
       points = Math.max(10, Math.round(100 - 40 * (dist / level.tol)) - (hint ? 25 : 0) - 15 * missCount);
@@ -84,7 +84,7 @@ export default function Play() {
       addPoints(gain, `Training: ${level.preset ? PRESET_BY_ID[level.preset].name : 'bonus'} level`);
       toast(`+${gain} points for training.`, 'good');
     }
-  }, [level, hint, recordGame, user, addPoints, toast]);
+  };
 
   const onPick = (x, y) => {
     if (result) return;

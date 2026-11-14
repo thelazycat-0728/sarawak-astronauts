@@ -66,8 +66,11 @@ export default function Explore() {
   }, [v.playing, v.mode, v.speed, incIdx]);
 
   // Expert: the source whose spectrum and brightness are shown.
-  const [pick, setPick] = useState(null);
-  useEffect(() => setPick(null), [v.targetId, v.ra, v.dec, v.fov]);
+  // Cleared whenever the view moves to another field.
+  const fieldKey = `${v.targetId}|${v.ra}|${v.dec}|${v.fov}`;
+  const [picked, setPicked] = useState({ key: fieldKey, pick: null });
+  const pick = picked.key === fieldKey ? picked.pick : null;
+  const setPick = useCallback((p) => setPicked({ key: fieldKey, pick: p }), [fieldKey]);
   const selection = useMemo(() => {
     if (!field) return null;
     if (pick) return pick;
@@ -85,7 +88,7 @@ export default function Explore() {
     let bi = -1, bd = 3;
     field.stars.forEach((s, i) => { const d = Math.hypot(s.x - x, s.y - y); if (d < bd) { bd = d; bi = i; } });
     if (bi >= 0) setPick({ type: 'star', i: bi });
-  }, [field, cur]);
+  }, [field, cur, setPick]);
 
   return (
     <div className="mx-auto max-w-[1680px] px-[max(16px,env(safe-area-inset-left,0px))] pb-6 lg:px-10">
@@ -148,7 +151,11 @@ function TargetPanel() {
   const [ra, setRa] = useState(v.ra);
   const [dec, setDec] = useState(v.dec);
   const [err, setErr] = useState('');
-  useEffect(() => { setRa(v.ra); setDec(v.dec); setErr(''); }, [v.ra, v.dec]);
+  // Resync the inputs when the target changes elsewhere (adjusting state during render).
+  const [synced, setSynced] = useState([v.ra, v.dec]);
+  if (synced[0] !== v.ra || synced[1] !== v.dec) {
+    setSynced([v.ra, v.dec]); setRa(v.ra); setDec(v.dec); setErr('');
+  }
 
   const explore = (e) => {
     e.preventDefault();
@@ -470,7 +477,8 @@ function ModeBar({ expert, hasField }) {
 }
 
 function StatusBar({ field, incIdx, source, error }) {
-  const label = { demo: 'Demo frames', precomputed: 'Pre-computed frames', live: 'Live from IRSA', none: 'No field' }[source] ?? 'Demo frames';
+  const live = field?.synthetic ? 'Live API · synthetic mock data' : 'Live from IRSA';
+  const label = { demo: 'Demo frames', precomputed: 'Pre-computed frames', live, none: 'No field' }[source] ?? 'Demo frames';
   return (
     <div className="label-mono flex flex-wrap items-center justify-between gap-3 border-t border-line px-6 py-3 text-muted lg:col-span-2">
       <span className="flex items-center gap-2">
@@ -615,7 +623,7 @@ function Analysis({ field, preset, incIdx, cur, selection }) {
           <p className="text-xs text-muted">Built on the fly from all six arrays. Dashed lines mark where molecules absorb.</p>
         </Panel>
 
-        <MotionCard field={field} preset={preset} incIdx={incIdx} />
+        <MotionCard field={field} incIdx={incIdx} />
 
         <Panel className="p-5">
           <CardTitle term="gaia">Catalogue overlays</CardTitle>
@@ -637,7 +645,7 @@ function CardTitle({ term, children }) {
   return <h3 className="label-mono text-muted"><Term id={term}>{children}</Term></h3>;
 }
 
-function MotionCard({ field, preset, incIdx }) {
+function MotionCard({ field, incIdx }) {
   const o = field.object;
   const content = (() => {
     if (!o || o.kind !== 'motion' || incIdx.length < 2) {
@@ -679,8 +687,13 @@ function MotionCard({ field, preset, incIdx }) {
 
 function MetadataCard({ field, incIdx, cur }) {
   const rows = field.epochs.map((e, i) => {
+    if (field.live) {
+      const pct = `${((e.flaggedFraction ?? 0) * 100).toFixed(1)}%`;
+      return { ...e, i, exposures: e.exposures ?? 1, flagText: e.flags?.length ? `${pct} · ${e.flags.join(', ')}` : pct };
+    }
     const rng = mulberry32(hashString(e.date + field.fov));
-    return { ...e, i, ghost: Math.floor(rng() * 4), persist: Math.floor(rng() * 6), halo: Math.floor(rng() * 3) };
+    const ghost = Math.floor(rng() * 4), persist = Math.floor(rng() * 6), halo = Math.floor(rng() * 3);
+    return { ...e, i, exposures: 3, flagText: ghost + persist + halo === 0 ? 'none' : `ghost ${ghost} · persist ${persist} · halo ${halo}` };
   });
   return (
     <Panel className="p-5 md:col-span-2">
@@ -696,8 +709,8 @@ function MetadataCard({ field, incIdx, cur }) {
                 <td className="py-2 pr-3">{r.label}</td>
                 <td className="pr-3">{formatDate(r.date)}</td>
                 <td className="pr-3"><Chip tone={r.release === 'DR1' ? 'accent' : 'teal'}>{r.release}</Chip></td>
-                <td className="pr-3">3</td>
-                <td className="pr-3">{r.ghost + r.persist + r.halo === 0 ? 'none' : `ghost ${r.ghost} · persist ${r.persist} · halo ${r.halo}`}</td>
+                <td className="pr-3">{r.exposures}</td>
+                <td className="pr-3">{r.flagText}</td>
                 <td>{incIdx.includes(r.i) ? <Check className="size-4 text-good" aria-label="Included" /> : <span className="text-faint">—</span>}</td>
               </tr>
             ))}

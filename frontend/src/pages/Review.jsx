@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { ShieldCheck, LogIn, Eye, EyeOff, Users, RotateCcw } from 'lucide-react';
 import { Button, Segmented, Kicker, Panel, Chip, SkyCanvas } from '../components/ui';
 import { useAuth, useUi, useSubmissions } from '../store';
-import { DEMO_QUEUE, SURVEYS, PRESET_BY_ID, customObject } from '../lib/data';
+import { DEMO_QUEUE, SURVEYS, customObject } from '../lib/data';
 import { simulate, crop, paintImage, paintDiff, LUTS } from '../lib/sim';
 import { demoField } from '../lib/api';
 import { parseRA, parseDec, cn } from '../lib/util';
@@ -44,10 +44,11 @@ export default function Review() {
   const demoVerdicts = useSubmissions((s) => s.demoVerdicts);
   const [sort, setSort] = useState('ai');
   const [tab, setTab] = useState('pending');
+  const [now] = useState(() => Date.now()); // fixed for this visit, so ages don't shift between renders
 
   const queue = useMemo(() => {
     const mine = items.filter((it) => it.outcome === 'candidate').map((it) => ({
-      id: it.id, code: it.code, by: it.by, agreed: 1, ai: it.score, ageH: Math.max(0, Math.round((Date.now() - Date.parse(it.at)) / 36e5)),
+      id: it.id, code: it.code, by: it.by, agreed: 1, ai: it.score, ageH: Math.max(0, Math.round((now - Date.parse(it.at)) / 36e5)),
       note: it.note, hiddenNote: it.noteHidden, user: true, verdict: it.verdict,
       signals: {
         motion: it.checks.find((c) => c.id === 'motion')?.detail, snr: +(it.snr ?? 0).toFixed(1), flags: 'Clear',
@@ -58,7 +59,7 @@ export default function Review() {
     const demo = DEMO_QUEUE.map((d) => ({ ...d, verdict: demoVerdicts[d.id], build: () => demoCandidate(d) }));
     const all = [...mine, ...demo].filter((q) => (tab === 'pending' ? !q.verdict : q.verdict));
     return all.sort((x, y) => (sort === 'ai' ? y.ai - x.ai : x.ageH - y.ageH));
-  }, [items, demoVerdicts, sort, tab]);
+  }, [items, demoVerdicts, sort, tab, now]);
 
   if (!user || user.role !== 'scientist') {
     return (
