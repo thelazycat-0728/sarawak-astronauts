@@ -33,7 +33,8 @@ SIMBAD_ERRORS = (OSError, ValueError, KeyError, DALAccessError)
 PRESETS = (
     ("barnards-star", "Barnard's Star", 269.4464, 4.7668, "D2", "Barnard's star"),
     ("eps-indi-b", "Epsilon Indi B", 331.0951, -56.8007, "D2", "eps Ind B"),
-    ("wise-0855", "WISE 0855-0714", 133.7951, -7.2451, "D6", "WISE J085510.83-071442.5"),
+    # SIMBAD position moved to 2025.5 (T-003 found the old 133.7951, -7.2451 2.04' off).
+    ("wise-0855", "WISE 0855-0714", 133.7609, -7.2423, "D6", "WISE J085510.83-071442.5"),
     ("rw-aur", "RW Aurigae", 76.9564, 30.4014, "D2", "RW Aur"),
     ("r-dra", "R Draconis", 248.1674, 66.7550, "D2", "R Dra"),
 )

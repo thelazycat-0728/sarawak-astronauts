@@ -57,6 +57,26 @@ class CleanFrame:
     def valid(self) -> np.ndarray:
         return np.isfinite(self.image)
 
+    @property
+    def core_valid(self) -> float:
+        """Valid fraction of the target's core (r <= 2 px of the view centre)."""
+        return core_valid_fraction(self.image)
+
+
+CORE_RADIUS_PX = 2.0  # the target's core, for core_valid_fraction
+
+
+def core_valid_fraction(image: np.ndarray, radius_px: float = CORE_RADIUS_PX) -> float:
+    """Fraction of pixels within ``radius_px`` of the image centre (the target)
+    that hold a value. Filled saturated cores count as valid; masked, off-detector
+    and NaN pixels do not. 0 when no pixel is that close (an empty image)."""
+    ny, nx = image.shape
+    yy, xx = np.indices(image.shape)
+    core = np.hypot(xx - (nx - 1) / 2.0, yy - (ny - 1) / 2.0) <= radius_px
+    if not core.any():
+        return 0.0
+    return round(float(np.mean(np.isfinite(image[core]))), 4)
+
 
 def grid_side(fov_arcmin: float, scale_arcsec: float) -> int:
     """Pixels per side of the output grid: ceil(fov * 60 / scale)."""

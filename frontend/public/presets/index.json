@@ -1,0 +1,155 @@
+{
+  "credit": "SPHEREx data: NASA/IPAC Infrared Science Archive (IRSA)",
+  "fovs_arcmin": [
+    12.0,
+    6.0,
+    3.0
+  ],
+  "presets": [
+    {
+      "id": "barnards-star",
+      "name": "Barnard's Star",
+      "ra": 269.4464,
+      "dec": 4.7668,
+      "band": "D2",
+      "default_fov_arcmin": 6.0,
+      "look_for": "Position shift between visits",
+      "manifests": [
+        {
+          "fov_arcmin": 12.0,
+          "url": "/presets/barnards-star/manifest.json",
+          "count": 18,
+          "visits": 3
+        },
+        {
+          "fov_arcmin": 6.0,
+          "url": "/presets/barnards-star/fov-6/manifest.json",
+          "count": 18,
+          "visits": 3
+        },
+        {
+          "fov_arcmin": 3.0,
+          "url": "/presets/barnards-star/fov-3/manifest.json",
+          "count": 18,
+          "visits": 3
+        }
+      ]
+    },
+    {
+      "id": "eps-indi-b",
+      "name": "Epsilon Indi B",
+      "ra": 331.0951,
+      "dec": -56.8007,
+      "band": "D2",
+      "default_fov_arcmin": 6.0,
+      "look_for": "Faint brown dwarf that moves about one pixel a year; easiest to see in the difference image.",
+      "manifests": [
+        {
+          "fov_arcmin": 12.0,
+          "url": "/presets/eps-indi-b/manifest.json",
+          "count": 24,
+          "visits": 4
+        },
+        {
+          "fov_arcmin": 6.0,
+          "url": "/presets/eps-indi-b/fov-6/manifest.json",
+          "count": 24,
+          "visits": 4
+        },
+        {
+          "fov_arcmin": 3.0,
+          "url": "/presets/eps-indi-b/fov-3/manifest.json",
+          "count": 24,
+          "visits": 4
+        }
+      ]
+    },
+    {
+      "id": "wise-0855",
+      "name": "WISE 0855-0714",
+      "ra": 133.7609,
+      "dec": -7.2423,
+      "band": "D6",
+      "default_fov_arcmin": 6.0,
+      "look_for": "Too faint to see in single SPHEREx snapshots at 4–5 µm; it only shows up when a visit's exposures are stacked. It moves about one pixel (8″) west per year.",
+      "manifests": [
+        {
+          "fov_arcmin": 12.0,
+          "url": "/presets/wise-0855/manifest.json",
+          "count": 14,
+          "visits": 3
+        },
+        {
+          "fov_arcmin": 6.0,
+          "url": "/presets/wise-0855/fov-6/manifest.json",
+          "count": 14,
+          "visits": 3
+        },
+        {
+          "fov_arcmin": 3.0,
+          "url": "/presets/wise-0855/fov-3/manifest.json",
+          "count": 14,
+          "visits": 3
+        }
+      ]
+    },
+    {
+      "id": "rw-aur",
+      "name": "RW Aurigae",
+      "ra": 76.9564,
+      "dec": 30.4014,
+      "band": "D2",
+      "default_fov_arcmin": 6.0,
+      "look_for": "Young star whose brightness changes between visits. Part of the frame-to-frame change is colour, because each frame is at a slightly different wavelength.",
+      "manifests": [
+        {
+          "fov_arcmin": 12.0,
+          "url": "/presets/rw-aur/manifest.json",
+          "count": 18,
+          "visits": 3
+        },
+        {
+          "fov_arcmin": 6.0,
+          "url": "/presets/rw-aur/fov-6/manifest.json",
+          "count": 18,
+          "visits": 3
+        },
+        {
+          "fov_arcmin": 3.0,
+          "url": "/presets/rw-aur/fov-3/manifest.json",
+          "count": 18,
+          "visits": 3
+        }
+      ]
+    },
+    {
+      "id": "r-dra",
+      "name": "R Draconis",
+      "ra": 248.1674,
+      "dec": 66.755,
+      "band": "D2",
+      "default_fov_arcmin": 6.0,
+      "look_for": "Mira variable whose brightness changes between visits. Part of the frame-to-frame change is colour, because each frame is at a slightly different wavelength.",
+      "manifests": [
+        {
+          "fov_arcmin": 12.0,
+          "url": "/presets/r-dra/manifest.json",
+          "count": 18,
+          "visits": 3
+        },
+        {
+          "fov_arcmin": 6.0,
+          "url": "/presets/r-dra/fov-6/manifest.json",
+          "count": 18,
+          "visits": 3
+        },
+        {
+          "fov_arcmin": 3.0,
+          "url": "/presets/r-dra/fov-3/manifest.json",
+          "count": 18,
+          "visits": 3
+        }
+      ]
+    }
+  ]
+}
