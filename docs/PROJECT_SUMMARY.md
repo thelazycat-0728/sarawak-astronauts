@@ -154,9 +154,10 @@ Everything except submitting is **open to everyone without logging in**. An acco
 | --- | --- |
 | Repository set-up, CI and deploys | Done: GitHub Actions CI, Netlify (frontend) and Render Blueprint (API) |
 | Project summary, tech stack, work plan, API contract | Done (`docs/`) |
-| Level 1 features | Viewer, playback, presets, epoch selection and share URLs built. The presets play **simulated** fields; real SPHEREx frames are not wired in yet |
+| Level 1 features | Viewer, playback, presets, epoch selection and share URLs built. The five presets show **real SPHEREx frames** (shipped in `frontend/public/presets/`) in each target's own detector array; other arrays use the live API or, without one, the simulator. Typed coordinates use the live API |
 | Level 2 features | Blink, difference, stack, brightness chart, FOV and array controls built on simulated data |
 | Level 3 features | Spectrum view, simulated Gaia overlay and a 25-year time machine page built on simulated data. Object tracking, WISE overlay and real catalogues not started |
 | Public engagement (tutorials, games) | Glossary tooltips, Beginner/Expert mode, guided tour, lessons and training game built |
-| Accounts, submissions & AI services | Submit, review and profile pages work with browser-only accounts. Supabase login is wired but no tables exist yet. `/explain` uses offline answers until the backend endpoint is built |
-| Science backend | API endpoints serve synthetic mock data. IRSA SPHEREx exposure lookup is built and tested but not yet connected to the endpoints |
+| Accounts & submissions | Submit, review and profile pages work with browser-only accounts. Supabase login is wired but no tables exist yet |
+| AI explainer assistant | ✅ Done (tested locally 2026-11-14): `POST /explain` answers with Google Gemini (free tier, `gemini-3.8-flash` with `gemini-3.5-flash-lite` as fallback), grounded in the glossary and the current view, rate-limited per IP. Live on the deployed site once `GEMINI_API_KEY` is set on Render; until then, and whenever Gemini fails, the assistant gives labelled offline answers |
+| Science backend | `/epochs` and `/frame` serve real SPHEREx data with `DATA_MODE=irsa` (synthetic data with `mock`). CORS accepts Netlify deploy previews through `CORS_ORIGIN_REGEX` |

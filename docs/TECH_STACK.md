@@ -15,7 +15,7 @@ Browser (React + Vite, hosted on Netlify)
 Supabase (Auth + Postgres)     Python API (FastAPI on Render)
                                   │
                                   ▼
-        IRSA (SPHEREx, 2MASS, WISE) · ESA Gaia · SIMBAD · SkyBoT · LLM API
+        IRSA (SPHEREx, 2MASS, WISE) · ESA Gaia · SIMBAD · SkyBoT · Google Gemini API
 ```
 
 - The **frontend** is a single-page React app on Netlify. Everything except submitting works without logging in.
@@ -35,9 +35,9 @@ Supabase (Auth + Postgres)     Python API (FastAPI on Render)
 | Time-series viewer, blink, subtraction | **HTML `<canvas>`** components | Level 1 viewer and Level 2 comparison tools (reuses the Spot the Mover canvas code) |
 | Charts | **Recharts** | Brightness over time, spectra |
 | Guided tour | **driver.js** | First-run tour and target tutorials (`lib/tour.js`) |
-| Glossary | `GLOSSARY` in `frontend/src/lib/data.js` (to move to a shared `glossary.json`) | Single source for tooltips, the glossary page and the AI explainer's grounding |
+| Glossary | `frontend/src/glossary.json` (re-exported as `GLOSSARY` from `lib/data.js`); the backend keeps a copy in `backend/app/ai/glossary.json`, and a test checks the two match | Single source for tooltips, the glossary page and the AI explainer's grounding |
 | Guest progress | Browser `localStorage` (Zustand `persist`) | Tutorial and game progress for users without an account. Until Supabase tables exist, submissions, points and the review queue are also stored here |
-| Demo safety | Pre-computed frames in `public/presets/` (planned); built-in simulator (`lib/sim.js`) now | The five presets load instantly even if IRSA or the backend is slow. Today the presets, games and time machine render simulated fields; only typed-in coordinates call the API |
+| Demo safety | Pre-computed real SPHEREx frames in `public/presets/`; built-in simulator (`lib/sim.js`) | The five presets load real frames even if IRSA or the backend is slow or down. Games, lessons and the time machine still render simulated fields |
 
 ## 3. Science backend (Python)
 
@@ -52,7 +52,8 @@ Supabase (Auth + Postgres)     Python API (FastAPI on Render)
 | Photometry and tracking | **photutils** | Brightness inspection (Level 2) and centroids for object tracking (Level 3) |
 | Image output | **Pillow** | PNG frames for the viewer |
 | Background jobs | FastAPI `BackgroundTasks` (upgrade to **RQ + Redis** later) | Slow jobs such as the time machine |
-| Rate limiting | **slowapi** | Limits on submissions and the AI explainer |
+| Rate limiting | In-memory per-IP limiter (`backend/app/ai/ratelimit.py`) | The AI explainer: 6 questions a minute and 60 a day per IP. Submissions will need one once they move to Supabase |
+| LLM client | **google-genai** (Google Gemini API, free tier) | The AI explainer (`backend/app/ai/`) |
 | Existing pipelines | `spherex_blink.py`, `time_machine.py` | Core processing, to be wrapped as API endpoints. Not in the repo yet |
 
 ### Handling the 102 bands
@@ -104,7 +105,7 @@ Supabase (Auth + Postgres)     Python API (FastAPI on Render)
 
 | Service | Approach | Safeguards |
 | --- | --- | --- |
-| **AI explainer assistant** | LLM API (Claude, Gemini or OpenAI) called from the backend with **tool calling** to our own endpoints, grounded in the glossary JSON and the current frame's metadata | Answers labelled "AI-generated"; API key kept server-side; rate-limited |
+| **AI explainer assistant** — ✅ **Done** (tested locally 2026-11-14) | **Google Gemini API, free tier** (default model `gemini-3.8-flash`, set by `GEMINI_MODEL`; when it is overloaded or out of quota, which is common on the free tier, `gemini-3.5-flash-lite` answers instead, set by `GEMINI_FALLBACK_MODEL`), called from the backend (`POST /explain`). One request per question, no tool calling: the system prompt holds the glossary and fixed facts about SPHEREx and the tool, and the user turn holds the current view (target, coordinates, fov, array, mode). Structured JSON output returns the answer and the glossary ids it used | Answers labelled "AI-generated" (offline fallback answers are labelled "Offline answer"); production needs only `GEMINI_API_KEY` set on Render; key kept server-side (`GEMINI_API_KEY` on Render); per-IP rate limit; without a key, or when Gemini fails or its quota runs out, the panel falls back to offline answers. **Free-tier caveat:** Google may use free-tier prompts to improve its products, so the panel tells users not to include personal details. Moving to the paid tier removes this |
 | **AI priority ranking** | **scikit-learn gradient boosting** (or LightGBM) on tabular signals: motion consistency, signal-to-noise, contamination flags, catalogue matches, agreement between users, user track record | Scientists can always view the unranked queue; retrained on verified outcomes |
 | **Image score** (optional) | Small **PyTorch** CNN classifying epoch stamps as real mover vs. artefact, trained on injected fake movers | Used as one input feature to the ranking model |
 | **Note moderation** | LLM or moderation API screening submission notes for spam, abuse and personal data | Flagged notes are hidden; the coordinates still go through vetting |
@@ -144,7 +145,7 @@ Setup steps:
 
 1. In Netlify, choose **Add new site → Import an existing project**, select the GitHub repo, and keep the settings from `netlify.toml`.
 2. Under **Site configuration → Environment variables**, set `VITE_API_URL` to the Python API's public URL. Vite bakes it into the bundle at build time, so trigger a redeploy after changing it.
-3. Add the Netlify domain (`https://<site>.netlify.app`, plus the deploy-preview pattern if previews must call the API) to the FastAPI **CORS allow-list**.
+3. Add the Netlify domain (`https://<site>.netlify.app`) to the API's `CORS_ORIGINS`. Deploy previews are allowed by pattern through `CORS_ORIGIN_REGEX` (set in `render.yaml`).
 4. Deploy previews are created automatically for every pull request.
 
 **Fallbacks if Netlify is unavailable:** Cloudflare Pages or a Render static site (same build settings, with a `/*` → `/index.html` rewrite). As a last resort for a demo, run `npm run build && npx serve -s dist` on a laptop.
@@ -173,12 +174,18 @@ services:
         value: mock
       - key: CORS_ORIGINS
         sync: false                  # set in the dashboard: https://<site>.netlify.app
+      - key: CORS_ORIGIN_REGEX       # Netlify deploy previews
+        value: ^https://deploy-preview-\d+--aesthetic-parfait-36a9c2\.netlify\.app$
+      - key: GEMINI_API_KEY          # AI explainer; secret, set in the dashboard
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.8-flash
 ```
 
 Setup steps:
 
 1. In Render, choose **New → Blueprint**, select the GitHub repo, and Render creates the service from `render.yaml`.
-2. Fill in `CORS_ORIGINS` when prompted, then check `https://<service>.onrender.com/health`.
+2. Fill in `CORS_ORIGINS` and `GEMINI_API_KEY` when prompted, then check `https://<service>.onrender.com/health`. Get the key free from Google AI Studio (<https://aistudio.google.com>, **Get API key**). Leaving it empty keeps the explainer off (`/explain` answers 503 and the panel uses offline answers).
 3. Set Netlify's `VITE_API_URL` to the Render URL and redeploy the frontend.
 4. After that, every merge to `main` redeploys both the frontend (Netlify) and the API (Render).
 
@@ -211,7 +218,8 @@ Then start the API with `CORS_ORIGINS=https://<site>.netlify.app`, set `VITE_API
 ## 8. Security and privacy
 
 - **Validate every input** with Pydantic. User values are converted to numbers and never pasted into ADQL queries as text.
-- **Rate-limit** submissions and the AI explainer, per user and per IP address.
+- **Rate-limit** submissions and the AI explainer, per user and per IP address. The explainer's per-IP limit is in place.
+- **Keep the LLM key server-side.** `GEMINI_API_KEY` lives only in Render's environment. The free Gemini tier may use questions to improve Google's products; the assistant panel says so.
 - **Lock CORS** to the Netlify domain.
 - **Enforce the scientist role in the database** (row-level security), not just by hiding UI.
 - **Collect minimal personal data** (username and email), publish a privacy policy, and follow Malaysia's Personal Data Protection Act (PDPA).

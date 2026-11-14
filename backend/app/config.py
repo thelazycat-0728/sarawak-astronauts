@@ -1,11 +1,22 @@
 """Settings for the science API.
 
-Three values come from the environment (names are provisional; Track C owns the
+These values come from the environment (names are provisional; Track C owns the
 first two):
 
 - ``DATA_MODE``: which data provider serves the endpoints: ``mock`` (default,
   synthetic frames) or ``irsa`` (live SPHEREx data, ``app.providers.irsa``).
 - ``CORS_ORIGINS``: comma-separated list of allowed browser origins.
+- ``CORS_ORIGIN_REGEX``: optional regular expression; any origin it fully matches
+  is also allowed. Used for Netlify's per-PR deploy previews
+  (``https://deploy-preview-N--<site>.netlify.app``). An invalid pattern fails at
+  start-up.
+- ``GEMINI_API_KEY``: Google Gemini API key for the AI explainer (POST /explain).
+  Unset means /explain answers 503 and the frontend uses its offline answers.
+  A secret: set it in the Render dashboard, never in the repo.
+- ``GEMINI_MODEL``: Gemini model id (default ``gemini-3.8-flash``, free tier).
+- ``GEMINI_FALLBACK_MODEL``: model asked once when the main one is overloaded, out
+  of quota or unknown (default ``gemini-3.5-flash-lite``; set it to the main model
+  to turn the fallback off).
 - ``CUTOUT_CACHE_DIR``: where SPHEREx cutouts are cached on disk (default
   ``backend/.cache/cutouts/``, git-ignored). On Render's free plan the disk is wiped
   on every restart, so the cache is only a speed-up.
@@ -16,7 +27,8 @@ Everything else is a plain default that code can override (for example in tests)
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, field
 from pathlib import Path
 
 DEFAULT_CORS_ORIGINS = ("http://localhost:5173",)  # Vite dev server
@@ -32,6 +44,8 @@ def _split_csv(value: str) -> tuple[str, ...]:
 class Settings:
     data_mode: str = "mock"
     cors_origins: tuple[str, ...] = DEFAULT_CORS_ORIGINS
+    # Extra origins allowed by pattern (CORSMiddleware's allow_origin_regex).
+    cors_origin_regex: str | None = None
     # SPHEREx release labels used in responses. Keeping them here means a new
     # release needs no code change. The order matters: when the same exposure is
     # served by more than one release, the release listed first wins.
@@ -79,6 +93,22 @@ class Settings:
     epochs_max_waiters: int = 16
     # Whole-request limit for /frame/{id}.png in irsa mode (504 upstream_timeout).
     frame_deadline_s: float = 60.0
+
+    # ------------------------------------------------ AI explainer (POST /explain)
+    # Google Gemini, free tier (docs/TECH_STACK.md). repr=False keeps the key out of logs.
+    gemini_api_key: str | None = field(default=None, repr=False)
+    gemini_model: str = "gemini-3.8-flash"
+    # Asked once when the main model answers 429/5xx/404 or times out. Free-tier
+    # models often answer 503 "high demand"; quotas are per model.
+    gemini_fallback_model: str = "gemini-3.5-flash-lite"
+    # Per Gemini call; a question may take two calls (main model, then fallback).
+    explain_timeout_s: float = 15.0
+    # Room for Gemini's thinking tokens plus a 2-4 sentence JSON reply.
+    explain_max_output_tokens: int = 2048
+    # Per client IP. Generous for a person, tight for a script; they also keep the
+    # whole site inside Gemini's free-tier quota.
+    explain_rate_per_minute: int = 6
+    explain_rate_per_day: int = 60
 
     # ------------------------------------------------ cleaning pipeline (app.pipeline)
     # FLAGS bits that mask a pixel, by name. Bit numbers are read from each cutout's
@@ -145,9 +175,20 @@ class Settings:
     @classmethod
     def from_env(cls) -> Settings:
         origins = _split_csv(os.environ.get("CORS_ORIGINS", ""))
+        origin_regex = os.environ.get("CORS_ORIGIN_REGEX", "").strip() or None
+        if origin_regex is not None:
+            try:
+                re.compile(origin_regex)
+            except re.error as exc:
+                raise ValueError(f"invalid CORS_ORIGIN_REGEX {origin_regex!r}: {exc}") from exc
         return cls(
             data_mode=os.environ.get("DATA_MODE", "mock").strip().lower() or "mock",
             cors_origins=origins or DEFAULT_CORS_ORIGINS,
+            cors_origin_regex=origin_regex,
             cutout_cache_dir=os.environ.get("CUTOUT_CACHE_DIR", "").strip()
             or DEFAULT_CUTOUT_CACHE_DIR,
+            gemini_api_key=os.environ.get("GEMINI_API_KEY", "").strip() or None,
+            gemini_model=os.environ.get("GEMINI_MODEL", "").strip() or cls.gemini_model,
+            gemini_fallback_model=os.environ.get("GEMINI_FALLBACK_MODEL", "").strip()
+            or cls.gemini_fallback_model,
         )

@@ -530,11 +530,11 @@ function LiveError({ message, onRetry }) {
 
 function StatusBar({ field, incIdx, source, error }) {
   const live = field?.synthetic ? 'Live API · synthetic mock data' : 'Live from IRSA';
-  const label = { demo: 'Demo frames', precomputed: 'Pre-computed frames', live, error: 'Live API', none: 'No field' }[source] ?? 'Demo frames';
+  const label = { demo: 'Demo frames', preset: 'Real SPHEREx frames (preset)', live, error: 'Live API', none: 'No field' }[source] ?? 'Demo frames';
   return (
     <div className="label-mono flex flex-wrap items-center justify-between gap-3 border-t border-line px-6 py-3 text-muted lg:col-span-2">
       <span className="flex items-center gap-2">
-        <span className={cn('size-1.5 rounded-full', source === 'live' ? 'bg-good' : 'bg-amber')} />
+        <span className={cn('size-1.5 rounded-full', source === 'live' || source === 'preset' ? 'bg-good' : 'bg-amber')} />
         SPHEREx public data · <span className="text-fg">{label}</span>
         {error && <span className="normal-case tracking-normal text-amber">(Live view unavailable)</span>}
       </span>

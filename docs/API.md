@@ -1,8 +1,11 @@
 # Science API contract
 
-**Version:** 0.2 (2026-11-14) · **Owner:** Track B (Noah) · **Consumers:** Track A (viewer), Track C (AI explainer)
+**Version:** 0.3 (2026-11-14) · **Owner:** Track B (Noah) · **Consumers:** Track A (viewer), Track C (AI explainer)
 
 This is the contract between the frontend and the FastAPI science backend. Mock responses that follow it live in `frontend/public/mock/` (see its `README.md`). Any change to this file is announced in the team chat first.
+
+**Changes in 0.3** (since 0.2):
+- `POST /explain` is implemented with Google Gemini (free tier), with a fallback model when the main one is busy: optional `context.mode` (`blink`, `diff`, `stack`), `glossary_terms` are ids from `glossary.json`, per-IP rate limit (`429`), `503` without `GEMINI_API_KEY`.
 
 **Changes in 0.2** (since 0.1):
 - T-005 fix-1: `image.nodata_gray` (always 0) and `stretch.asinh_a`; frames use grey 1–255 for data and 0 for no data, with the documented inverse; `quality.flags` lists masked bits only.
@@ -214,30 +217,38 @@ Errors: `400 invalid_parameter`, `502 upstream_error`, `503 unavailable` (live A
 
 ### `POST /explain` (implemented by Track C)
 
-Plain-language answer from an LLM, grounded in the glossary and the current view. Shape only; Track C owns the behaviour, rate limits and prompt.
+Plain-language answer from Google Gemini (free tier; model set by `GEMINI_MODEL`, default `gemini-3.8-flash`), grounded in the glossary and the current view. Code: `backend/app/ai/`. Track C owns the behaviour, rate limits and prompt.
 
-Request body (`application/json`). `question` is required, 1–500 characters. `context` and each of its fields are optional:
+Request body (`application/json`). `question` is required, 1–500 characters, not blank. `context` and each of its fields are optional; `mode` is the viewer mode on screen (`blink`, `diff` or `stack`):
 
 ```json
 {
   "question": "Why does this dot move between snapshots?",
   "context": {"ra": 269.4464, "dec": 4.7668, "fov_arcmin": 10, "band": "D2",
-              "target_name": "Barnard's Star", "epoch_id": "sx_2025W20_0137_D2"}
+              "target_name": "Barnard's Star", "epoch_id": "sx_2025W20_0137_D2", "mode": "blink"}
 }
 ```
 
-Response `200`. `ai_generated` is always `true` and the UI must show an "AI-generated" label. `glossary_terms` lists the `glossary.json` entry ids used for grounding (may be empty):
+Response `200`. `ai_generated` is always `true` and the UI must show an "AI-generated" label. `model` is the Gemini model id. `glossary_terms` lists the ids of the `glossary.json` entries the answer relies on (only known ids; may be empty):
 
 ```json
 {
   "answer": "The bright dot near the centre is Barnard's Star. It is very close to the Sun, so it moves across the sky fast enough to see between snapshots taken months apart.",
   "ai_generated": true,
-  "model": "provider-model-name",
-  "glossary_terms": ["proper-motion", "epoch"]
+  "model": "gemini-3.8-flash",
+  "glossary_terms": ["pm", "epoch"]
 }
 ```
 
-Errors: `400 invalid_parameter`, `429 rate_limited`, `502 upstream_error` (LLM failed), `503 unavailable` (no LLM configured).
+Errors:
+- `400 invalid_parameter`: missing, blank or too long question, or an unknown `mode`.
+- `429 rate_limited`: more than 6 questions a minute or 60 a day from one IP, or the Gemini free-tier quota is used up.
+- `502 upstream_error`: Gemini failed, timed out (15 s per call), blocked the answer or returned something unusable.
+
+When the main model is overloaded (Gemini's `503` "high demand"), out of quota, unknown or too slow, the API asks the fallback model (`GEMINI_FALLBACK_MODEL`, default `gemini-3.5-flash-lite`) once, and `model` names the one that answered. The errors above apply when both fail.
+- `503 unavailable`: no `GEMINI_API_KEY` on the server.
+
+The frontend shows its built-in offline answers (labelled "Offline answer") for every error.
 
 ## 4. Preset manifests
 

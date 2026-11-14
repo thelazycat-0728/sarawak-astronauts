@@ -11,9 +11,11 @@ from app.providers import make_provider
 def test_defaults(monkeypatch):
     monkeypatch.delenv("DATA_MODE", raising=False)
     monkeypatch.delenv("CORS_ORIGINS", raising=False)
+    monkeypatch.delenv("CORS_ORIGIN_REGEX", raising=False)
     s = Settings.from_env()
     assert s.data_mode == "mock"
     assert s.cors_origins == ("http://localhost:5173",)
+    assert s.cors_origin_regex is None
     assert s.spherex_releases == ("DR1", "QR3")
 
 
@@ -23,6 +25,16 @@ def test_env_overrides(monkeypatch):
     s = Settings.from_env()
     assert s.data_mode == "mock"
     assert s.cors_origins == ("https://a.example", "https://b.example")
+
+
+def test_cors_origin_regex_env(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGIN_REGEX", r" ^https://deploy-preview-\d+--site\.netlify\.app$ ")
+    assert Settings.from_env().cors_origin_regex == r"^https://deploy-preview-\d+--site\.netlify\.app$"
+    monkeypatch.setenv("CORS_ORIGIN_REGEX", "   ")
+    assert Settings.from_env().cors_origin_regex is None
+    monkeypatch.setenv("CORS_ORIGIN_REGEX", "https://(unclosed")
+    with pytest.raises(ValueError, match="invalid CORS_ORIGIN_REGEX"):
+        Settings.from_env()
 
 
 def test_unknown_data_mode_fails_fast():

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
+from app.config import Settings
+from app.main import create_app
 from app.models import BAND_RANGES_UM, EpochsResponse, LightcurveResponse
 from tests.conftest import BARNARD, FRONTEND_MOCK, png_info
 
@@ -142,3 +144,31 @@ def test_cors_allows_vite_dev_origin(client):
     assert resp.headers["access-control-allow-origin"] == "http://localhost:5173"
     resp = client.get("/health", headers={"Origin": "https://evil.example"})
     assert "access-control-allow-origin" not in resp.headers
+
+
+def test_cors_origin_regex_allows_deploy_previews(provider):
+    settings = Settings(
+        cors_origins=("https://site.netlify.app",),
+        cors_origin_regex=r"^https://deploy-preview-\d+--site\.netlify\.app$",
+    )
+    client = TestClient(create_app(settings=settings, provider=provider))
+
+    def allowed(origin):
+        resp = client.get("/health", headers={"Origin": origin})
+        return resp.headers.get("access-control-allow-origin") == origin
+
+    assert allowed("https://site.netlify.app")
+    assert allowed("https://deploy-preview-14--site.netlify.app")
+    assert not allowed("https://deploy-preview-x--site.netlify.app")
+    assert not allowed("https://deploy-preview-14--site.netlify.app.evil.example")
+    assert not allowed("https://deploy-preview-14--other.netlify.app")
+    # Preflight from a preview origin.
+    resp = client.options(
+        "/epochs",
+        headers={
+            "Origin": "https://deploy-preview-3--site.netlify.app",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.headers["access-control-allow-origin"] == "https://deploy-preview-3--site.netlify.app"

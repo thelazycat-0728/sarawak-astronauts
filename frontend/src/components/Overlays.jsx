@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Sparkles, Send, Mail } from 'lucide-react';
+import { Sparkles, Send, Mail, BookOpen } from 'lucide-react';
 import { Modal, Sheet, Button, Chip } from './ui';
 import { useUi, useAuth, useViewer } from '../store';
 import { explain } from '../lib/api';
@@ -78,7 +78,7 @@ export function Assistant() {
     setMessages((m) => [...m, { role: 'user', text: question }]);
     setBusy(true);
     const answer = await explain(question, { preset, mode: v.mode, arrayIdx: v.arrayIdx, fov: v.fov, ra: v.ra, dec: v.dec });
-    setMessages((m) => [...m, { role: 'ai', text: answer }]);
+    setMessages((m) => [...m, { role: 'ai', text: answer.text, ai: answer.ai }]);
     setBusy(false);
   };
 
@@ -102,7 +102,9 @@ export function Assistant() {
         )}
         {messages.map((m, i) => (
           <div key={i} className={cn('max-w-[90%] rounded-lg px-3.5 py-2.5 text-sm leading-relaxed', m.role === 'user' ? 'ml-auto bg-accent-soft text-fg' : 'border border-line bg-ink-900')}>
-            {m.role === 'ai' && <Chip tone="accent" className="mb-2"><Sparkles className="size-3" />AI-generated</Chip>}
+            {m.role === 'ai' && (m.ai
+              ? <Chip tone="accent" className="mb-2"><Sparkles className="size-3" />AI-generated</Chip>
+              : <Chip className="mb-2"><BookOpen className="size-3" />Offline answer</Chip>)}
             <p>{m.text}</p>
           </div>
         ))}
@@ -113,7 +115,7 @@ export function Assistant() {
         <input id="assistant-input" value={input} onChange={(e) => setInput(e.target.value)} maxLength={300} placeholder="Ask about this view…" className="h-10 min-w-0 flex-1 rounded-md border border-line-strong bg-ink-900 px-3 text-sm outline-none focus:border-accent" />
         <Button type="submit" variant="primary" size="icon" aria-label="Send" disabled={!input.trim() || busy}><Send className="size-4" /></Button>
       </form>
-      <p className="px-5 pb-4 text-[11.5px] text-faint">Answers are AI-generated from the glossary and this view’s metadata. Check important facts.</p>
+      <p className="px-5 pb-4 text-[11.5px] text-faint">AI answers come from Google Gemini, using our glossary and this view’s details, and can be wrong: check important facts. Questions are sent to Google and may be used to improve its products, so don’t include personal details.</p>
     </Sheet>
   );
 }
