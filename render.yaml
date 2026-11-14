@@ -1,0 +1,21 @@
+# Render Blueprint for the Python science API (see docs/TECH_STACK.md §7).
+# Create once in the Render dashboard: New → Blueprint → select this repo.
+# After that, every push to main redeploys the API automatically.
+
+services:
+  - type: web
+    name: sarawak-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: DATA_MODE
+        value: mock
+      - key: CORS_ORIGINS
+        sync: false   # set in the dashboard, e.g. https://<site>.netlify.app
