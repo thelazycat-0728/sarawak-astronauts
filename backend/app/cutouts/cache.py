@@ -7,6 +7,10 @@
 - **Atomic writes:** a cutout is written to a hidden ``.<key>.<random>.tmp`` file in
   the same directory and renamed into place with ``os.replace``, so readers never
   see a partial file. A failed write leaves no entry and removes its temp files.
+  On Windows the rename fails with PermissionError when another process has the
+  final file open; the file is then already complete, so that counts as a hit.
+- **Unreadable files** found later (``discard_file``) are removed, so a retry
+  downloads them again.
 - **One download per key:** a per-key lock inside the process makes concurrent
   requests for one key wait for the first, which then finds the file. (Separate
   processes may still download the same key twice; the rename keeps that safe.)
@@ -35,6 +39,20 @@ _KEY_RE = re.compile(r"^[A-Za-z0-9_.+-]{1,160}$")
 _RELEASE_RE = re.compile(r"^[A-Za-z0-9]{1,16}$")
 _OBS_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,56}$")  # as app.irsa accepts
 STALE_TEMP_S = 3600.0
+_replace = os.replace  # replaced in tests
+
+
+def discard_file(path: str | os.PathLike[str]) -> bool:
+    """Remove a cached cutout that turned out to be unreadable, so the next
+    request downloads it again. True if it is gone afterwards. A file that cannot
+    be removed (open elsewhere on Windows) is left and logged."""
+    try:
+        Path(path).unlink(missing_ok=True)
+        log.info("cutout cache: removed unreadable %s", Path(path).name)
+        return True
+    except OSError as exc:
+        log.info("cutout cache: could not remove unreadable %s (%s)", Path(path).name, exc)
+        return False
 
 
 def cutout_key(
@@ -101,7 +119,15 @@ class CutoutCache:
             temp = self.directory / f".{key}.{uuid.uuid4().hex}.tmp"
             try:
                 create(temp)
-                os.replace(temp, final)
+                try:
+                    _replace(temp, final)
+                except PermissionError:
+                    # Windows: another process has the final file open, so it
+                    # exists and is complete (it was renamed into place whole).
+                    if not final.is_file():
+                        raise
+                    log.info("cutout cache: %s was written by another process", key)
+                    return final, True
             finally:
                 temp.unlink(missing_ok=True)
         self.evict(keep=final)

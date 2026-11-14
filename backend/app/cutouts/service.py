@@ -17,7 +17,7 @@ from typing import Any
 from astropy.io import fits
 
 from app.config import Settings
-from app.cutouts.cache import CutoutCache, cutout_key
+from app.cutouts.cache import CutoutCache, cutout_key, discard_file
 from app.cutouts.download import (
     StreamingSession,
     build_cutout_url,
@@ -183,6 +183,7 @@ def get_cutout(
             wavelength, coverage = measure(hdul, view.ra, view.dec, view.fov_arcmin)
         size = path.stat().st_size
     except (OSError, KeyError, ValueError) as exc:
+        discard_file(path)  # so a retry downloads it again
         raise UpstreamError("cached cutout could not be read") from exc
     return Cutout(exposure, epoch_id, path, from_cache, size, elapsed, wavelength, coverage)
 

@@ -4,8 +4,10 @@ Modes:
 
 - ``per_visit`` (live sequences): one exposure per visit, chosen from metadata
   before downloading (``select``). Presets pass ``max_per_visit`` for several.
-- ``all`` (presets): every exposure IRSA lists. Failed downloads are left out and
-  counted in ``Sequence.failures``.
+- ``all`` (presets): every exposure IRSA lists. Failed downloads, and cutouts that
+  could not be cleaned (reason ``clean_failed: ...``), are left out and counted
+  in ``Sequence.failures``. In ``per_visit`` mode they are ``Attempt`` outcomes
+  ``download_failed`` and ``clean_failed``.
 
 Every frame is cleaned (``clean``), then one stretch is computed over the valid
 pixels of all frames and every PNG is rendered with it. Frame URLs come from the
@@ -46,7 +48,7 @@ from app.models import (
 )
 from app.pipeline.clean import CleanFrame, grid_side
 from app.pipeline.render import clean_path, compute_stretch, frame_png
-from app.pipeline.select import Attempt, select_per_visit
+from app.pipeline.select import Attempt, clean_failure, select_per_visit
 from app.stretch import NODATA_GRAY
 
 Mode = Literal["per_visit", "all"]
@@ -198,7 +200,14 @@ def build_sequence(
                 continue
             downloads += 0 if got.from_cache else 1
             hits += 1 if got.from_cache else 0
-            picked.append((epoch, got, clean(got)))
+            try:
+                frame = clean(got)
+            except Exception as exc:  # one bad file never aborts the sequence
+                code, _, reason = clean_failure(exc).partition(": ")
+                failures.append(CutoutFailure(got.exposure, got.epoch_id, code,
+                                              f"clean_failed: {reason}"))
+                continue
+            picked.append((epoch, got, frame))
         timings["clean"] = time.monotonic() - t1
 
     t2 = time.monotonic()

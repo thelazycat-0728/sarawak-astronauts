@@ -106,7 +106,9 @@ def test_stretch_covers_every_frame(tmp_path):
     seq = build_sequence(RA, DEC, "D2", 10, frame_url=frame_url, mode="all",
                          settings=settings, session=StreamSession(replies=[ok(FOV10)]),
                          query=query_of(epochs_of_three_visits()))
-    pixels = np.concatenate([f.image[f.valid] for f in seq.cleaned.values()])
+    # Every valid, measured pixel of every frame: filled saturated cores are out.
+    pixels = np.concatenate([f.image[f.valid & ~f.filled_mask]
+                             for f in seq.cleaned.values()])
     lo, hi = np.percentile(pixels, settings.stretch_percentiles)
     assert seq.response.stretch.vmin == pytest.approx(lo, rel=1e-4)
     assert seq.response.stretch.vmax == pytest.approx(hi, rel=1e-4)
