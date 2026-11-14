@@ -26,3 +26,14 @@ def test_env_overrides(monkeypatch):
 def test_unknown_data_mode_fails_fast():
     with pytest.raises(ValueError, match="only 'mock'"):
         make_provider(Settings(data_mode="irsa"))
+
+
+def test_irsa_defaults_and_release_mapping():
+    s = Settings()
+    assert s.irsa_sia_url == "https://irsa.ipac.caltech.edu/SIA"
+    assert s.irsa_timeout_s == 30.0
+    assert [s.collection_for(r) for r in s.spherex_releases] == ["spherex_dr1", "spherex_qr3"]
+    assert s.release_for("spherex_qr3") == "QR3"
+    assert s.release_for("spherex_dr1_deep") is None
+    with pytest.raises(ValueError, match="no IRSA collection"):
+        s.collection_for("DR2")
