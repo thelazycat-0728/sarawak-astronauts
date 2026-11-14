@@ -126,8 +126,12 @@ The frontend is a static Vite build, so Netlify only needs the build settings an
 ```toml
 [build]
   base    = "frontend"
-  command = "npm run build"
+  command = "npm run lint && npm run build"
   publish = "dist"          # relative to base
+  ignore  = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../netlify.toml"
+
+[build.environment]
+  NODE_VERSION = "22"
 
 # React Router: serve index.html for /explore, /learn, etc.
 [[redirects]]
