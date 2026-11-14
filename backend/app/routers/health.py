@@ -17,6 +17,8 @@ DATA_MODE_HEADER = "X-Data-Mode"
         "description": "Data provider in use: mock or irsa", "schema": {"type": "string"},
     }}}},
 )
-def health(request: Request, response: Response) -> HealthResponse:
+async def health(request: Request, response: Response) -> HealthResponse:
+    # async: answered on the event loop, so slow /epochs requests holding worker
+    # threads cannot delay it (Render's health check uses this route).
     response.headers[DATA_MODE_HEADER] = request.app.state.provider.name
     return HealthResponse(status="ok")
