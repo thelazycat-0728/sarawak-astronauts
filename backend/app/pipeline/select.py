@@ -226,7 +226,7 @@ def select_per_visit(
                 continue
             try:
                 frame = clean(got)
-            except Exception as exc:  # one bad file never aborts the sequence
+            except Exception as exc:  # noqa: BLE001 - logged in clean_failure; one bad file never aborts the sequence
                 result.attempts.append(Attempt(visit, epoch.id, "clean_failed",
                                                clean_failure(exc)))
                 continue
