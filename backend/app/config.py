@@ -137,7 +137,10 @@ class Settings:
     # Saturated star cores are NaN in IMAGE with OVERFLOW set. When True they are
     # filled, before reprojection, with the brightest finite pixel within 2 px, so a
     # bright star renders as a white disc instead of a hole. Display only: the
-    # filled value is a lower bound, not a measurement.
+    # filled value is a lower bound, not a measurement. CleanFrame.filled marks the
+    # affected view pixels; they are left out of the stretch percentiles and must
+    # be left out of photometry (CleanFrame.measurable), but they are displayed and
+    # so do not count as flagged in quality.flagged_fraction.
     pipeline_fill_saturated: bool = True
     # Output grid: north up, east left, centred on the target, side
     # ceil(fov * 60 / scale) pixels (fov=10 gives 97 px). 6.2" is about SPHEREx native.

@@ -9,12 +9,18 @@ Steps, in order (TECH_STACK section 3, "Data cleaning applied to every image"):
    that are not finite, become NaN. ``SOURCE`` never masks (see ``flags``).
    Saturated cores (not finite, OVERFLOW set, no mask bit) are filled with the
    brightest valid pixel within 2 px when ``pipeline_fill_saturated`` is on.
+   The fill is for display: ``CleanFrame.filled`` marks every view pixel that
+   takes any part of its value from a filled pixel. Those pixels are left out of
+   the stretch percentiles, and ``CleanFrame.measurable`` (NaN there) is what
+   photometry should use. They still count as valid (displayed, not flagged) in
+   ``flagged_fraction`` and ``core_valid``, because the frame shows a value there.
 3. **Reproject** with ``reproject.reproject_interp`` (bilinear, using the IMAGE WCS
    with its SIP distortion) onto a TAN grid centred on the target: north up, east
    left, ``pixel_scale_arcsec`` per pixel, ``side = ceil(fov * 60 / scale)`` pixels.
    A NaN input pixel makes every output pixel that interpolates from it NaN.
 4. **Quality** (API.md section 3). ``flagged_fraction`` is the fraction of view
    pixels with no valid value after step 3: masked, off the detector, or NaN.
+   Filled saturated pixels have a value, so they are not flagged.
    ``status`` is ``good`` below ``quality_warn_fraction`` (5 %), ``warn`` below
    ``quality_bad_fraction`` (25 %), else ``bad``. ``flags`` lists the masked flag
    names (from the configured set) present in the view, found by a
@@ -52,10 +58,30 @@ class CleanFrame:
     flags: list[str]
     coverage: float  # fraction of the view on the detector (nearest-neighbour)
     saturated_px: int  # input pixels filled as saturated cores
+    # View pixels (display order) whose value comes partly or wholly from a filled
+    # saturated core: shown, but not a measurement. None means no pixel is filled.
+    filled: np.ndarray | None = None
 
     @property
     def valid(self) -> np.ndarray:
         return np.isfinite(self.image)
+
+    @property
+    def filled_mask(self) -> np.ndarray:
+        """Boolean ``filled`` with the image's shape (all False when None)."""
+        if self.filled is None:
+            return np.zeros(self.image.shape, dtype=bool)
+        return self.filled
+
+    @property
+    def measurable(self) -> np.ndarray:
+        """The image with filled saturated pixels set to NaN: real measurements
+        only, for the stretch percentiles and for photometry."""
+        if self.filled is None or not self.filled.any():
+            return self.image
+        out = self.image.copy()
+        out[self.filled] = np.nan
+        return out
 
     @property
     def core_valid(self) -> float:
@@ -129,16 +155,17 @@ def subtract_zodi(hdul: fits.HDUList) -> np.ndarray:
     return image.data.astype(np.float64) * k_img - zodi.data.astype(np.float64) * k_zodi
 
 
-def _fill_saturated(data: np.ndarray, saturated: np.ndarray) -> int:
-    """Fill saturated pixels in place from the brightest finite neighbour."""
+def _fill_saturated(data: np.ndarray, saturated: np.ndarray) -> np.ndarray:
+    """Fill saturated pixels in place from the brightest finite neighbour;
+    returns the mask of the pixels that were filled."""
     if not saturated.any():
-        return 0
+        return np.zeros(data.shape, dtype=bool)
     finite = np.where(np.isfinite(data), data, -np.inf)
     size = 2 * SATURATED_FILL_PX + 1
     brightest = maximum_filter(finite, size=size, mode="constant", cval=-np.inf)
     fillable = saturated & np.isfinite(brightest)
     data[fillable] = brightest[fillable]
-    return int(fillable.sum())
+    return fillable
 
 
 def clean_cutout(
@@ -160,10 +187,12 @@ def clean_cutout(
     bad = fl.bad_pixels(flags, bitmask)
     data[bad] = np.nan
     saturated_px = 0
+    filled_in: np.ndarray | None = None
     if settings.pipeline_fill_saturated and fl.OVERFLOW in bits:
         overflow = fl.bad_pixels(flags, 1 << bits[fl.OVERFLOW])
         saturated = ~np.isfinite(data) & overflow & ~bad
-        saturated_px = _fill_saturated(data, saturated)
+        filled_in = _fill_saturated(data, saturated)
+        saturated_px = int(filled_in.sum())
 
     wcs_out, side = view_wcs(ra, dec, fov_arcmin, settings.pipeline_pixel_scale_arcsec)
     shape = (side, side)
@@ -172,6 +201,13 @@ def clean_cutout(
                                     order="bilinear")
         flags_out, foot = reproject_interp((flags.astype(np.float64), wcs_in), wcs_out,
                                            shape_out=shape, order="nearest-neighbor")
+        filled_out = None
+        if saturated_px:
+            # Same bilinear weights as the image: any share of a filled pixel
+            # marks the view pixel as filled.
+            weight, _ = reproject_interp((filled_in.astype(np.float64), wcs_in), wcs_out,
+                                         shape_out=shape, order="bilinear")
+            filled_out = np.flipud(np.isfinite(image) & (np.nan_to_num(weight) > 0.0))
     on_detector = (foot > 0) & np.isfinite(flags_out)
     present = 0
     if on_detector.any():
@@ -186,4 +222,5 @@ def clean_cutout(
         flags=names,
         coverage=round(float(np.mean(on_detector)), 4),
         saturated_px=saturated_px,
+        filled=None if filled_out is None or not filled_out.any() else filled_out.copy(),
     )

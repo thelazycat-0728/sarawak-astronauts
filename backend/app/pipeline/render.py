@@ -1,7 +1,8 @@
 """Shared asinh stretch, 8-bit PNG output, and the stateless ``render_frame``.
 
 - **Stretch.** ``vmin`` and ``vmax`` (MJy/sr) are the ``Settings.stretch_percentiles``
-  (1st and 99.5th) of every valid pixel of every frame in the sequence, rounded to 5
+  (1st and 99.5th) of every valid, measured pixel of every frame in the sequence
+  (filled saturated cores are left out, ``CleanFrame.measurable``), rounded to 5
   significant digits so the values written to JSON give the same PNG bytes when
   they come back as ``frame_url`` parameters. Grey levels follow ``app.stretch``:
   ``x = clip((v - vmin) / (vmax - vmin), 0, 1)``, then
@@ -161,5 +162,6 @@ def render_frame(
         path = get_cutout(record, view.ra, view.dec, view.fov_arcmin, settings=settings,
                           cache=cache, session=session, view=view).path
     frame = clean_path(path, view.ra, view.dec, view.fov_arcmin, settings)
-    lo, hi = stretch if stretch is not None else compute_stretch([frame.image], settings)
+    lo, hi = stretch if stretch is not None else compute_stretch([frame.measurable],
+                                                                 settings)
     return frame_png(frame, lo, hi, settings)

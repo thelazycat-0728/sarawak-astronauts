@@ -203,7 +203,7 @@ def build_sequence(
 
     t2 = time.monotonic()
     if stretch_pair is None:
-        vmin, vmax = compute_stretch([frame.image for _, _, frame in picked], settings)
+        vmin, vmax = compute_stretch([frame.measurable for _, _, frame in picked], settings)
     else:
         vmin, vmax = stretch_pair
     frames: dict[str, bytes] = {}
