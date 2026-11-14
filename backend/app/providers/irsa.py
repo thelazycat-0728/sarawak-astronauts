@@ -17,26 +17,37 @@ Request flow for ``/epochs``:
 What is cached:
 
 - a full sequence: ``epochs_cache_ttl_s`` (600 s);
-- a sequence that lost a visit because every download for it failed:
+- a sequence that lost a visit because every download (or clean) for it failed:
   ``epochs_cache_degraded_ttl_s`` (30 s);
 - no exposures at the position (``count: 0``, API.md "no coverage"): 600 s;
-- exposures exist but every frame failed to download: not cached, and answered
-  ``502 upstream_error`` (``504 upstream_timeout`` when every failure was a
-  timeout), so the client falls back to presets instead of showing "no data".
+- exposures exist but every frame failed to download or to be cleaned (an
+  unreadable cached file is removed, so the retry downloads it again): not
+  cached, and answered ``502 upstream_error`` (``504 upstream_timeout`` when every
+  failure was a timeout), so the client falls back to presets instead of showing
+  "no data".
 
-At most ``epochs_max_waiters`` (16) requests wait for builds at once; more get
-``503 unavailable`` at once, so waiting requests cannot use up the worker threads.
+Builds run on at most ``BUILD_SLOTS`` (2) worker threads; more builds wait in a
+queue without a thread of their own. At most ``epochs_max_waiters`` (16) requests
+wait for builds at once; more get ``503 unavailable`` at once, so waiting requests
+cannot use up the worker threads and the queue never holds more than that many
+live builds.
 
 ``/frame/{id}.png`` uses the stateless ``render_frame`` (cached cutouts need no
-IRSA call) with an overall ``frame_deadline_s`` (60 s). ``/diff`` and
-``/lightcurve`` answer ``503 unavailable`` until they are implemented for live
-data. Every IRSA request takes a process-wide slot (``app.cutouts.limit``).
-``app.pipeline`` (reproject, dask) is imported on first use only.
+IRSA call) with an overall ``frame_deadline_s`` (60 s). At most
+``frame_max_concurrent`` (4) renders run at once; more answer ``503 unavailable``
+at once. A render that passed its deadline keeps its slot until it ends, so slow
+renders cannot pile up threads. A well-formed id that resolves to nothing (404)
+is remembered for ``frame_not_found_ttl_s`` (60 s) per rounded position and band,
+so repeating it costs no IRSA query. ``/diff`` and ``/lightcurve`` answer
+``503 unavailable`` until they are implemented for live data. Every IRSA request
+takes a process-wide slot (``app.cutouts.limit``). ``app.pipeline`` (reproject,
+dask) is imported on first use only.
 """
 
 from __future__ import annotations
 
 import logging
+import queue
 import threading
 import time
 from collections.abc import Callable, Hashable
@@ -46,9 +57,10 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.config import Settings
+from app.cutouts import QueryCache
 from app.cutouts.geometry import round_position
 from app.cutouts.limit import LimitedSiaSession
-from app.errors import ApiError, Unavailable, UpstreamError, UpstreamTimeout
+from app.errors import ApiError, NotFound, Unavailable, UpstreamError, UpstreamTimeout
 from app.models import (
     DiffQuery,
     EpochBase,
@@ -61,10 +73,15 @@ from app.providers.base import EpochSequence
 
 log = logging.getLogger("app.providers.irsa")
 
-# Sequence builds running at once; more wait for a free slot (and count against
-# their request's deadline). IRSA traffic is capped separately.
+# Sequence builds running at once (each on one worker thread); more wait in a
+# queue and count against their request's deadline. IRSA traffic is capped
+# separately.
 BUILD_SLOTS = 2
+BUILD_WORKER_IDLE_S = 5.0  # an idle build worker thread exits after this long
+NOT_FOUND_MAX_ENTRIES = 256
 FALLBACK_HINT = "Try again in a minute, or use a preset target."
+# Per-visit outcomes that mean "IRSA's data did not reach us", not "no data".
+FAILED_OUTCOMES = ("download_failed", "clean_failed")
 
 
 class TtlCache:
@@ -130,9 +147,9 @@ def _resolve(future: Future, fn: Callable[[], Any], what: str) -> None:
 
 
 def _download_failure(seq: Any, visits: set[int] | None = None) -> tuple[int, bool]:
-    """(number of failed downloads, all of them timeouts) among the per-visit
-    attempts, limited to ``visits`` when given."""
-    failed = [a for a in seq.attempts if a.outcome == "download_failed"
+    """(number of failed downloads or cleans, all of them timeouts) among the
+    per-visit attempts, limited to ``visits`` when given."""
+    failed = [a for a in seq.attempts if a.outcome in FAILED_OUTCOMES
               and (visits is None or a.visit in visits)]
     timeouts = all(a.detail.startswith("upstream_timeout") for a in failed)
     return len(failed), bool(failed) and timeouts
@@ -158,6 +175,13 @@ class IrsaProvider:
         self._inflight: dict[Hashable, Future] = {}
         self._waiters: dict[Future, int] = {}  # requests waiting on each build
         self._build_slots = threading.BoundedSemaphore(BUILD_SLOTS)
+        self._queue: queue.SimpleQueue[tuple[Future, Callable[[], Built]]] = \
+            queue.SimpleQueue()
+        self._workers: list[threading.Thread] = []
+        self._rendering = 0  # frame renders holding a slot
+        self._not_found = TtlCache(settings.frame_not_found_ttl_s, NOT_FOUND_MAX_ENTRIES,
+                                   clock)
+        self._query_cache = QueryCache(clock=clock)
 
     # ------------------------------------------------------------ /epochs
 
@@ -214,20 +238,45 @@ class IrsaProvider:
         return self._for_query(built.sequence, q)
 
     def _submit(self, fn: Callable[[], Built]) -> Future:
-        """Run ``fn`` on a daemon thread once a build slot is free.
+        """Queue ``fn`` for one of the ``BUILD_SLOTS`` worker threads.
 
-        Daemon threads, so a build still running after its deadline never holds
-        up server shutdown.
+        No thread is started per build: a queued build is only a future and a
+        callable, and it can be cancelled until a worker starts it. Workers are
+        daemon threads, so a build still running after its deadline never holds
+        up server shutdown, and they exit after ``BUILD_WORKER_IDLE_S`` idle.
         """
         future: Future = Future()
+        self._queue.put((future, fn))
+        with self._lock:
+            self._workers = [w for w in self._workers if w.is_alive()]
+            while len(self._workers) < BUILD_SLOTS:
+                worker = threading.Thread(target=self._work, name="epochs-build",
+                                          daemon=True)
+                self._workers.append(worker)
+                worker.start()
+        return future
 
-        def run() -> None:
+    def _work(self) -> None:
+        me = threading.current_thread()
+        while True:
+            try:
+                future, fn = self._queue.get(timeout=BUILD_WORKER_IDLE_S)
+            except queue.Empty:
+                with self._lock:
+                    if self._queue.empty():
+                        if me in self._workers:
+                            self._workers.remove(me)
+                        return
+                continue
             with self._build_slots:
                 if future.set_running_or_notify_cancel():
                     _resolve(future, fn, "/epochs build")
 
-        threading.Thread(target=run, name="epochs-build", daemon=True).start()
-        return future
+    @property
+    def build_threads(self) -> int:
+        """Build worker threads alive now (never more than BUILD_SLOTS)."""
+        with self._lock:
+            return sum(1 for w in self._workers if w.is_alive())
 
     def _finished(self, key: Hashable, future: Future) -> None:
         with self._lock:
@@ -294,27 +343,68 @@ class IrsaProvider:
     # ------------------------------------------------------------ other routes
 
     def frame_png(self, epoch_id: str, q: FrameQuery) -> bytes:
-        """``render_frame`` with an overall deadline. On timeout the render keeps
-        running on a daemon thread and fills the cutout cache for a retry."""
+        """``render_frame`` with an overall deadline and a concurrency cap.
+
+        On timeout the render keeps running on its daemon thread (and keeps its
+        slot) and fills the cutout cache for a retry. A 404 is remembered for
+        ``frame_not_found_ttl_s``.
+        """
+        s = self._settings
+        ra, dec = round_position(q.ra, q.dec)
+        miss_key = (epoch_id, ra, dec, q.band)
+        known_missing = self._not_found.get(miss_key)
+        if known_missing is not None:
+            raise NotFound(known_missing)
+        if not self._take_frame_slot():
+            raise Unavailable("Too many live SPHEREx frames are being rendered right "
+                              "now. " + FALLBACK_HINT)
 
         def render() -> bytes:
             from app.pipeline import render_frame  # heavy: reproject, dask
 
             return render_frame(epoch_id, q.ra, q.dec, q.fov, q.band, q.vmin, q.vmax,
-                                settings=self._settings, session=self._cutout_session,
-                                sia_session=self._sia)
+                                settings=s, session=self._cutout_session,
+                                sia_session=self._sia, query_cache=self._query_cache)
+
+        def run() -> None:
+            try:
+                _resolve(future, render, "/frame render")
+            finally:
+                self._free_frame_slot()
 
         future: Future = Future()
         future.set_running_or_notify_cancel()
-        threading.Thread(target=_resolve, args=(future, render, "/frame render"),
-                         name="frame-render", daemon=True).start()
-        deadline = self._settings.frame_deadline_s
         try:
-            return future.result(timeout=deadline)
+            threading.Thread(target=run, name="frame-render", daemon=True).start()
+        except BaseException:
+            self._free_frame_slot()
+            raise
+        try:
+            return future.result(timeout=s.frame_deadline_s)
         except FutureTimeout:
             raise UpstreamTimeout(
-                f"IRSA did not deliver this SPHEREx frame within {deadline:g} s. "
-                + FALLBACK_HINT) from None
+                f"IRSA did not deliver this SPHEREx frame within {s.frame_deadline_s:g} "
+                "s. " + FALLBACK_HINT) from None
+        except NotFound as exc:
+            self._not_found.put(miss_key, exc.message)
+            raise
+
+    def _take_frame_slot(self) -> bool:
+        with self._lock:
+            if self._rendering >= max(1, int(self._settings.frame_max_concurrent)):
+                return False
+            self._rendering += 1
+            return True
+
+    def _free_frame_slot(self) -> None:
+        with self._lock:
+            self._rendering -= 1
+
+    @property
+    def frames_rendering(self) -> int:
+        """Frame renders holding a slot now (including ones past their deadline)."""
+        with self._lock:
+            return self._rendering
 
     def diff_png(self, q: DiffQuery) -> bytes:
         raise Unavailable("Difference images are not available for live SPHEREx data "

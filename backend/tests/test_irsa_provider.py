@@ -10,6 +10,7 @@ import subprocess
 import sys
 import threading
 import time
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -136,12 +137,10 @@ def test_deadline_returns_504_and_the_build_still_fills_the_cache(tmp_path):
         assert "preset" in resp.json()["error"]["message"]
     finally:
         gate.set()
-    # Retries join the same background build (single flight) until it is done.
-    for _ in range(100):
-        resp = t.client.get("/epochs", params=VIEW)
-        if resp.status_code == 200:
-            break
-        assert_error(resp, 504, "upstream_timeout")
+    # Retries join the same background build (single flight) until it is done;
+    # wait for the build to fill the cache instead of polling with requests.
+    _wait_for(lambda: len(t.provider._cache) == 1, timeout=60)
+    resp = t.client.get("/epochs", params=VIEW)
     assert resp.status_code == 200 and resp.json()["count"] == 3
     assert len(sia.calls) == 1 and len(t.cutouts.calls) == 3
 
@@ -388,16 +387,15 @@ def test_frame_deadline_returns_504(tmp_path):
     finally:
         gate.set()
     # The render finished in the background, so the retry is a cache hit.
-    _wait_for(lambda: any((tmp_path / "cache").glob("*.fits")))
-    for _ in range(50):
-        resp = t.client.get("/frame/sx_dr1_2025W35_1A_0146_4_D2.png", params=VIEW)
-        if resp.status_code == 200:
-            break
+    _wait_for(lambda: t.provider.frames_rendering == 0, timeout=60)
+    assert any((tmp_path / "cache").glob("*.fits"))
+    resp = t.client.get("/frame/sx_dr1_2025W35_1A_0146_4_D2.png", params=VIEW)
     assert resp.status_code == 200 and resp.headers["content-type"] == "image/png"
+    assert len(cutouts.calls) == 1
 
 
 def test_second_waiter_keeps_a_queued_build_alive(tmp_path):
-    t = live(tmp_path, epochs_deadline_s=4.0)
+    t = live(tmp_path, epochs_deadline_s=0.5)
     slots = t.provider._build_slots
     slots.acquire()
     slots.acquire()  # both build slots busy: the next build is queued
@@ -405,7 +403,9 @@ def test_second_waiter_keeps_a_queued_build_alive(tmp_path):
     try:
         th_a, out_a = _get_in_thread(t.client, VIEW)
         _wait_for(lambda: t.provider.waiting == 1)
-        time.sleep(2.0)
+        # B waits much longer than A, without any sleep: A has already read its
+        # 0.5 s deadline, B reads the new one.
+        t.provider._settings = replace(t.settings, epochs_deadline_s=30.0)
         th_b, out_b = _get_in_thread(t.client, VIEW)
         _wait_for(lambda: t.provider.waiting == 2)
         th_a.join(10)
@@ -435,8 +435,11 @@ def test_last_waiter_cancels_a_queued_build(tmp_path):
     finally:
         slots.release()
         slots.release()
-    time.sleep(0.2)
-    assert t.sia.calls == []  # the cancelled build never ran
+    # A later build for another view runs after the cancelled one in the queue,
+    # so once it is done the cancelled one has been skipped, not run.
+    t.provider._settings = replace(t.settings, epochs_deadline_s=30.0)
+    assert t.client.get("/epochs", params={**VIEW, "fov": 12}).status_code == 200
+    assert len(t.sia.calls) == 1  # only the later build queried IRSA
 
 
 class _Abort(BaseException):
@@ -480,3 +483,134 @@ def test_irsa_mode_logs_app_info(tmp_path):
     assert names.count("app-irsa-info") == 1
     live(tmp_path)  # a second app adds no second handler
     assert [h.get_name() for h in logger.handlers].count("app-irsa-info") == 1
+
+
+# ------------------------------------------------- T-015: clean failures, caps
+
+
+def test_all_cleans_failing_is_502_not_cached_and_recovers(tmp_path):
+    from tests.test_pipeline_failures import with_image_unit
+
+    irsa_ok = [False]
+    adu = StreamResponse(with_image_unit("adu"))
+
+    def reply(url):
+        return ok(FOV10) if irsa_ok[0] else adu
+
+    t = live(tmp_path, cutouts=StreamSession(replies=[reply]))
+    resp = t.client.get("/epochs", params=VIEW)
+    assert_error(resp, 502, "upstream_error")  # not "no data" (count 0)
+    assert len(t.provider._cache) == 0
+    # The bad files are readable, so they stay cached; fix the upstream, clear
+    # the disk cache as a restart would, and the next call rebuilds.
+    for f in (tmp_path / "cache").glob("*.fits"):
+        f.unlink()
+    irsa_ok[0] = True
+    resp = t.client.get("/epochs", params=VIEW)
+    assert resp.status_code == 200 and resp.json()["count"] == 3
+    assert len(t.sia.calls) == 2
+
+
+def test_a_visit_lost_to_clean_failures_is_cached_only_briefly(tmp_path):
+    from tests.test_pipeline_failures import with_image_unit
+
+    now = [1000.0]
+    adu = StreamResponse(with_image_unit("adu"))
+
+    def reply(url):  # visit 2 holds the 2026W11 and 2026W12 exposures
+        visit2 = "level2_2026W11_" in url or "level2_2026W12_" in url
+        return adu if visit2 else ok(FOV10)
+
+    t = live(tmp_path, cutouts=StreamSession(replies=[reply]), clock=lambda: now[0])
+    doc = t.client.get("/epochs", params=VIEW).json()
+    assert [e["visit"] for e in doc["epochs"]] == [1, 3]
+    now[0] += 31.0  # past the 30 s degraded TTL
+    t.client.get("/epochs", params=VIEW)
+    assert len(t.sia.calls) == 2
+
+
+def test_frame_renders_are_capped_with_an_immediate_503(tmp_path):
+    gate = threading.Event()
+    cutouts = StreamSession(replies=[ok(FOV10)], gate=gate)
+    t = live(tmp_path, cutouts=cutouts, frame_max_concurrent=1)
+    assert Settings().frame_max_concurrent == 4  # the default
+    first = "/frame/sx_dr1_2025W35_1A_0146_4_D2.png"
+    out: dict = {}
+    th = threading.Thread(target=lambda: out.setdefault("r", t.client.get(first,
+                                                                           params=VIEW)))
+    th.start()
+    try:
+        assert cutouts.entered.wait(10)  # the first render is downloading
+        assert t.provider.frames_rendering == 1
+        started = time.monotonic()
+        resp = t.client.get("/frame/sx_dr1_2026W12_1A_0311_4_D2.png", params=VIEW)
+        assert time.monotonic() - started < 2
+        assert_error(resp, 503, "unavailable")
+        assert "preset" in resp.json()["error"]["message"]
+    finally:
+        gate.set()
+        th.join(30)
+    assert out["r"].status_code == 200
+    _wait_for(lambda: t.provider.frames_rendering == 0)
+    resp = t.client.get("/frame/sx_dr1_2026W12_1A_0311_4_D2.png", params=VIEW)
+    assert resp.status_code == 200
+
+
+def test_a_timed_out_render_keeps_its_slot_until_it_ends(tmp_path):
+    gate = threading.Event()
+    cutouts = StreamSession(replies=[ok(FOV10)], gate=gate)
+    t = live(tmp_path, cutouts=cutouts, frame_max_concurrent=1, frame_deadline_s=0.2)
+    try:
+        resp = t.client.get("/frame/sx_dr1_2025W35_1A_0146_4_D2.png", params=VIEW)
+        assert_error(resp, 504, "upstream_timeout")
+        assert t.provider.frames_rendering == 1  # still running in the background
+        resp = t.client.get("/frame/sx_dr1_2026W12_1A_0311_4_D2.png", params=VIEW)
+        assert_error(resp, 503, "unavailable")
+    finally:
+        gate.set()
+    _wait_for(lambda: t.provider.frames_rendering == 0, timeout=30)
+
+
+def test_unknown_frame_ids_are_remembered_briefly(tmp_path):
+    now = [1000.0]
+    t = live(tmp_path, clock=lambda: now[0])
+    assert t.settings.frame_not_found_ttl_s == 60.0
+    unknown = "/frame/sx_dr1_2025W35_1A_9999_4_D2.png"
+    assert_error(t.client.get(unknown, params=VIEW), 404, "not_found")
+    assert len(t.sia.calls) == 1
+    t.provider._query_cache.clear()  # the position query is no longer cached
+    resp = t.client.get(unknown, params=VIEW)
+    assert_error(resp, 404, "not_found")
+    assert "not found at this position" in resp.json()["error"]["message"]
+    assert len(t.sia.calls) == 1 and t.provider.frames_rendering == 0  # no render
+    # Another position is another key.
+    assert_error(t.client.get(unknown, params={**VIEW, "dec": 4.8}), 404, "not_found")
+    assert len(t.sia.calls) == 2
+    now[0] += 61.0
+    assert_error(t.client.get(unknown, params=VIEW), 404, "not_found")
+    assert len(t.sia.calls) == 3  # expired: asked IRSA again
+    assert t.cutouts.calls == []
+
+
+def test_build_threads_are_bounded_while_both_slots_are_busy(tmp_path):
+    from app.providers.irsa import BUILD_SLOTS
+
+    t = live(tmp_path, epochs_deadline_s=5.0, epochs_max_waiters=4)
+    slots = t.provider._build_slots
+    slots.acquire()
+    slots.acquire()
+    started = [_get_in_thread(t.client, {**VIEW, "fov": fov}) for fov in (10, 11, 12, 13)]
+    try:
+        _wait_for(lambda: t.provider.waiting == 4)
+        assert len(t.provider._inflight) == 4  # four distinct views queued
+        assert t.provider.build_threads <= BUILD_SLOTS  # not one thread per view
+        resp = t.client.get("/epochs", params={**VIEW, "fov": 14})
+        assert_error(resp, 503, "unavailable")  # beyond the waiter cap
+        assert t.provider.build_threads <= BUILD_SLOTS
+    finally:
+        for th, _ in started:
+            th.join(30)
+        slots.release()
+        slots.release()
+    assert all(out["r"].status_code == 504 for _, out in started)
+    assert t.provider.waiting == 0 and t.sia.calls == []  # all cancelled, none ran
