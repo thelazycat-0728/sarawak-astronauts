@@ -16,6 +16,17 @@ services:
       - key: PYTHON_VERSION
         value: 3.12.8
       - key: DATA_MODE
-        value: mock
+        value: irsa
       - key: CORS_ORIGINS
         sync: false   # set in the dashboard, e.g. https://<site>.netlify.app
+      # Netlify deploy previews (one per pull request) may call the API too.
+      - key: CORS_ORIGIN_REGEX
+        value: ^https://deploy-preview-\d+--aesthetic-parfait-36a9c2\.netlify\.app$
+      # AI explainer (POST /explain), Google Gemini free tier. The key is a secret:
+      # set it in the dashboard (free from https://aistudio.google.com). Empty = off.
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.8-flash
+      - key: GEMINI_FALLBACK_MODEL   # used when the main model is busy
+        value: gemini-3.5-flash-lite

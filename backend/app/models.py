@@ -233,6 +233,8 @@ class ExplainContext(BaseModel):
     band: str | None = None
     target_name: str | None = None
     epoch_id: str | None = None
+    # Viewer mode on screen (added in API v0.3).
+    mode: Literal["blink", "diff", "stack"] | None = None
 
 
 class ExplainRequest(BaseModel):

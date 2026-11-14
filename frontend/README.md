@@ -18,10 +18,10 @@ All are optional. Put them in `frontend/.env.local` (ignored by git) or in Netli
 
 | Variable | Effect when set | Without it |
 | --- | --- | --- |
-| `VITE_API_URL` | Typed-in coordinates load frames from the Python API, and the assistant calls `POST /explain` | Everything runs on simulated fields and offline answers |
+| `VITE_API_URL` | Typed-in coordinates load frames from the Python API, and the assistant calls `POST /explain` (Google Gemini, when the API has a `GEMINI_API_KEY`) | Typed-in coordinates run on simulated fields and the assistant gives offline answers |
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Real sign-in (email magic link, Google) through Supabase | Browser-only demo accounts |
 
-The five presets, lessons, games and the time machine always use the built-in simulator (`src/lib/sim.js`) for now, so the demo works offline.
+The five presets load real SPHEREx frames from `public/presets/` (static files, so they work without the API) when the view is in the target's own detector array: array 2, or array 6 for WISE 0855. In other arrays a preset behaves like typed coordinates. Lessons, games, the review queue and the time machine use the built-in simulator (`src/lib/sim.js`).
 
 ## Layout
 

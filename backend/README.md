@@ -36,8 +36,31 @@ Then open <http://localhost:8000/docs> or
 <http://localhost:8000/epochs?ra=269.4464&dec=4.7668>.
 
 Optional environment variables: `DATA_MODE` (`mock`, the default, or `irsa`),
-`CORS_ORIGINS` (comma-separated, default `http://localhost:5173`) and
-`CUTOUT_CACHE_DIR` (where cutouts are cached, default `backend/.cache/cutouts/`).
+`CORS_ORIGINS` (comma-separated, default `http://localhost:5173`),
+`CORS_ORIGIN_REGEX` (optional; origins it fully matches are also allowed, used for
+Netlify deploy previews such as `^https://deploy-preview-\d+--<site>\.netlify\.app$`) and
+`CUTOUT_CACHE_DIR` (where cutouts are cached, default `backend/.cache/cutouts/`),
+`GEMINI_API_KEY` (turns on the AI explainer, `POST /explain`; free key from
+<https://aistudio.google.com>, never commit it), `GEMINI_MODEL` (default
+`gemini-3.8-flash`) and `GEMINI_FALLBACK_MODEL` (default `gemini-3.5-flash-lite`,
+asked once when the main model is overloaded, out of quota or unknown).
+
+### AI explainer (`POST /explain`)
+
+`app/ai/` sends each question to Google Gemini (free tier) with the glossary
+(`app/ai/glossary.json`, a copy of `frontend/src/glossary.json`) and the current view
+in the prompt. Without `GEMINI_API_KEY` the endpoint answers `503` and the frontend
+uses its offline answers. Limits: 6 questions a minute and 60 a day per IP
+(`Settings.explain_rate_per_minute` / `explain_rate_per_day`). The tests use a fake
+explainer and never call Gemini. To try it locally (PowerShell):
+
+```
+$env:GEMINI_API_KEY = "<your key>"; .venv/Scripts/python -m uvicorn app.main:app --reload
+```
+
+Then `POST http://localhost:8000/explain` with `{"question": "What is proper motion?"}`
+from <http://localhost:8000/docs>, or run the frontend with `VITE_API_URL=http://localhost:8000`
+and open the assistant panel. Token counts are logged at INFO (`app.ai`).
 
 ### Live SPHEREx data (`DATA_MODE=irsa`)
 

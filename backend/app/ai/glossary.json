@@ -1,0 +1,82 @@
+{
+  "ra": {
+    "term": "Right ascension (RA)",
+    "short": "The sky’s “longitude”, measured east in hours, minutes and seconds (24h = full circle)."
+  },
+  "dec": {
+    "term": "Declination (Dec)",
+    "short": "The sky’s “latitude”, from −90° at the south celestial pole to +90° at the north."
+  },
+  "fov": {
+    "term": "Field of view",
+    "short": "How much sky the image covers, in arcminutes (′). Bigger fields catch faster movers but take longer to load."
+  },
+  "arcsec": {
+    "term": "Arcsecond (″)",
+    "short": "1/3600 of a degree. The full Moon is about 1,800″ across; a SPHEREx pixel is 6.15″."
+  },
+  "epoch": {
+    "term": "Snapshot (epoch)",
+    "short": "One visit to this patch of sky. SPHEREx revisits the whole sky about every six months."
+  },
+  "band": {
+    "term": "Infrared colour (band)",
+    "short": "A narrow slice of infrared wavelengths. SPHEREx records 102 of them, from 0.75 to 5.0 µm."
+  },
+  "array": {
+    "term": "Detector array",
+    "short": "SPHEREx has six detectors, each covering a range of wavelengths. Stacking a whole array gives a cleaner image."
+  },
+  "blink": {
+    "term": "Blink",
+    "short": "Flipping between snapshots, the way Clyde Tombaugh found Pluto in 1930. Anything that jumps is moving."
+  },
+  "difference": {
+    "term": "Difference image",
+    "short": "One snapshot subtracted from another. Fixed stars cancel out; movers leave a teal (was here) and amber (now here) pair."
+  },
+  "stack": {
+    "term": "Stack (co-add)",
+    "short": "Averaging snapshots together. Noise drops, so faint still objects stand out, but movers smear."
+  },
+  "pm": {
+    "term": "Proper motion",
+    "short": "How fast a star drifts across the sky, in arcseconds per year. Nearby stars move most."
+  },
+  "browndwarf": {
+    "term": "Brown dwarf",
+    "short": "An object too heavy to be a planet but too light to burn like a star. Cold ones glow mainly in infrared."
+  },
+  "variable": {
+    "term": "Variable star",
+    "short": "A star whose brightness changes over time, from pulsing, eclipses or passing dust."
+  },
+  "flags": {
+    "term": "Contamination flags",
+    "short": "Markers on pixels affected by glitches such as cosmic rays, ghosts or glare. Flagged pixels are hidden."
+  },
+  "zodi": {
+    "term": "Zodiacal light",
+    "short": "Faint glow from dust in our Solar System. It changes with the seasons, so it is removed before comparing snapshots."
+  },
+  "spectrum": {
+    "term": "Spectrum",
+    "short": "Brightness at each wavelength. Dips reveal molecules such as water ice, methane or carbon dioxide."
+  },
+  "gaia": {
+    "term": "Gaia",
+    "short": "ESA mission that measured positions and motions of almost 2 billion stars. Used to check whether a mover is already known."
+  },
+  "wise": {
+    "term": "WISE / CatWISE",
+    "short": "NASA infrared survey from 2010 onward. Catches cold objects Gaia can’t see."
+  },
+  "release": {
+    "term": "Data release",
+    "short": "A published batch of processed images. DR1 covers surveys 1–2; QR3 adds newer data every week."
+  },
+  "candidate": {
+    "term": "Candidate",
+    "short": "A possible discovery waiting for a scientist to check it. Not confirmed until verified."
+  }
+}

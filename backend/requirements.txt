@@ -10,3 +10,5 @@ astroquery>=0.4.8
 # Cleaning pipeline (T-005): reprojection onto a north-up grid, and scipy.ndimage.
 reproject>=0.13
 scipy
+# AI explainer (POST /explain): Google Gemini API, free tier.
+google-genai>=3.3
