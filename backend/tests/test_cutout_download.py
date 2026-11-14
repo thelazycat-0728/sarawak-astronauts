@@ -404,3 +404,82 @@ def test_a_stalled_real_server_ends_the_attempt_at_the_deadline(tmp_path):
     listener.close()
     assert isinstance(info.value.error, UpstreamTimeout)
     assert 1.9 <= elapsed < 2.7, elapsed
+
+
+def _trickle_server(headers: bytes, stop):
+    """A localhost HTTP server that sends ``headers`` and then one byte every
+    0.1 s until ``stop`` is set (or 4 s pass)."""
+    import socket
+    import threading
+    import time
+
+    listener = socket.socket()
+    listener.bind(("127.0.0.1", 0))
+    listener.listen(1)
+
+    def serve():
+        conn, _ = listener.accept()
+        with conn:
+            conn.recv(65536)
+            conn.sendall(headers)
+            end = time.monotonic() + 4
+            while not stop.is_set() and time.monotonic() < end:
+                try:
+                    conn.sendall(b"x")
+                except OSError:
+                    return  # the client hung up
+                time.sleep(0.1)
+
+    th = threading.Thread(target=serve, daemon=True)
+    th.start()
+    return listener, th
+
+
+class _NoWatchdog:
+    """Stands in for download._Watchdog to show what happens without it."""
+
+    def __init__(self, sock, after_s):
+        import threading
+
+        self.fired = threading.Event()
+
+    def cancel(self):
+        pass
+
+
+@pytest.mark.parametrize("headers", [
+    b"HTTP/1.1 200 OK\r\nContent-Length: 1000000\r\n\r\n",
+    b"HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n",  # ends at EOF, no length
+], ids=["content-length", "until-eof"])
+@pytest.mark.parametrize("watchdog", [True, False], ids=["watchdog", "without"])
+def test_a_trickling_server_ends_the_attempt_at_the_deadline(tmp_path, monkeypatch,
+                                                            headers, watchdog):
+    """A byte every 0.1 s keeps one 64 KB read busy: without the watchdog the
+    attempt runs as long as the server trickles (the T-015 review saw 6 s for
+    T = 1 s); with it, the attempt ends at T."""
+    import threading
+    import time
+
+    if not watchdog:
+        monkeypatch.setattr(download, "_Watchdog", _NoWatchdog)
+    stop = threading.Event()
+    listener, th = _trickle_server(headers, stop)
+    port = listener.getsockname()[1]
+    settings = make_settings(tmp_path, cutout_timeout_s=1.0)
+    try:
+        with requests.Session() as session:
+            session.trust_env = False  # no proxy for localhost
+            started = time.monotonic()
+            with pytest.raises(download._Retryable) as info:
+                download._download_once(f"http://127.0.0.1:{port}/x", tmp_path / "x",
+                                        settings, session)
+            elapsed = time.monotonic() - started
+    finally:
+        stop.set()
+        th.join(10)
+        listener.close()
+    if watchdog:
+        assert isinstance(info.value.error, UpstreamTimeout)
+        assert 0.9 <= elapsed < 1.6, elapsed
+    else:
+        assert elapsed > 3.0, elapsed  # documents the bug the watchdog fixes

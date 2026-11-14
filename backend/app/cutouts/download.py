@@ -22,6 +22,8 @@ from __future__ import annotations
 import logging
 import math
 import random
+import socket
+import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -110,11 +112,45 @@ def build_cutout_url(access_url: str, ra: float, dec: float, size_arcmin: float)
 
 def _socket_of(resp: Any) -> Any | None:
     """The socket under a streamed requests response (urllib3 2.x), or None (for
-    example for a test double)."""
+    example for a test double).
+
+    Usually the connection's socket. When the server closes the connection after
+    the body (no Content-Length), http.client has already dropped the
+    connection's reference, so the socket is taken from the response's file."""
     raw = getattr(resp, "raw", None)
     conn = getattr(raw, "connection", None) or getattr(raw, "_connection", None)
     sock = getattr(conn, "sock", None)
+    if sock is None:
+        fp = getattr(getattr(raw, "_fp", None), "fp", None)  # http.client response
+        sock = getattr(getattr(fp, "raw", None), "_sock", None)  # socket.SocketIO
     return sock if callable(getattr(sock, "settimeout", None)) else None
+
+
+class _Watchdog:
+    """Shuts the response's socket down when the attempt deadline passes.
+
+    A blocked ``recv`` in the download thread then returns or fails at once, so a
+    server that trickles bytes cannot keep one read going past the deadline.
+    ``shutdown`` (not ``close``) is used because it wakes a blocked reader on
+    Linux and Windows alike; the response is closed as usual afterwards.
+    """
+
+    def __init__(self, sock: Any, after_s: float):
+        self.fired = threading.Event()
+        self._sock = sock
+        self._timer = threading.Timer(max(0.0, after_s), self._fire)
+        self._timer.daemon = True
+        self._timer.start()
+
+    def _fire(self) -> None:
+        self.fired.set()
+        try:
+            self._sock.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass  # already closed: nothing left to stop
+
+    def cancel(self) -> None:
+        self._timer.cancel()
 
 
 def _download_once(url: str, dest: Path, settings: Settings, session: Any) -> int:
@@ -122,11 +158,12 @@ def _download_once(url: str, dest: Path, settings: Settings, session: Any) -> in
 
     Connecting and waiting for the response headers share T (a urllib3
     ``Timeout(total=T)``). While the body streams, the socket timeout is set to
-    the time left before every chunk, and the deadline is checked after every
-    chunk, so a server that stalls ends the attempt at T. A server that keeps
-    trickling bytes can stretch the chunk being read past T by at most the
-    socket timeout set for it; IRSA's host is fixed, so this is not a concern
-    in practice. See ``download_cutout`` for the bound over all attempts.
+    the time left before every chunk, the deadline is checked after every chunk,
+    and a watchdog timer shuts the socket down at the deadline. So a server that
+    stalls, or one that trickles a byte at a time (which would otherwise keep a
+    single 64 KB read waiting up to the time left for every byte), ends the
+    attempt at T (plus thread scheduling, milliseconds). See ``download_cutout``
+    for the bound over all attempts.
     """
     timeout = settings.cutout_timeout_s
     deadline = _clock() + timeout
@@ -157,37 +194,20 @@ def _download_once(url: str, dest: Path, settings: Settings, session: Any) -> in
             raise UpstreamError(f"IRSA cutout returned HTTP {status}")
         total = 0
         sock = _socket_of(resp)
+        watchdog = None
+        if sock is not None and callable(getattr(sock, "shutdown", None)):
+            watchdog = _Watchdog(sock, deadline - _clock())
         try:
-            with open(dest, "wb") as out:
-                chunks = resp.iter_content(chunk_size=CHUNK_BYTES)
-                while True:
-                    left = deadline - _clock()
-                    if left <= 0:
-                        raise _Retryable(too_slow)
-                    if sock is not None:
-                        sock.settimeout(left)  # the next read may wait only this long
-                    try:
-                        chunk = next(chunks)
-                    except StopIteration:
-                        break
-                    if _clock() > deadline:
-                        raise _Retryable(too_slow)
-                    total += len(chunk)
-                    if total > MAX_CUTOUT_BYTES:
-                        raise UpstreamError("IRSA cutout is larger than expected")
-                    out.write(chunk)
-        except requests.Timeout as exc:
-            raise _Retryable(too_slow) from exc
-        except requests.ConnectionError as exc:
-            if exc.args and isinstance(exc.args[0], ReadTimeoutError):
-                raise _Retryable(too_slow) from exc
-            raise _Retryable(
-                UpstreamError(f"IRSA cutout download broke off ({type(exc).__name__})")
-            ) from exc
-        except requests.RequestException as exc:  # ChunkedEncodingError and similar
-            raise _Retryable(
-                UpstreamError(f"IRSA cutout download broke off ({type(exc).__name__})")
-            ) from exc
+            total = _stream_body(resp, dest, deadline, too_slow, sock)
+        except Exception as exc:
+            if watchdog is not None and watchdog.fired.is_set():
+                raise _Retryable(too_slow) from exc  # the watchdog cut the read off
+            raise
+        finally:
+            if watchdog is not None:
+                watchdog.cancel()
+        if watchdog is not None and watchdog.fired.is_set():
+            raise _Retryable(too_slow)  # a body cut short at the deadline
         if total == 0:
             raise UpstreamError("IRSA returned an empty cutout")
         return total
@@ -195,6 +215,44 @@ def _download_once(url: str, dest: Path, settings: Settings, session: Any) -> in
         close = getattr(resp, "close", None)
         if close is not None:
             close()
+
+
+def _stream_body(resp: Any, dest: Path, deadline: float, too_slow: UpstreamTimeout,
+                 sock: Any | None) -> int:
+    """Write the body to ``dest`` chunk by chunk; returns the bytes written."""
+    total = 0
+    try:
+        with open(dest, "wb") as out:
+            chunks = resp.iter_content(chunk_size=CHUNK_BYTES)
+            while True:
+                left = deadline - _clock()
+                if left <= 0:
+                    raise _Retryable(too_slow)
+                if sock is not None:
+                    sock.settimeout(left)  # the next read may wait only this long
+                try:
+                    chunk = next(chunks)
+                except StopIteration:
+                    break
+                if _clock() > deadline:
+                    raise _Retryable(too_slow)
+                total += len(chunk)
+                if total > MAX_CUTOUT_BYTES:
+                    raise UpstreamError("IRSA cutout is larger than expected")
+                out.write(chunk)
+    except requests.Timeout as exc:
+        raise _Retryable(too_slow) from exc
+    except requests.ConnectionError as exc:
+        if exc.args and isinstance(exc.args[0], ReadTimeoutError):
+            raise _Retryable(too_slow) from exc
+        raise _Retryable(
+            UpstreamError(f"IRSA cutout download broke off ({type(exc).__name__})")
+        ) from exc
+    except requests.RequestException as exc:  # ChunkedEncodingError and similar
+        raise _Retryable(
+            UpstreamError(f"IRSA cutout download broke off ({type(exc).__name__})")
+        ) from exc
+    return total
 
 
 def download_cutout(
@@ -221,7 +279,8 @@ def download_cutout(
     30 s each, so one exposure takes at most 3 x 60 + 7.5 + 15 = 202.5 s, or
     3 x 60 + 30 + 30 = 240 s when IRSA sends Retry-After: 30. Time spent waiting
     for a free IRSA slot comes on top. (Before T-015 a single attempt could run
-    to about 2 x T.)
+    to about 2 x T, and until T-015 fix-1 a server trickling bytes could keep one
+    read going for as long as it trickled.)
     Raises UpstreamTimeout or UpstreamError when every attempt fails.
     """
     check_access_url(url.split("?", 1)[0])
