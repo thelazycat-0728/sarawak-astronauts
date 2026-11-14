@@ -22,11 +22,30 @@ Checks, for every preset in ``PRESETS`` (irsa_coverage.py) and every fov in
 - ``index.json`` lists exactly these presets with matching name, position, band
   and a manifest URL per fov, and the whole folder is under 10 MB.
 
+Stacks (T-016, ``preset_stacks.py``), for every manifest:
+
+- ``stacks`` validates, holds one stack per visit of the frames (same visits, the
+  visit's epoch ids in order, each id in ``epochs``), with a mean ``mjd`` and a
+  wavelength range that match those epochs;
+- every stack URL resolves to an 8-bit grey PNG of the frame size, whose
+  no-data pixels (grey 0) are exactly those with no data in every frame of the
+  visit, and whose ``quality.flagged_fraction`` is the share of those pixels;
+- the stack diff (first visit to last visit) exists and resolves, and the fovs of
+  a preset share the stack diff scale; ``index.json`` gives ``stacks`` per manifest.
+
+With ``--baseline`` (the default ``presets_baseline.json`` next to this script,
+used by ``main``), every frame and diff PNG and every manifest field other than
+``stacks`` must have the recorded SHA-256, and the stretch the recorded values:
+the stacks must not change the existing frames. ``--write-baseline`` records the
+current files (only after a deliberate rebuild of the frames).
+
 Exit code 0 when everything passes, 1 otherwise.
 """
 
 from __future__ import annotations
 
+import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -42,15 +61,20 @@ sys.path.insert(0, str(BACKEND / "scripts"))
 
 from build_presets import CREDIT, MIN_CORE_VALID, PRESET_FOVS, VARIABLES, manifest_url
 from irsa_coverage import PRESETS
+from preset_stacks import STACKS_DIR, Stacks, stack_diff_name, stack_name, visit_groups
 
 from app.models import EpochsResponse
 from app.stretch import NODATA_GRAY
 
 PUBLIC = REPO / "frontend" / "public"
+BASELINE = Path(__file__).resolve().parent / "presets_baseline.json"
 MAX_FOLDER_BYTES = 10_000_000
 MIN_VISITS = 2
 POSITION_TOLERANCE_DEG = 1e-9
 CORE_RADIUS_PX = 2.0
+MJD_TOLERANCE = 1e-5
+WAVELENGTH_TOLERANCE_UM = 1e-5
+FRACTION_TOLERANCE = 1e-4
 
 
 def url_to_file(url: str, public: Path) -> Path | None:
@@ -152,9 +176,103 @@ def check_manifest(path: Path, preset: tuple, fov: float, public: Path,
     return doc
 
 
+def _gray(path: Path) -> np.ndarray | None:
+    try:
+        with Image.open(path) as im:
+            return np.asarray(im)
+    except OSError:
+        return None
+
+
+def check_stacks(path: Path, doc: EpochsResponse, public: Path,
+                 errs: list[str]) -> Stacks | None:
+    """The ``stacks`` section of one manifest (see the module docstring)."""
+    where = str(path.relative_to(public)).replace("\\", "/")
+    folder_url = "/" + where.rsplit("/", 1)[0] + "/"
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8")).get("stacks")
+    except (OSError, ValueError, AttributeError):
+        raw = None
+    if raw is None:
+        errs.append(f"{where}: stacks missing")
+        return None
+    try:
+        stacks = Stacks.model_validate(raw)
+    except ValidationError as exc:
+        errs.append(f"{where}: stacks not valid: {exc.errors()[:3]}")
+        return None
+    size = (doc.image.width_px, doc.image.height_px)
+    ids = {e.id for e in doc.epochs}
+    groups = visit_groups(doc.epochs)
+    got_visits = [s.visit for s in stacks.visits]
+    if got_visits != list(groups):
+        errs.append(f"{where}: stack visits {got_visits} != frame visits {list(groups)}")
+    for s in stacks.visits:
+        w = f"{where} stack visit {s.visit}"
+        unknown = [i for i in s.epoch_ids if i not in ids]
+        if unknown:
+            errs.append(f"{w}: epoch ids not in epochs: {unknown}")
+        group = groups.get(s.visit, [])
+        if s.epoch_ids != [e.id for e in group]:
+            errs.append(f"{w}: epoch_ids are not the visit's frames")
+        if s.n_frames != len(s.epoch_ids):
+            errs.append(f"{w}: n_frames {s.n_frames} != {len(s.epoch_ids)} epoch ids")
+        if group:
+            mjd = sum(e.mjd for e in group) / len(group)
+            wls = [e.wavelength_um for e in group]
+            if abs(s.mjd - mjd) > MJD_TOLERANCE:
+                errs.append(f"{w}: mjd {s.mjd} is not the frames' mean {mjd:.6f}")
+            if (abs(s.wavelength_min_um - min(wls)) > WAVELENGTH_TOLERANCE_UM
+                    or abs(s.wavelength_max_um - max(wls)) > WAVELENGTH_TOLERANCE_UM
+                    or abs(s.wavelength_mean_um - sum(wls) / len(wls))
+                    > WAVELENGTH_TOLERANCE_UM):
+                errs.append(f"{w}: wavelength range does not match the frames")
+        if s.url != f"{folder_url}{STACKS_DIR}/{stack_name(s.visit)}":
+            errs.append(f"{w}: url {s.url!r} is not {STACKS_DIR}/{stack_name(s.visit)}")
+        png = url_to_file(s.url, public)
+        if png is None:
+            errs.append(f"{w}: url {s.url!r} does not resolve under frontend/public/")
+            continue
+        n_errs = len(errs)
+        _check_png(png, size, w, errs)
+        if len(errs) > n_errs:
+            continue
+        gray = _gray(png)
+        frames = [_gray(f) for e in group if (f := url_to_file(e.frame_url, public))]
+        if gray is None or not frames or any(f is None or f.shape != gray.shape
+                                             for f in frames):
+            continue
+        any_data = np.logical_or.reduce([f != NODATA_GRAY for f in frames])
+        if not np.array_equal(gray != NODATA_GRAY, any_data):
+            errs.append(f"{w}: no-data pixels differ from the frames' common no-data")
+        share = float(np.mean(gray == NODATA_GRAY))
+        if abs(s.quality.flagged_fraction - share) > FRACTION_TOLERANCE:
+            errs.append(f"{w}: flagged_fraction {s.quality.flagged_fraction} != "
+                        f"no-data share {share:.4f}")
+    d = stacks.diff
+    if d is None:
+        errs.append(f"{where}: no stack diff")
+    elif groups:
+        first, last = min(groups), max(groups)
+        if (d.a_visit, d.b_visit) != (first, last):
+            errs.append(f"{where}: stack diff is visit {d.a_visit} -> {d.b_visit}, "
+                        f"want {first} -> {last}")
+        if d.url != f"{folder_url}{STACKS_DIR}/diff/{stack_diff_name(first, last)}":
+            errs.append(f"{where}: stack diff url {d.url!r} is not the expected path")
+        png = url_to_file(d.url, public)
+        if png is None:
+            errs.append(f"{where}: stack diff url {d.url!r} does not resolve")
+        else:
+            _check_png(png, size, f"{where} stack diff", errs)
+    return stacks
+
+
 def check_fovs(manifests: dict[tuple[str, float], EpochsResponse], presets: tuple,
-               fovs: tuple[float, ...], errs: list[str]) -> None:
-    """The fovs of a preset hold the same exposures, stretch and diff pairs."""
+               fovs: tuple[float, ...], errs: list[str],
+               stacks: dict[tuple[str, float], Stacks] | None = None) -> None:
+    """The fovs of a preset hold the same exposures, stretch, diff pairs and
+    stacks (visits, epoch ids and stack diff scale)."""
+    stacks = stacks or {}
     for preset in presets:
         pid = preset[0]
         docs = {fov: manifests[(pid, fov)] for fov in fovs if (pid, fov) in manifests}
@@ -162,10 +280,18 @@ def check_fovs(manifests: dict[tuple[str, float], EpochsResponse], presets: tupl
             continue
         ref_fov = max(docs)
         ref = docs[ref_fov]
+        ref_st = stacks.get((pid, ref_fov))
         for fov, doc in docs.items():
             if fov == ref_fov:
                 continue
             where = f"{pid} fov {fov:g} vs {ref_fov:g}"
+            st = stacks.get((pid, fov))
+            if st is not None and ref_st is not None:
+                if ([(s.visit, s.epoch_ids) for s in st.visits]
+                        != [(s.visit, s.epoch_ids) for s in ref_st.visits]):
+                    errs.append(f"{where}: stack visits or epoch ids differ")
+                if ((st.diff and st.diff.scale) != (ref_st.diff and ref_st.diff.scale)):
+                    errs.append(f"{where}: stack diff scale differs")
             if [e.id for e in doc.epochs] != [e.id for e in ref.epochs]:
                 errs.append(f"{where}: epoch ids differ")
             if (doc.stretch.vmin, doc.stretch.vmax) != (ref.stretch.vmin, ref.stretch.vmax):
@@ -177,7 +303,8 @@ def check_fovs(manifests: dict[tuple[str, float], EpochsResponse], presets: tupl
 
 def check_index(root: Path, manifests: dict[tuple[str, float], EpochsResponse],
                 presets: tuple, fovs: tuple[float, ...], public: Path,
-                errs: list[str]) -> None:
+                errs: list[str],
+                stacks: dict[tuple[str, float], Stacks] | None = None) -> None:
     try:
         doc = json.loads((root / "index.json").read_text(encoding="utf-8"))
         entries = doc["presets"]
@@ -230,35 +357,141 @@ def check_index(root: Path, manifests: dict[tuple[str, float], EpochsResponse],
                 errs.append(f"{where}: fov {fov:g} count {m.get('count')} != {man.count}")
             if m.get("visits") != len({e.visit for e in man.epochs}):
                 errs.append(f"{where}: fov {fov:g} visits do not match the manifest")
+            st = (stacks or {}).get((pid, fov))
+            if st is not None and m.get("stacks") != len(st.visits):
+                errs.append(f"{where}: fov {fov:g} stacks {m.get('stacks')!r} != "
+                            f"{len(st.visits)} visit stacks in the manifest")
+
+
+# ------------------------------------------------------------------ baseline
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _canonical_sha256(obj: object) -> str:
+    text = json.dumps(obj, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _index_without_additions(doc: dict) -> dict:
+    """index.json minus the fields T-016 may change (``stacks``, ``look_for``)."""
+    out = json.loads(json.dumps(doc))
+    for p in out.get("presets", []):
+        p.pop("look_for", None)
+        for m in p.get("manifests", []):
+            m.pop("stacks", None)
+    return out
+
+
+def baseline_document(public: Path, root: Path, presets: tuple = PRESETS,
+                      fovs: tuple[float, ...] = PRESET_FOVS) -> dict:
+    """SHA-256 of every manifest's fields other than ``stacks``, its stretch, every
+    frame and diff PNG it references, and index.json without the additive fields."""
+    manifests: dict[str, dict] = {}
+    files: dict[str, str] = {}
+    for preset in presets:
+        for fov in fovs:
+            url = manifest_url(preset[0], fov, fovs)
+            raw = json.loads((public / url.lstrip("/")).read_text(encoding="utf-8"))
+            raw.pop("stacks", None)
+            manifests[url] = {"fields_sha256": _canonical_sha256(raw),
+                              "stretch": [raw["stretch"]["vmin"], raw["stretch"]["vmax"]]}
+            urls = [e["frame_url"] for e in raw["epochs"]] + [d["url"] for d in raw["diffs"]]
+            for u in urls:
+                files[u] = _sha256(public / u.lstrip("/"))
+    index = json.loads((root / "index.json").read_text(encoding="utf-8"))
+    return {"index_sha256": _canonical_sha256(_index_without_additions(index)),
+            "manifests": manifests, "files": dict(sorted(files.items()))}
+
+
+def check_baseline(baseline: Path, public: Path, root: Path, presets: tuple,
+                   fovs: tuple[float, ...], errs: list[str]) -> int:
+    """Compare with the recorded baseline; returns the number of files compared."""
+    try:
+        want = json.loads(baseline.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        errs.append(f"baseline {baseline.name}: cannot load ({exc})")
+        return 0
+    try:
+        got = baseline_document(public, root, presets, fovs)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        errs.append(f"baseline: cannot read the current presets ({exc})")
+        return 0
+    if got["index_sha256"] != want.get("index_sha256"):
+        errs.append("baseline: index.json fields (other than stacks and look_for) changed")
+    for url, rec in want.get("manifests", {}).items():
+        now = got["manifests"].get(url)
+        if now is None:
+            errs.append(f"baseline: {url} missing")
+            continue
+        if now["stretch"] != rec["stretch"]:
+            errs.append(f"baseline: {url} stretch {now['stretch']} != {rec['stretch']}")
+        if now["fields_sha256"] != rec["fields_sha256"]:
+            errs.append(f"baseline: {url} fields other than stacks changed")
+    for url in sorted(set(got["manifests"]) - set(want.get("manifests", {}))):
+        errs.append(f"baseline: {url} is not in the baseline")
+    want_files = want.get("files", {})
+    for url, sha in want_files.items():
+        if got["files"].get(url) != sha:
+            errs.append(f"baseline: {url} changed or missing")
+    for url in sorted(set(got["files"]) - set(want_files)):
+        errs.append(f"baseline: {url} is not in the baseline")
+    return len(want_files)
 
 
 def check(root: Path | None = None, public: Path | None = None, presets: tuple = PRESETS,
           fovs: tuple[float, ...] = PRESET_FOVS,
-          max_bytes: int = MAX_FOLDER_BYTES) -> tuple[list[str], dict]:
-    """(errors, summary). ``root`` is the presets folder inside ``public``."""
+          max_bytes: int = MAX_FOLDER_BYTES,
+          baseline: Path | None = None) -> tuple[list[str], dict]:
+    """(errors, summary). ``root`` is the presets folder inside ``public``.
+    ``baseline``: also compare the frames and manifest fields with that record."""
     public = public or PUBLIC
     root = root or public / "presets"
     errs: list[str] = []
     manifests: dict[tuple[str, float], EpochsResponse] = {}
+    stacks: dict[tuple[str, float], Stacks] = {}
     for preset in presets:
         for fov in fovs:
             path = public / manifest_url(preset[0], fov, fovs).lstrip("/")
             doc = check_manifest(path, preset, fov, public, errs)
             if doc is not None:
                 manifests[(preset[0], fov)] = doc
-    check_fovs(manifests, presets, fovs, errs)
-    check_index(root, manifests, presets, fovs, public, errs)
+                st = check_stacks(path, doc, public, errs)
+                if st is not None:
+                    stacks[(preset[0], fov)] = st
+    check_fovs(manifests, presets, fovs, errs, stacks)
+    check_index(root, manifests, presets, fovs, public, errs, stacks)
+    compared = 0
+    if baseline is not None:
+        compared = check_baseline(baseline, public, root, presets, fovs, errs)
     if not (root / "README.md").is_file():
         errs.append("README.md missing")
     total = sum(p.stat().st_size for p in root.rglob("*") if p.is_file()) if root.is_dir() else 0
     if total >= max_bytes:
         errs.append(f"presets folder is {total} bytes, limit {max_bytes}")
     frames = sum(m.count for m in manifests.values())
-    return errs, {"manifests": len(manifests), "frames": frames, "bytes": total}
+    n_stacks = sum(len(s.visits) for s in stacks.values())
+    return errs, {"manifests": len(manifests), "frames": frames, "stacks": n_stacks,
+                  "baseline_files": compared, "bytes": total}
 
 
-def main() -> int:
-    errs, summary = check()
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--baseline", type=Path, default=BASELINE,
+                        help="baseline of the existing frames (default: %(default)s)")
+    parser.add_argument("--write-baseline", action="store_true",
+                        help="record the current frames and manifest fields, then exit")
+    args = parser.parse_args(argv)
+    if args.write_baseline:
+        doc = baseline_document(PUBLIC, PUBLIC / "presets")
+        args.baseline.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n",
+                                 encoding="utf-8", newline="\n")
+        print(f"wrote {args.baseline} ({len(doc['files'])} files, "
+              f"{len(doc['manifests'])} manifests)")
+        return 0
+    errs, summary = check(baseline=args.baseline)
     if errs:
         print("PRESET CHECK FAILED:")
         for e in errs:
@@ -266,6 +499,8 @@ def main() -> int:
         return 1
     print(f"PRESET CHECK OK: {summary['manifests']} manifests "
           f"({len(PRESETS)} presets x {len(PRESET_FOVS)} fovs), {summary['frames']} frames, "
+          f"{summary['stacks']} visit stacks, {summary['baseline_files']} frame and diff "
+          f"PNGs and every manifest field unchanged from the baseline, "
           f"folder {summary['bytes']} bytes")
     return 0
 
