@@ -202,7 +202,7 @@ def test_a_memory_error_in_cleaning_is_not_a_clean_failure(tmp_path, monkeypatch
 
 
 def test_a_memory_error_in_a_download_batch_surfaces(tmp_path, monkeypatch):
-    import app.cutouts.service as service
+    from app.cutouts import service
 
     def fail(*args, **kwargs):
         raise MemoryError()
@@ -214,7 +214,7 @@ def test_a_memory_error_in_a_download_batch_surfaces(tmp_path, monkeypatch):
 
 
 def test_a_geometry_error_does_not_evict_the_cached_file(tmp_path, monkeypatch):
-    import app.cutouts.service as service
+    from app.cutouts import service
 
     settings, session, first = _cached(tmp_path)
 
