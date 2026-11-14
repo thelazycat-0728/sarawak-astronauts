@@ -22,6 +22,7 @@ lowest flagged fraction if the target is on it, and is skipped otherwise.
 accepted candidates of each visit, replacing rejected ones from further down the
 ranking, with at most ``max_candidates`` tried per visit. ``keep_rejected=False``
 skips a visit with no accepted candidate instead of keeping a rejected one.
+``min_core_valid`` rejects candidates whose target core is mostly masked.
 """
 
 from __future__ import annotations
@@ -32,6 +33,7 @@ from dataclasses import dataclass, field
 
 from app.config import Settings
 from app.cutouts import Cutout, CutoutFailure
+from app.errors import InvalidParameter
 from app.irsa.records import EpochRecord
 from app.pipeline.clean import CleanFrame
 
@@ -121,7 +123,7 @@ class Chosen:
 class Attempt:
     visit: int
     epoch_id: str
-    outcome: str  # accepted, download_failed, low_coverage or bad_quality
+    outcome: str  # accepted, download_failed, low_coverage, bad_quality or masked_core
     detail: str = ""
 
 
@@ -140,6 +142,12 @@ FetchFn = Callable[[list[EpochRecord]], Sequence[Cutout | CutoutFailure]]
 CleanFn = Callable[[Cutout], CleanFrame]
 
 
+def _positive_int(name: str, value: object) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise InvalidParameter(f"{name} must be a positive integer")
+    return value
+
+
 def select_per_visit(
     epochs: Sequence[EpochRecord],
     ra: float,
@@ -152,6 +160,7 @@ def select_per_visit(
     max_per_visit: int = 1,
     max_candidates: int | None = None,
     keep_rejected: bool = True,
+    min_core_valid: float | None = None,
 ) -> Selection:
     """Up to ``max_per_visit`` exposures per visit (default one); only ranked
     candidates are fetched, in rounds.
@@ -161,13 +170,23 @@ def select_per_visit(
     tried candidates (default ``per_visit_max_candidates * max_per_visit``, so 3
     for one per visit). ``keep_rejected=False`` turns off the fallback, so a visit
     with no accepted candidate is skipped instead of keeping a rejected one.
+    ``min_core_valid`` (0 to 1, default off) also rejects a candidate whose target
+    core (r <= 2 px of the view centre, after cleaning; filled saturated pixels
+    count as valid) has a smaller valid fraction, outcome ``masked_core``.
+
+    Raises InvalidParameter when ``max_per_visit`` or ``max_candidates`` is not a
+    positive integer, or ``min_core_valid`` is outside 0 to 1.
     """
-    ranked = {v: rank_visit(g, ra, dec, fov_arcmin) for v, g in group_visits(epochs).items()}
-    want = max(1, int(max_per_visit))
+    want = _positive_int("max_per_visit", max_per_visit)
     if max_candidates is None:
         limit = max(1, int(settings.per_visit_max_candidates)) * want
     else:
-        limit = max(1, int(max_candidates))
+        limit = _positive_int("max_candidates", max_candidates)
+    if min_core_valid is not None and (
+            isinstance(min_core_valid, bool) or not isinstance(min_core_valid, int | float)
+            or not 0.0 <= float(min_core_valid) <= 1.0):
+        raise InvalidParameter("min_core_valid must be a number from 0 to 1")
+    ranked = {v: rank_visit(g, ra, dec, fov_arcmin) for v, g in group_visits(epochs).items()}
     result = Selection()
     accepted: dict[int, list[Chosen]] = {v: [] for v in ranked}
     tried: dict[int, int] = {v: 0 for v in ranked}
@@ -193,9 +212,13 @@ def select_per_visit(
                 outcome = "low_coverage"
             elif frame.status == "bad":
                 outcome = "bad_quality"
+            elif min_core_valid is not None and frame.core_valid < min_core_valid:
+                outcome = "masked_core"
             else:
                 outcome = "accepted"
             detail = f"coverage {got.coverage:.3f}, flagged {frame.flagged_fraction:.4f}"
+            if min_core_valid is not None:
+                detail += f", core valid {frame.core_valid:.2f}"
             result.attempts.append(Attempt(visit, epoch.id, outcome, detail))
             if outcome == "accepted":
                 accepted[visit].append(Chosen(epoch, got, frame, accepted=True))

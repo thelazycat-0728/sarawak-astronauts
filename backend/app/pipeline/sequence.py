@@ -80,6 +80,23 @@ def _wavelength(cutout: Cutout, band: str) -> float:
     return round((lo + hi) / 2.0, 5)
 
 
+def _check_stretch(stretch: object) -> tuple[float, float] | None:
+    """A caller-given (vmin, vmax): two finite numbers with vmax > vmin."""
+    if stretch is None:
+        return None
+    try:
+        lo, hi = stretch  # type: ignore[misc]
+    except (TypeError, ValueError) as exc:
+        raise InvalidParameter("stretch must be a (vmin, vmax) pair") from exc
+    for value in (lo, hi):
+        if isinstance(value, bool) or not isinstance(value, int | float):
+            raise InvalidParameter("stretch values must be numbers")
+    lo, hi = float(lo), float(hi)
+    if not (math.isfinite(lo) and math.isfinite(hi) and hi > lo):
+        raise InvalidParameter("stretch must be finite with vmax > vmin")
+    return lo, hi
+
+
 def build_sequence(
     ra: object,
     dec: object,
@@ -99,6 +116,7 @@ def build_sequence(
     keep_rejected: bool = True,
     cutout_fov: object = None,
     stretch: tuple[float, float] | None = None,
+    min_core_valid: float | None = None,
 ) -> Sequence:
     """Query (unless ``query`` is given), fetch, clean, stretch and render.
 
@@ -109,10 +127,11 @@ def build_sequence(
     smaller ``fov`` values; cleaning, rendering and the response use ``fov``.
     ``stretch`` = (vmin, vmax) in MJy/sr replaces the computed shared stretch (for
     example to give a smaller fov the same grey levels as a larger one).
+    ``min_core_valid`` is passed to ``select_per_visit`` (``per_visit`` only).
 
-    Raises InvalidParameter for a bad view or mode, and UpstreamError or
-    UpstreamTimeout when the IRSA query fails. Individual cutout failures do not
-    fail the sequence.
+    Raises InvalidParameter for a bad view, mode, selection limit or stretch (all
+    checked before any IRSA call), and UpstreamError or UpstreamTimeout when the
+    IRSA query fails. Individual cutout failures do not fail the sequence.
     """
     settings = settings or Settings()
     view = make_view(ra, dec, fov)
@@ -122,6 +141,11 @@ def build_sequence(
     band_s = validate_band(band)
     if mode not in ("per_visit", "all"):
         raise InvalidParameter("mode must be per_visit or all")
+    for label, value in (("max_per_visit", max_per_visit), ("max_candidates", max_candidates)):
+        if value is not None and (isinstance(value, bool) or not isinstance(value, int)
+                                  or value < 1):
+            raise InvalidParameter(f"{label} must be a positive integer")
+    stretch_pair = _check_stretch(stretch)
     cache = cache or default_cache(settings)
     timings: dict[str, float] = {}
     started = time.monotonic()
@@ -157,7 +181,8 @@ def build_sequence(
                                      fetch=counting_fetch, clean=clean, settings=settings,
                                      max_per_visit=max_per_visit,
                                      max_candidates=max_candidates,
-                                     keep_rejected=keep_rejected)
+                                     keep_rejected=keep_rejected,
+                                     min_core_valid=min_core_valid)
         picked = [(c.epoch, c.cutout, c.frame) for c in selection.chosen]
         seq_attempts, skipped = selection.attempts, selection.skipped_visits
         downloads = sum(1 for c in fetched if not c.from_cache)
@@ -177,12 +202,10 @@ def build_sequence(
         timings["clean"] = time.monotonic() - t1
 
     t2 = time.monotonic()
-    if stretch is None:
+    if stretch_pair is None:
         vmin, vmax = compute_stretch([frame.image for _, _, frame in picked], settings)
     else:
-        vmin, vmax = (float(v) for v in stretch)
-        if not (math.isfinite(vmin) and math.isfinite(vmax) and vmax > vmin):
-            raise InvalidParameter("stretch must be finite with vmax > vmin")
+        vmin, vmax = stretch_pair
     frames: dict[str, bytes] = {}
     out_epochs: list[Epoch] = []
     for epoch, cutout, frame in picked:
