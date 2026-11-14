@@ -1,0 +1,195 @@
+{
+  "synthetic": true,
+  "target": {
+    "name": "Barnard's Star",
+    "ra": 269.4464,
+    "dec": 4.7668,
+    "frame": "ICRS"
+  },
+  "fov_arcmin": 10.0,
+  "band": {
+    "id": "D2",
+    "wavelength_min_um": 1.1,
+    "wavelength_max_um": 1.62
+  },
+  "image": {
+    "width_px": 96,
+    "height_px": 96,
+    "pixel_scale_arcsec": 6.25,
+    "orientation": "north-up-east-left",
+    "format": "png-gray8"
+  },
+  "stretch": {
+    "shared": true,
+    "method": "asinh",
+    "vmin": 0.0079,
+    "vmax": 1.9739,
+    "unit": "MJy/sr",
+    "note": "One stretch is shared by every frame in this sequence, so brightness changes between frames are real."
+  },
+  "releases": [
+    "DR1",
+    "QR3"
+  ],
+  "duplicates_removed": 0,
+  "count": 9,
+  "epochs": [
+    {
+      "id": "mock_20250514_01_D2",
+      "time_utc": "2025-05-14T03:12:40Z",
+      "mjd": 60809.133796,
+      "visit": 1,
+      "release": "DR1",
+      "obs_id": "synthetic-0001",
+      "band": "D2",
+      "wavelength_um": 1.496,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.004,
+        "flags": []
+      },
+      "frame_url": "/mock/frames/mock_20250514_01_D2.png"
+    },
+    {
+      "id": "mock_20250514_02_D2",
+      "time_utc": "2025-05-14T16:47:05Z",
+      "mjd": 60809.699363,
+      "visit": 1,
+      "release": "DR1",
+      "obs_id": "synthetic-0002",
+      "band": "D2",
+      "wavelength_um": 1.484,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.006,
+        "flags": []
+      },
+      "frame_url": "/mock/frames/mock_20250514_02_D2.png"
+    },
+    {
+      "id": "mock_20250515_03_D2",
+      "time_utc": "2025-05-15T06:20:52Z",
+      "mjd": 60810.264491,
+      "visit": 1,
+      "release": "DR1",
+      "obs_id": "synthetic-0003",
+      "band": "D2",
+      "wavelength_um": 1.278,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.071,
+        "flags": [
+          "TRANSIENT"
+        ]
+      },
+      "frame_url": "/mock/frames/mock_20250515_03_D2.png"
+    },
+    {
+      "id": "mock_20251111_04_D2",
+      "time_utc": "2025-11-11T22:05:18Z",
+      "mjd": 60990.920347,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "synthetic-0004",
+      "band": "D2",
+      "wavelength_um": 1.144,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.003,
+        "flags": []
+      },
+      "frame_url": "/mock/frames/mock_20251111_04_D2.png"
+    },
+    {
+      "id": "mock_20251112_05_D2",
+      "time_utc": "2025-11-12T11:39:44Z",
+      "mjd": 60991.485926,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "synthetic-0005",
+      "band": "D2",
+      "wavelength_um": 1.371,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.005,
+        "flags": []
+      },
+      "frame_url": "/mock/frames/mock_20251112_05_D2.png"
+    },
+    {
+      "id": "mock_20251113_06_D2",
+      "time_utc": "2025-11-13T01:14:09Z",
+      "mjd": 60992.051493,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "synthetic-0006",
+      "band": "D2",
+      "wavelength_um": 1.351,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.009,
+        "flags": [
+          "PERSIST"
+        ]
+      },
+      "frame_url": "/mock/frames/mock_20251113_06_D2.png"
+    },
+    {
+      "id": "mock_20260513_07_D2",
+      "time_utc": "2026-05-13T08:31:27Z",
+      "mjd": 61173.355174,
+      "visit": 3,
+      "release": "QR3",
+      "obs_id": "synthetic-0007",
+      "band": "D2",
+      "wavelength_um": 1.491,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.004,
+        "flags": []
+      },
+      "frame_url": "/mock/frames/mock_20260513_07_D2.png"
+    },
+    {
+      "id": "mock_20260513_08_D2",
+      "time_utc": "2026-05-13T22:05:51Z",
+      "mjd": 61173.920729,
+      "visit": 3,
+      "release": "QR3",
+      "obs_id": "synthetic-0008",
+      "band": "D2",
+      "wavelength_um": 1.293,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.012,
+        "flags": []
+      },
+      "frame_url": "/mock/frames/mock_20260513_08_D2.png"
+    },
+    {
+      "id": "mock_20260514_09_D2",
+      "time_utc": "2026-05-14T11:40:16Z",
+      "mjd": 61174.486296,
+      "visit": 3,
+      "release": "QR3",
+      "obs_id": "synthetic-0009",
+      "band": "D2",
+      "wavelength_um": 1.166,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.006,
+        "flags": []
+      },
+      "frame_url": "/mock/frames/mock_20260514_09_D2.png"
+    }
+  ],
+  "diff_url_template": null,
+  "diffs": [
+    {
+      "a": "mock_20250514_01_D2",
+      "b": "mock_20260514_09_D2",
+      "url": "/mock/diff/mock_20250514_01_D2__mock_20260514_09_D2.png",
+      "scale": 0.1254
+    }
+  ]
+}
