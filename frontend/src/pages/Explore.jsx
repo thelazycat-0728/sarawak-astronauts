@@ -13,7 +13,7 @@ import { useViewer, useUi, useProgress } from '../store';
 import { useField } from '../lib/api';
 import { PRESETS, PRESET_BY_ID, ARRAYS, LESSONS } from '../lib/data';
 import {
-  PX, paintImage, paintDiff, lutForArray, meanOf, drawReticle, drawCompass, aperture, centroid,
+  paintImage, paintDiff, lutForArray, meanOf, drawReticle, drawCompass, aperture, centroid,
   spectrum102, MOLECULES, bandLambda,
 } from '../lib/sim';
 import { parseRA, parseDec, formatRA, formatDec, formatDate, cn, mulberry32, hashString } from '../lib/util';
@@ -289,7 +289,7 @@ function Stage({ field, loading, preset, cur, base, incIdx, expert, selection, o
       const o = field.object;
       if (o && o.pm && o.inGaia !== false && !o.mystery && ['barnard', 'rwaur', 'rdra'].includes(o.id)) {
         const p = field.posAt(cur);
-        const len = Math.hypot(...o.pm) / 1000 / PX; // 1 year, in pixels
+        const len = Math.hypot(...o.pm) / 1000 / field.pxScale; // 1 year, in pixels
         const ang = Math.atan2(o.pm[1], -o.pm[0]);
         const ex = p[0] * sx + Math.cos(ang) * len * sx, ey = p[1] * sy - Math.sin(ang) * len * sy;
         ctx.strokeStyle = '#45d3b8'; ctx.lineWidth = 1.5;
@@ -328,7 +328,7 @@ function Stage({ field, loading, preset, cur, base, incIdx, expert, selection, o
       let sub;
       if (o.kind === 'motion') {
         const [bx, by] = field.posAt(base);
-        sub = `motion detected · ${(Math.hypot(x - bx, y - by) * PX).toFixed(1)}″`;
+        sub = `motion detected · ${(Math.hypot(x - bx, y - by) * field.pxScale).toFixed(1)}″`;
       } else {
         const ref = aperture(field.stacks[base], field.nx, field.ny, x, y);
         const now = aperture(field.stacks[cur], field.nx, field.ny, x, y);
@@ -349,7 +349,7 @@ function Stage({ field, loading, preset, cur, base, incIdx, expert, selection, o
         ctx.restore();
       }
     }
-    drawCompass(ctx, W, H, field.fov, nx);
+    drawCompass(ctx, W, H, field.fov, nx, field.pxScale);
   }, [field, v.mode, v.overlays, cur, base, incIdx, expert, selection, preset]);
 
   const arr = ARRAYS[v.arrayIdx - 1];
@@ -655,7 +655,7 @@ function MotionCard({ field, incIdx }) {
     const pa = centroid(field.stacks[a], field.nx, field.ny, ...field.posAt(a));
     const pb = centroid(field.stacks[b], field.nx, field.ny, ...field.posAt(b));
     const dx = pb[0] - pa[0], dy = pb[1] - pa[1];
-    const shift = Math.hypot(dx, dy) * PX;
+    const shift = Math.hypot(dx, dy) * field.pxScale;
     const years = field.epochs[b].t - field.epochs[a].t;
     const rate = shift / years;
     const angle = ((Math.atan2(-dx, -dy) * 180) / Math.PI + 360) % 360;
