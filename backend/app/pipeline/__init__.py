@@ -7,6 +7,7 @@ Not wired into the routes yet (T-014 adds the IRSA provider). Modules:
 - ``render``: shared asinh stretch, 8-bit PNG, stateless ``render_frame``.
 - ``select``: per-visit ranking from SIA metadata, with download fallback.
 - ``sequence``: ``build_sequence`` returning an ``/epochs`` response plus PNGs.
+- ``diff``: ``b - a`` difference PNGs (grey 128 = no change).
 """
 
 from app.pipeline.clean import (
@@ -16,6 +17,7 @@ from app.pipeline.clean import (
     quality_status,
     view_wcs,
 )
+from app.pipeline.diff import diff_png
 from app.pipeline.render import compute_stretch, encode_png, render_frame, to_gray8
 from app.pipeline.select import edge_distance_arcmin, rank_visit, select_per_visit
 from app.pipeline.sequence import Sequence, build_sequence
@@ -26,6 +28,7 @@ __all__ = [
     "build_sequence",
     "clean_cutout",
     "compute_stretch",
+    "diff_png",
     "edge_distance_arcmin",
     "encode_png",
     "grid_side",

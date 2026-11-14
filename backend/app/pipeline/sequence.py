@@ -3,7 +3,7 @@
 Modes:
 
 - ``per_visit`` (live sequences): one exposure per visit, chosen from metadata
-  before downloading (``select``).
+  before downloading (``select``). Presets pass ``max_per_visit`` for several.
 - ``all`` (presets): every exposure IRSA lists. Failed downloads are left out and
   counted in ``Sequence.failures``.
 
@@ -93,8 +93,18 @@ def build_sequence(
     session: StreamingSession | None = None,
     sia_session: HttpSession | None = None,
     query: EpochQueryResult | None = None,
+    max_per_visit: int = 1,
+    max_candidates: int | None = None,
+    keep_rejected: bool = True,
+    cutout_fov: object = None,
 ) -> Sequence:
     """Query (unless ``query`` is given), fetch, clean, stretch and render.
+
+    ``max_per_visit``, ``max_candidates`` and ``keep_rejected`` are passed to
+    ``select_per_visit`` (``per_visit`` mode only; the defaults keep one exposure
+    per visit). ``cutout_fov`` (arcmin, at least ``fov``) fetches the cutouts sized
+    for that larger view, so one cached set of cutouts can be rendered at several
+    smaller ``fov`` values; cleaning, rendering and the response use ``fov``.
 
     Raises InvalidParameter for a bad view or mode, and UpstreamError or
     UpstreamTimeout when the IRSA query fails. Individual cutout failures do not
@@ -102,6 +112,9 @@ def build_sequence(
     """
     settings = settings or Settings()
     view = make_view(ra, dec, fov)
+    fetch_view = view if cutout_fov is None else make_view(ra, dec, cutout_fov)
+    if fetch_view.fov_arcmin < view.fov_arcmin:
+        raise InvalidParameter("cutout_fov must be at least fov")
     band_s = validate_band(band)
     if mode not in ("per_visit", "all"):
         raise InvalidParameter("mode must be per_visit or all")
@@ -116,8 +129,8 @@ def build_sequence(
     epochs = list(query.epochs)
 
     def fetch(items: list[EpochRecord]) -> tuple[Cutout | CutoutFailure, ...]:
-        return fetch_cutouts(items, view.ra, view.dec, view.fov_arcmin, settings=settings,
-                             cache=cache, session=session).results
+        return fetch_cutouts(items, fetch_view.ra, fetch_view.dec, fetch_view.fov_arcmin,
+                             settings=settings, cache=cache, session=session).results
 
     def clean(cutout: Cutout) -> CleanFrame:
         return clean_path(cutout.path, view.ra, view.dec, view.fov_arcmin, settings)
@@ -137,7 +150,10 @@ def build_sequence(
             return results
 
         selection = select_per_visit(epochs, view.ra, view.dec, view.fov_arcmin,
-                                     fetch=counting_fetch, clean=clean, settings=settings)
+                                     fetch=counting_fetch, clean=clean, settings=settings,
+                                     max_per_visit=max_per_visit,
+                                     max_candidates=max_candidates,
+                                     keep_rejected=keep_rejected)
         picked = [(c.epoch, c.cutout, c.frame) for c in selection.chosen]
         seq_attempts, skipped = selection.attempts, selection.skipped_visits
         downloads = sum(1 for c in fetched if not c.from_cache)
