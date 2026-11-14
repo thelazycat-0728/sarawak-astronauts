@@ -15,6 +15,7 @@ caller's ``frame_url(epoch_id, vmin, vmax)`` so presets can use root-relative
 
 from __future__ import annotations
 
+import math
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -97,6 +98,7 @@ def build_sequence(
     max_candidates: int | None = None,
     keep_rejected: bool = True,
     cutout_fov: object = None,
+    stretch: tuple[float, float] | None = None,
 ) -> Sequence:
     """Query (unless ``query`` is given), fetch, clean, stretch and render.
 
@@ -105,6 +107,8 @@ def build_sequence(
     per visit). ``cutout_fov`` (arcmin, at least ``fov``) fetches the cutouts sized
     for that larger view, so one cached set of cutouts can be rendered at several
     smaller ``fov`` values; cleaning, rendering and the response use ``fov``.
+    ``stretch`` = (vmin, vmax) in MJy/sr replaces the computed shared stretch (for
+    example to give a smaller fov the same grey levels as a larger one).
 
     Raises InvalidParameter for a bad view or mode, and UpstreamError or
     UpstreamTimeout when the IRSA query fails. Individual cutout failures do not
@@ -173,7 +177,12 @@ def build_sequence(
         timings["clean"] = time.monotonic() - t1
 
     t2 = time.monotonic()
-    vmin, vmax = compute_stretch([frame.image for _, _, frame in picked], settings)
+    if stretch is None:
+        vmin, vmax = compute_stretch([frame.image for _, _, frame in picked], settings)
+    else:
+        vmin, vmax = (float(v) for v in stretch)
+        if not (math.isfinite(vmin) and math.isfinite(vmax) and vmax > vmin):
+            raise InvalidParameter("stretch must be finite with vmax > vmin")
     frames: dict[str, bytes] = {}
     out_epochs: list[Epoch] = []
     for epoch, cutout, frame in picked:

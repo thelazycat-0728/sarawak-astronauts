@@ -150,6 +150,24 @@ def test_cutout_fov_must_not_be_smaller_than_fov(tmp_path):
                        settings=make_settings(tmp_path), query=query_of([]))
 
 
+def test_a_given_stretch_replaces_the_computed_one(tmp_path):
+    settings = make_settings(tmp_path)
+    session = StreamSession(replies=[ok(FOV10)])
+    query = query_of(visits(1))
+    own = build_sequence(RA, DEC, "D2", 10, frame_url=lambda i, a, b: f"/f/{i}.png",
+                         mode="all", settings=settings, session=session, query=query)
+    given = build_sequence(RA, DEC, "D2", 10, frame_url=lambda i, a, b: f"/f/{i}?{a},{b}",
+                           mode="all", settings=settings, session=session, query=query,
+                           stretch=(0.5, 2.0))
+    assert (given.response.stretch.vmin, given.response.stretch.vmax) == (0.5, 2.0)
+    assert all(e.frame_url.endswith("?0.5,2.0") for e in given.response.epochs)
+    assert given.frames != own.frames
+    for bad in [(1.0, 1.0), (2.0, 1.0), (0.0, float("nan"))]:
+        with pytest.raises(InvalidParameter):
+            build_sequence(RA, DEC, "D2", 10, frame_url=lambda i, a, b: "", mode="all",
+                           settings=settings, session=session, query=query, stretch=bad)
+
+
 # ------------------------------------------------------------ diffs
 
 
