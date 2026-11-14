@@ -19,6 +19,7 @@ Safety rules:
 from __future__ import annotations
 
 import logging
+import math
 import random
 import time
 from collections.abc import Callable
@@ -41,6 +42,7 @@ IRSA_HOST = "irsa.ipac.caltech.edu"
 CHUNK_BYTES = 64 * 1024
 # A 30' cutout is about 7 MB with EPSF; anything far larger is not a cutout.
 MAX_CUTOUT_BYTES = 64 * 1024 * 1024
+MAX_RETRY_AFTER_S = 30.0
 _clock = time.monotonic  # replaced in tests
 
 
@@ -53,9 +55,23 @@ class StreamingSession(Protocol):
 class _Retryable(Exception):
     """Internal: a transient failure (timeout, 5xx, dropped connection)."""
 
-    def __init__(self, error: ApiError):
+    def __init__(self, error: ApiError, retry_after_s: float = 0.0):
         super().__init__(error.message)
         self.error = error
+        self.retry_after_s = retry_after_s
+
+
+def _retry_after_s(resp: Any) -> float:
+    """Seconds from a numeric Retry-After header (IRSA sends 5 with its 503),
+    capped at MAX_RETRY_AFTER_S; 0 when absent or not a number."""
+    headers = getattr(resp, "headers", None) or {}
+    try:
+        value = float(headers.get("Retry-After", 0))
+    except (TypeError, ValueError):
+        return 0.0
+    if not math.isfinite(value):
+        return 0.0
+    return min(max(value, 0.0), MAX_RETRY_AFTER_S)
 
 
 def check_access_url(url: object) -> str:
@@ -113,7 +129,8 @@ def _download_once(url: str, dest: Path, settings: Settings, session: Any) -> in
     try:
         status = int(getattr(resp, "status_code", 0))
         if status >= 500:
-            raise _Retryable(UpstreamError(f"IRSA cutout returned HTTP {status}"))
+            raise _Retryable(UpstreamError(f"IRSA cutout returned HTTP {status}"),
+                             _retry_after_s(resp))
         if status != 200:
             raise UpstreamError(f"IRSA cutout returned HTTP {status}")
         total = 0
@@ -160,7 +177,8 @@ def download_cutout(
     Timeouts, 5xx responses and dropped connections are retried
     ``settings.cutout_retries`` times. Retry n waits
     ``cutout_retry_backoff_s * 2**(n-1)`` times a random factor from 0.5 to 1.5, so
-    parallel workers that hit IRSA's "Server busy" 503 at once do not retry in step.
+    parallel workers that hit IRSA's "Server busy" 503 at once do not retry in step,
+    and never less than a numeric Retry-After header (capped at 30 s).
     Raises UpstreamTimeout or UpstreamError when every attempt fails.
     """
     check_access_url(url.split("?", 1)[0])
@@ -174,7 +192,8 @@ def download_cutout(
             except _Retryable as exc:
                 if attempt + 1 >= attempts:
                     raise exc.error from exc
-                wait = settings.cutout_retry_backoff_s * (2**attempt) * jitter()
+                backoff = settings.cutout_retry_backoff_s * (2**attempt) * jitter()
+                wait = max(backoff, exc.retry_after_s)
                 log.info("IRSA cutout attempt %d failed (%s); retrying in %.1f s",
                          attempt + 1, exc.error.message, wait)
                 sleep(wait)

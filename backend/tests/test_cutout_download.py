@@ -270,6 +270,21 @@ def test_backoff_has_jitter(tmp_path):
     assert make_settings(tmp_path).cutout_retry_backoff_s == 0.0  # tests never wait
 
 
+@pytest.mark.parametrize(
+    "header, expected",
+    [("5", [5.0, 5.0]), ("120", [30.0, 30.0]), ("soon", [1.0, 2.0]), (None, [1.0, 2.0])],
+)
+def test_retry_after_is_a_minimum_wait(tmp_path, header, expected):
+    settings = make_settings(tmp_path, cutout_retry_backoff_s=1.0, cutout_retries=2)
+    headers = {"Retry-After": header} if header is not None else {}
+    busy = StreamResponse(b"Server busy, retry later.", 503, headers=headers)
+    waits: list[float] = []
+    with pytest.raises(UpstreamError, match="HTTP 503"):
+        download_cutout(IRSA_FILE + "?center=1,2d&size=0.1", tmp_path / "x", settings,
+                        StreamSession(replies=[busy]), sleep=waits.append, jitter=lambda: 1.0)
+    assert waits == expected
+
+
 def test_zero_retries_means_one_attempt(tmp_path):
     settings = make_settings(tmp_path, cutout_retries=0)
     session = StreamSession(replies=[requests.ReadTimeout()])

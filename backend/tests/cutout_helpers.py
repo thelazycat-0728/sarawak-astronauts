@@ -74,6 +74,7 @@ class StreamResponse:
     status_code: int = 200
     chunk_size: int = 32 * 1024
     error_after: BaseException | None = None  # raised after the first chunk
+    headers: dict[str, str] = field(default_factory=dict)
     closed: bool = False
 
     def iter_content(self, chunk_size: int = 1):
@@ -128,7 +129,7 @@ class StreamSession:
                 raise reply
             # A fresh copy, so one canned response can serve many calls.
             return StreamResponse(reply.content, reply.status_code, reply.chunk_size,
-                                  reply.error_after)
+                                  reply.error_after, dict(reply.headers))
         finally:
             with self._lock:
                 self.active -= 1
