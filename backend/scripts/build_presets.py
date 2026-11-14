@@ -24,6 +24,10 @@ For each preset (``PRESETS`` in irsa_coverage.py):
    ``<id>/fov-6/manifest.json``, ``<id>/fov-3/manifest.json``, each with its
    ``frames/`` and ``diff/`` folders and root-relative ``/presets/...`` URLs, and
    ``index.json`` listing every preset with a manifest URL per fov.
+4. Per-visit stacks (preset_stacks.py): each manifest gets a ``stacks`` section
+   and ``stacks/`` folder (one mean image per visit with the stored stretch, and
+   a last-minus-first stack diff with the fov 12 stack scale). To add stacks to
+   the committed presets without rebuilding the frames, use build_stacks.py.
 
 Exit code 1 if a query failed, a preset has no frames, or any cutout download
 failed (IRSA often answers 503; re-run until there are 0 failures, cached cutouts
@@ -45,6 +49,7 @@ sys.path.insert(0, str(BACKEND))
 sys.path.insert(0, str(BACKEND / "scripts"))
 
 from irsa_coverage import PRESETS
+from preset_stacks import stack_section, write_stack_files
 
 from app.config import Settings
 from app.cutouts.download import StreamingSession
@@ -72,11 +77,13 @@ COLOUR_NOTE = ("Part of the frame-to-frame change is colour, because each frame 
 # What to look for (API.md section 4) and the fov the viewer opens with.
 LOOK_FOR = {
     "barnards-star": "Position shift between visits",
-    "eps-indi-b": ("Faint brown dwarf that moves about one pixel a year; easiest to see "
-                   "in the difference image."),
-    "wise-0855": ("Too faint to see in single SPHEREx snapshots at 4\u20135 \u00b5m; it only "
-                  "shows up when a visit's exposures are stacked. It moves about one pixel "
-                  "(8\u2033) west per year."),
+    "eps-indi-b": ("Faint brown dwarf that moves about one pixel a year; compare the first "
+                   "and last visit stacks, or see the stack difference, where it shows as "
+                   "a dark and bright pair."),
+    "wise-0855": ("Too faint to see in single SPHEREx snapshots at 4\u20135 \u00b5m. In the "
+                  "visit stacks it is at best a faint smudge at the centre, clearest in the "
+                  "last visit; its motion (about one pixel, 8\u2033, west per year) is too "
+                  "small to see here."),
     "rw-aur": f"Young star whose brightness changes between visits. {COLOUR_NOTE}",
     "r-dra": f"Mira variable whose brightness changes between visits. {COLOUR_NOTE}",
 }
@@ -109,6 +116,8 @@ class FovResult:
     visits: list[int]
     statuses: dict[str, int]
     diffs: list[DiffPair] = field(default_factory=list)
+    stacks: int = 0  # visit stacks in the manifest
+    stack_scale: float | None = None  # the stack diff scale
 
 
 @dataclass
@@ -180,9 +189,12 @@ def diff_pairs(pid: str, epochs) -> list[tuple[str, str]]:
 
 def write_sequence(seq, pid: str, fov: float, fovs: tuple[float, ...], root: Path,
                    pairs: list[tuple[str, str]],
-                   scales: dict[tuple[str, str], float] | None = None) -> FovResult:
+                   scales: dict[tuple[str, str], float] | None = None,
+                   stack_scale: float | None = None,
+                   settings: Settings | None = None) -> FovResult:
     """Write one fov's manifest, frames and ``pairs`` diffs (b - a), each with the
-    scale in ``scales`` if given, else the diff's own 99.5th percentile."""
+    scale in ``scales`` if given, else the diff's own 99.5th percentile, and the
+    per-visit stacks (preset_stacks.py) with ``stack_scale`` for their diff."""
     from app.pipeline.diff import diff_png
 
     sub = fov_subdir(fov, fovs)
@@ -202,11 +214,18 @@ def write_sequence(seq, pid: str, fov: float, fovs: tuple[float, ...], root: Pat
     EpochsResponse.model_validate_json(resp.model_dump_json())  # round-trip check
     _replace_pngs(folder / "frames", {f"{k}.png": v for k, v in seq.frames.items()})
     _replace_pngs(folder / "diff", diff_files)
-    _write_json(folder / "manifest.json", resp.model_dump(mode="json"))
+    section, stack_files, _stacks = stack_section(
+        resp.epochs, seq.cleaned, (resp.stretch.vmin, resp.stretch.vmax), url_base,
+        settings or Settings.from_env(), stack_scale)
+    write_stack_files(folder, stack_files)
+    doc = resp.model_dump(mode="json")
+    doc["stacks"] = section.model_dump(mode="json")
+    _write_json(folder / "manifest.json", doc)
     statuses = [e.quality.status for e in resp.epochs]
     return FovResult(fov=fov, count=resp.count, visits=sorted({e.visit for e in resp.epochs}),
                      statuses={s: statuses.count(s) for s in ("good", "warn", "bad")},
-                     diffs=diffs)
+                     diffs=diffs, stacks=len(section.visits),
+                     stack_scale=section.diff.scale if section.diff else None)
 
 
 def unusable(seq, min_core_valid: float = MIN_CORE_VALID) -> dict[str, str]:
@@ -305,10 +324,13 @@ def build_preset(
 
     pairs = diff_pairs(pid, final.epochs)
     scales: dict[tuple[str, str], float] | None = None
+    stack_scale: float | None = None
     for fov in sorted(fovs, reverse=True):  # the largest first: it sets the diff scales
-        written = write_sequence(sequences[fov], pid, fov, fovs, root, pairs, scales)
+        written = write_sequence(sequences[fov], pid, fov, fovs, root, pairs, scales,
+                                 stack_scale, settings)
         if scales is None:
             scales = {(d.a, d.b): d.scale for d in written.diffs}
+            stack_scale = written.stack_scale
         result.fovs.append(written)
     result.fovs.sort(key=lambda f: fovs.index(f.fov))
     result.ok = final.count > 0 and not result.download_failures
@@ -329,7 +351,7 @@ def index_document(results: list[PresetResult], fovs: tuple[float, ...] = PRESET
             "look_for": LOOK_FOR.get(r.pid, ""),
             "manifests": [
                 {"fov_arcmin": f.fov, "url": manifest_url(r.pid, f.fov, fovs),
-                 "count": f.count, "visits": len(f.visits)}
+                 "count": f.count, "visits": len(f.visits), "stacks": f.stacks}
                 for f in r.fovs
             ],
         })
@@ -356,7 +378,8 @@ def _kept(entry: dict) -> PresetResult:
     r = PresetResult(entry["id"], entry["name"], entry["ra"], entry["dec"], entry["band"],
                      ok=True)
     r.fovs = [FovResult(fov=m["fov_arcmin"], count=m["count"],
-                        visits=list(range(1, m["visits"] + 1)), statuses={})
+                        visits=list(range(1, m["visits"] + 1)), statuses={},
+                        stacks=m.get("stacks", 0))
               for m in entry["manifests"]]
     return r
 
