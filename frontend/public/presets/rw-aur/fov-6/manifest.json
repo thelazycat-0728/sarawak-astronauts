@@ -23,11 +23,11 @@
   "stretch": {
     "shared": true,
     "method": "asinh",
-    "vmin": 0.036424,
-    "vmax": 11.575,
+    "vmin": 0.0363,
+    "vmax": 11.662,
     "asinh_a": 0.1,
     "unit": "MJy/sr",
-    "note": "One stretch is shared by every frame in this sequence, so brightness changes between frames are real."
+    "note": "One stretch is shared by every frame in this sequence, so brightness changes between frames are real (each frame is at a slightly different wavelength)."
   },
   "releases": [
     "DR1",
@@ -36,28 +36,6 @@
   "duplicates_removed": 0,
   "count": 18,
   "epochs": [
-    {
-      "id": "sx_dr1_2025W37_1A_0366_1_D2",
-      "time_utc": "2025-09-09T20:08:26Z",
-      "mjd": 60927.839187,
-      "visit": 1,
-      "release": "DR1",
-      "obs_id": "2025W37_1A_0366_1",
-      "band": "D2",
-      "wavelength_um": 1.18546,
-      "quality": {
-        "status": "warn",
-        "flagged_fraction": 0.0511,
-        "flags": [
-          "NONFUNC",
-          "COLD",
-          "PERSIST",
-          "OUTLIER",
-          "HALO"
-        ]
-      },
-      "frame_url": "/presets/rw-aur/fov-6/frames/sx_dr1_2025W37_1A_0366_1_D2.png"
-    },
     {
       "id": "sx_dr1_2025W37_1A_0366_2_D2",
       "time_utc": "2025-09-09T20:10:35Z",
@@ -163,6 +141,29 @@
         ]
       },
       "frame_url": "/presets/rw-aur/fov-6/frames/sx_dr1_2025W37_1A_0379_2_D2.png"
+    },
+    {
+      "id": "sx_dr1_2025W37_1A_0379_3_D2",
+      "time_utc": "2025-09-09T21:51:04Z",
+      "mjd": 60927.910461,
+      "visit": 1,
+      "release": "DR1",
+      "obs_id": "2025W37_1A_0379_3",
+      "band": "D2",
+      "wavelength_um": 1.36488,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.1218,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "SNOWBALL",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_dr1_2025W37_1A_0379_3_D2.png"
     },
     {
       "id": "sx_dr1_2026W10_1A_0602_1_D2",
@@ -426,10 +427,16 @@
   "diff_url_template": null,
   "diffs": [
     {
-      "a": "sx_dr1_2025W37_1A_0366_1_D2",
+      "a": "sx_dr1_2025W37_1A_0366_2_D2",
       "b": "sx_qr3_2026W37_2A_0630_1_D2",
-      "url": "/presets/rw-aur/fov-6/diff/sx_dr1_2025W37_1A_0366_1_D2__sx_qr3_2026W37_2A_0630_1_D2.png",
-      "scale": 3.0777
+      "url": "/presets/rw-aur/fov-6/diff/sx_dr1_2025W37_1A_0366_2_D2__sx_qr3_2026W37_2A_0630_1_D2.png",
+      "scale": 5.3511
+    },
+    {
+      "a": "sx_dr1_2025W37_1A_0366_2_D2",
+      "b": "sx_qr3_2026W37_2A_0516_3_D2",
+      "url": "/presets/rw-aur/fov-6/diff/sx_dr1_2025W37_1A_0366_2_D2__sx_qr3_2026W37_2A_0516_3_D2.png",
+      "scale": 2.1705
     }
   ]
 }

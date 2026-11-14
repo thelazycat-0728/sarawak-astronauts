@@ -27,7 +27,7 @@
     "vmax": 32.414,
     "asinh_a": 0.1,
     "unit": "MJy/sr",
-    "note": "One stretch is shared by every frame in this sequence, so brightness changes between frames are real."
+    "note": "One stretch is shared by every frame in this sequence, so brightness changes between frames are real (each frame is at a slightly different wavelength)."
   },
   "releases": [
     "DR1",
@@ -402,6 +402,12 @@
       "b": "sx_qr3_2026W26_1A_0047_2_D2",
       "url": "/presets/r-dra/fov-3/diff/sx_dr1_2025W24_2D_0534_1_D2__sx_qr3_2026W26_1A_0047_2_D2.png",
       "scale": 35.887
+    },
+    {
+      "a": "sx_dr1_2025W24_2D_0534_4_D2",
+      "b": "sx_qr3_2026W26_1A_0047_1_D2",
+      "url": "/presets/r-dra/fov-3/diff/sx_dr1_2025W24_2D_0534_4_D2__sx_qr3_2026W26_1A_0047_1_D2.png",
+      "scale": 35.287
     }
   ]
 }

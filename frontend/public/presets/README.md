@@ -14,11 +14,14 @@ SPHEREx data: NASA/IPAC Infrared Science Archive (IRSA)
   `<id>/fov-3/manifest.json`: the `GET /epochs` response shape (`docs/API.md`
   sections 3 and 4). Each has its own `frames/` and `diff/` folders, referenced
   by root-relative `/presets/...` URLs.
-- Every fov shows the same exposures: up to 6 of the best-ranked per survey visit
-  (none with `bad` quality), cut once at fov 12 and rendered at 12, 6 and 3.
+- Every fov shows the same exposures: up to 6 of the best-ranked per survey visit,
+  cut once at fov 12 and rendered at 12, 6 and 3. An exposure that is `bad`, or
+  whose target centre is mostly masked, at any of the three fovs is left out.
   Frames are 8-bit grey, north up, east left, with one shared stretch (the same
   at all three fovs); grey 0 means no data. `diffs` holds the last-minus-first
-  difference (grey 128 = no change).
+  difference (grey 128 = no change); RW Aur and R Dra also hold a first-visit /
+  last-visit pair at the closest wavelength, because each frame is at a slightly
+  different wavelength and red stars change colour across the band.
 
 ## Regenerate
 

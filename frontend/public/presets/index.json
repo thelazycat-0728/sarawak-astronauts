@@ -42,7 +42,7 @@
       "dec": -56.8007,
       "band": "D2",
       "default_fov_arcmin": 6.0,
-      "look_for": "Faint co-moving brown dwarf pair",
+      "look_for": "Faint brown dwarf that moves about one pixel a year; easiest to see in the difference image.",
       "manifests": [
         {
           "fov_arcmin": 12.0,
@@ -71,7 +71,7 @@
       "dec": -7.2423,
       "band": "D6",
       "default_fov_arcmin": 6.0,
-      "look_for": "Motion; only visible at long wavelengths",
+      "look_for": "Too faint to see in single SPHEREx snapshots at 4–5 µm; it only shows up when a visit's exposures are stacked. It moves about one pixel (8″) west per year.",
       "manifests": [
         {
           "fov_arcmin": 12.0,
@@ -100,7 +100,7 @@
       "dec": 30.4014,
       "band": "D2",
       "default_fov_arcmin": 6.0,
-      "look_for": "Brightness changes",
+      "look_for": "Young star whose brightness changes between visits. Part of the frame-to-frame change is colour, because each frame is at a slightly different wavelength.",
       "manifests": [
         {
           "fov_arcmin": 12.0,
@@ -129,7 +129,7 @@
       "dec": 66.755,
       "band": "D2",
       "default_fov_arcmin": 6.0,
-      "look_for": "Brightness changes (Mira variable)",
+      "look_for": "Mira variable whose brightness changes between visits. Part of the frame-to-frame change is colour, because each frame is at a slightly different wavelength.",
       "manifests": [
         {
           "fov_arcmin": 12.0,

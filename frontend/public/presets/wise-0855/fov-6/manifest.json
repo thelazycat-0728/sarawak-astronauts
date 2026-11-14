@@ -27,7 +27,7 @@
     "vmax": 0.40195,
     "asinh_a": 0.1,
     "unit": "MJy/sr",
-    "note": "One stretch is shared by every frame in this sequence, so brightness changes between frames are real."
+    "note": "One stretch is shared by every frame in this sequence, so brightness changes between frames are real (each frame is at a slightly different wavelength)."
   },
   "releases": [
     "DR1"
