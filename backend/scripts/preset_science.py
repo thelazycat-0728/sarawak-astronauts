@@ -10,10 +10,17 @@ Pixel coordinates are x right (west), y down (south), 0-based, on the north-up
 grid at 6.2"/px; the target is at the centre. Every exposure is cleaned again from
 its cached cutout, so nothing is measured on the 8-bit PNGs.
 
-- **Movers** (barnards-star, eps-indi-b, wise-0855): per visit, the mean of the
-  visit's cleaned frames is centroided (flux-weighted, 7x7 box on the brightest
-  pixel within 4 px of the centre, background = median of the 8-12 px annulus).
-  ``snr`` is the 3x3 sum above background over its noise (from the annulus MAD).
+- **Movers** (barnards-star, eps-indi-b, wise-0855): per visit, the visit stack
+  (``app.pipeline.stack``, the same stack as the preset's ``stacks/visit-<n>.png``)
+  is measured on its ``measurable`` image, so filled saturated pixels never count.
+  It is centroided (flux-weighted, 7x7 box on the brightest valid pixel within
+  4 px of the centre, background = median of the 8-12 px annulus). ``snr`` is
+  the 3x3 sum above background over its noise (from the annulus MAD);
+  ``single-snr`` is the median of the same on the visit's single exposures.
+  When the stack has filled (saturated) pixels within 6 px of the centre, they
+  are NaN, so the centroid uses an 11x11 box and 5 re-centring passes on the
+  wings, and the centre of the filled-pixel mask (a position, no filled value
+  used) is reported as a second motion measure.
   The expected shift uses the SIMBAD proper motion between the visit mean times.
 - **Variables** (rw-aur, r-dra): saturated cores are *not* filled here
   (``pipeline_fill_saturated=False``), so they are NaN like masked pixels. Per
@@ -27,13 +34,15 @@ its cached cutout, so nothing is measured on the 8-bit PNGs.
   calibration and wavelength differences that affect every star alike. Values
   per visit are medians over the visit's exposures.
 
-``--sheets DIR`` also writes one contact sheet per preset (fov 12 PNGs, one row
-per visit, 3x enlarged) for viewing.
+``--sheets DIR`` also writes, per preset, a contact sheet of the fov 12 frames
+(one row per visit, 3x enlarged) and a stack sheet (one row per fov: the first
+frame, the visit stacks, the stack diff and the frame diff) for viewing.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import sys
 import warnings
@@ -56,6 +65,7 @@ from app.config import Settings
 from app.cutouts import cutout_key, default_cache, make_view
 from app.irsa.epochs import parse_epoch_id
 from app.models import EpochsResponse
+from app.pipeline.stack import stack_frames
 
 PUBLIC = REPO / "frontend" / "public"
 SCALE_ARCSEC = 6.2
@@ -69,6 +79,8 @@ PROPER_MOTION = {
 DAYS_PER_YEAR = 365.25
 REF_VALID_SHARE = 0.8  # a reference star's box must be valid in 80 % of exposures
 MIN_RING_SHARE = 0.5  # an exposure's wing value needs half the ring valid
+RECENTRE = 5  # centroid iterations when a saturated core is NaN
+SATURATED_HALF = 5  # and the centroid box / circle half-size then
 
 # ------------------------------------------------------------------ measurements
 
@@ -97,9 +109,12 @@ class Centroid:
 
 
 def centroid(img: np.ndarray, x0: float, y0: float, search: float = 4.0,
-             half: int = 3) -> Centroid:
+             half: int = 3, recentre: int = 0) -> Centroid:
     """Flux-weighted centroid in a (2*half+1)^2 box on the brightest valid pixel
-    within ``search`` px of (x0, y0); NaN pixels get no weight."""
+    within ``search`` px of (x0, y0); NaN pixels get no weight. ``recentre`` > 0
+    then repeats the weighting that many times in a radius ``half + 0.5`` circle
+    round the previous estimate, so a star with a missing (saturated, NaN) core
+    is centred on its wings instead of on the brightest pixel at the hole's edge."""
     bg, sigma = background(img, x0, y0, 8.0, 12.0)
     r = _radius(img.shape, x0, y0)
     near = np.where((r <= search) & np.isfinite(img), img, -np.inf)
@@ -113,7 +128,15 @@ def centroid(img: np.ndarray, x0: float, y0: float, search: float = 4.0,
         return Centroid(math.nan, math.nan, 0.0)
     core = np.nan_to_num(img[max(0, py - 1):py + 2, max(0, px - 1):px + 2] - bg, nan=0.0)
     snr = float(core.sum()) / (sigma * 3.0) if sigma > 0 else math.inf
-    return Centroid(float((box * xx).sum() / total), float((box * yy).sum() / total), snr)
+    cx, cy = float((box * xx).sum() / total), float((box * yy).sum() / total)
+    weights = np.nan_to_num(img - bg, nan=0.0).clip(min=0.0)
+    gy, gx = np.indices(img.shape)
+    for _ in range(recentre):
+        w = np.where(_radius(img.shape, cx, cy) <= half + 0.5, weights, 0.0)
+        if float(w.sum()) <= 0:
+            break
+        cx, cy = float((w * gx).sum() / w.sum()), float((w * gy).sum() / w.sum())
+    return Centroid(cx, cy, snr)
 
 
 def find_reference_stars(stack: np.ndarray, common: np.ndarray, x0: float, y0: float,
@@ -151,8 +174,8 @@ def load_manifest(pid: str) -> EpochsResponse:
     return EpochsResponse.model_validate_json(path.read_text(encoding="utf-8"))
 
 
-def cleaned_images(doc: EpochsResponse, settings: Settings) -> dict[str, np.ndarray]:
-    """Epoch id -> cleaned float image at the manifest's view, from the cache."""
+def cleaned_frames(doc: EpochsResponse, settings: Settings) -> dict:
+    """Epoch id -> CleanFrame at the manifest's view, from the cache."""
     from app.pipeline.render import clean_path
 
     view = make_view(doc.target.ra, doc.target.dec, doc.fov_arcmin)
@@ -165,8 +188,13 @@ def cleaned_images(doc: EpochsResponse, settings: Settings) -> dict[str, np.ndar
         path = cache.lookup(key)
         if path is None:
             raise SystemExit(f"{e.id}: cutout not cached; run build_presets.py first")
-        out[e.id] = clean_path(path, view.ra, view.dec, view.fov_arcmin, settings).image
+        out[e.id] = clean_path(path, view.ra, view.dec, view.fov_arcmin, settings)
     return out
+
+
+def cleaned_images(doc: EpochsResponse, settings: Settings) -> dict[str, np.ndarray]:
+    """Epoch id -> cleaned float image at the manifest's view, from the cache."""
+    return {k: f.image for k, f in cleaned_frames(doc, settings).items()}
 
 
 def visit_groups(doc: EpochsResponse) -> dict[int, list]:
@@ -186,23 +214,50 @@ def nanmean_stack(images: list[np.ndarray]) -> np.ndarray:
         return np.nanmean(np.stack(images), axis=0)
 
 
-def report_mover(pid: str, doc: EpochsResponse, images: dict[str, np.ndarray]) -> list[str]:
+def report_mover(pid: str, doc: EpochsResponse, images: dict[str, np.ndarray],
+                 frames: dict | None = None, settings: Settings | None = None) -> list[str]:
+    """Per visit: centroid and S/N on the visit stack. With ``frames`` (epoch id ->
+    CleanFrame), the stack is ``app.pipeline.stack`` on those frames and is
+    measured on its ``measurable`` image (filled saturated pixels left out); the
+    median single-exposure S/N is shown for comparison."""
     side = doc.image.width_px
     c0 = (side - 1) / 2.0
     rows = [(f"{pid} ({doc.band.id}, fov {doc.fov_arcmin:g}, centre {c0:.1f}): "
-             "visit  n  date        x      y     snr  exposure x/y scatter")]
+             "visit  n  date        x      y     snr  single-snr  filled-px  "
+             "exposure x/y scatter  saturated-core x/y")]
     first = None
+    first_core = last_core = None
     for visit, epochs in visit_groups(doc).items():
-        stack = nanmean_stack([images[e.id] for e in epochs])
-        c = centroid(stack, c0, c0)
-        singles = [centroid(images[e.id], c0, c0) for e in epochs]
+        filled_px = 0
+        core_xy = None
+        if frames is not None:
+            st = stack_frames([frames[e.id] for e in epochs], settings)
+            stack = st.measurable
+            near = _radius(stack.shape, c0, c0) <= 6.0
+            if st.filled is not None and (st.filled & near).any():
+                sel = st.filled & near
+                filled_px = int(sel.sum())
+                ys, xs = np.nonzero(sel)
+                core_xy = (float(xs.mean()), float(ys.mean()))
+        else:
+            stack = nanmean_stack([images[e.id] for e in epochs])
+        # A saturated core is NaN in the measurable stack: centre on the wings.
+        half, again = (SATURATED_HALF, RECENTRE) if filled_px else (3, 0)
+        c = centroid(stack, c0, c0, half=half, recentre=again)
+        singles = [centroid(images[e.id], c0, c0, half=half, recentre=again)
+                   for e in epochs]
+        single_snr = float(np.median([s.snr for s in singles]))
         sx = np.nanstd([s.x for s in singles]) if len(singles) > 1 else 0.0
         sy = np.nanstd([s.y for s in singles]) if len(singles) > 1 else 0.0
         mjd = float(np.mean([e.mjd for e in epochs]))
         if first is None:
             first = (mjd, c)
+            first_core = core_xy
+        last_core = core_xy
+        core_text = f"{core_xy[0]:.2f}/{core_xy[1]:.2f}" if core_xy else "-"
         rows.append(f"  {visit:>5} {len(epochs):>2}  {epochs[0].time_utc[:10]}  "
-                    f"{c.x:6.2f} {c.y:6.2f} {c.snr:6.1f}  {sx:.2f}/{sy:.2f}")
+                    f"{c.x:6.2f} {c.y:6.2f} {c.snr:6.1f}  {single_snr:9.1f}  "
+                    f"{filled_px:9d}  {sx:.2f}/{sy:.2f}             {core_text}")
     last_mjd, last = mjd, c
     dt_yr = (last_mjd - first[0]) / DAYS_PER_YEAR
     pmra, pmdec = PROPER_MOTION[pid]
@@ -212,6 +267,10 @@ def report_mover(pid: str, doc: EpochsResponse, images: dict[str, np.ndarray]) -
     rows.append(f"  first->last visit: dx {dx:+.2f} px, dy {dy:+.2f} px "
                 f"(|d| {math.hypot(dx, dy):.2f} px over {dt_yr:.2f} yr); expected "
                 f"dx {exp_dx:+.2f}, dy {exp_dy:+.2f} (|d| {math.hypot(exp_dx, exp_dy):.2f})")
+    if first_core and last_core:
+        cdx, cdy = last_core[0] - first_core[0], last_core[1] - first_core[1]
+        rows.append(f"  saturated core (centre of the filled-pixel mask, no filled "
+                    f"values used): dx {cdx:+.2f} px, dy {cdy:+.2f} px")
     return rows
 
 
@@ -297,6 +356,31 @@ def contact_sheet(pid: str, doc: EpochsResponse, out: Path, zoom: int = 3) -> Pa
     return path
 
 
+def stack_sheet(pid: str, out: Path, tile: int = 360) -> Path:
+    """One row per fov (12, 6, 3): the first frame, every visit stack, the stack
+    diff and the first-versus-last frame diff, each enlarged to ``tile`` px."""
+    rows = []
+    for fov in PRESET_FOVS:
+        sub = "" if fov == max(PRESET_FOVS) else f"fov-{fov:g}/"
+        raw = json.loads((PRESETS_DIR / pid / sub / "manifest.json").read_text(
+            encoding="utf-8"))
+        urls = [raw["epochs"][0]["frame_url"]]
+        urls += [s["url"] for s in raw["stacks"]["visits"]]
+        urls += [raw["stacks"]["diff"]["url"], raw["diffs"][0]["url"]]
+        rows.append(urls)
+    cols = max(len(r) for r in rows)
+    sheet = Image.new("L", (cols * (tile + 6), len(rows) * (tile + 6)), 60)
+    for r, urls in enumerate(rows):
+        for c, url in enumerate(urls):
+            with Image.open(PUBLIC / url.lstrip("/")) as im:
+                sheet.paste(im.resize((tile, tile), Image.NEAREST),
+                            (c * (tile + 6), r * (tile + 6)))
+    out.mkdir(parents=True, exist_ok=True)
+    path = out / f"stacks-{pid}.png"
+    sheet.save(path)
+    return path
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--preset", action="append", choices=[p[0] for p in PRESETS])
@@ -311,12 +395,15 @@ def main(argv: list[str] | None = None) -> int:
         doc = load_manifest(pid)
         assert doc.fov_arcmin == max(PRESET_FOVS)
         if pid in MOVERS:
-            rows = report_mover(pid, doc, cleaned_images(doc, display))
+            frames = cleaned_frames(doc, display)
+            measured = {k: f.measurable for k, f in frames.items()}
+            rows = report_mover(pid, doc, measured, frames, display)
         else:
             rows = report_variable(pid, doc, cleaned_images(doc, photometry))
         print("\n".join(rows))
         if args.sheets:
             print(f"  sheet {contact_sheet(pid, doc, args.sheets)}")
+            print(f"  stack sheet {stack_sheet(pid, args.sheets)}")
     return 0
 
 
