@@ -52,6 +52,11 @@ class UpstreamError(ApiError):
     code = "upstream_error"
 
 
+class Unavailable(ApiError):
+    status_code = 503
+    code = "unavailable"
+
+
 class UpstreamTimeout(ApiError):
     status_code = 504
     code = "upstream_timeout"

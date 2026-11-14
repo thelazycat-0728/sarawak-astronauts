@@ -3,7 +3,8 @@
 Three values come from the environment (names are provisional; Track C owns the
 first two):
 
-- ``DATA_MODE``: which data provider serves the endpoints. Only ``mock`` exists for now.
+- ``DATA_MODE``: which data provider serves the endpoints: ``mock`` (default,
+  synthetic frames) or ``irsa`` (live SPHEREx data, ``app.providers.irsa``).
 - ``CORS_ORIGINS``: comma-separated list of allowed browser origins.
 - ``CUTOUT_CACHE_DIR``: where SPHEREx cutouts are cached on disk (default
   ``backend/.cache/cutouts/``, git-ignored). On Render's free plan the disk is wiped
@@ -58,6 +59,18 @@ class Settings:
     cutout_retry_backoff_s: float = 5.0
     # How long a position query is reused when resolving an epoch id.
     epoch_query_ttl_s: float = 600.0
+
+    # ------------------------------------------------ live API (DATA_MODE=irsa)
+    # Most requests to IRSA (SIA queries and cutout downloads) in flight at once,
+    # across the whole process (app.cutouts.limit).
+    irsa_max_concurrency: int = 4
+    # Whole-request limit for /epochs. When it passes the API answers 504
+    # upstream_timeout; a build that has started keeps running in the background
+    # and fills the /epochs cache, so a retry can be fast.
+    epochs_deadline_s: float = 90.0
+    # In-memory cache of /epochs results, keyed by the rounded position, fov and band.
+    epochs_cache_ttl_s: float = 600.0
+    epochs_cache_max_entries: int = 32
 
     # ------------------------------------------------ cleaning pipeline (app.pipeline)
     # FLAGS bits that mask a pixel, by name. Bit numbers are read from each cutout's
