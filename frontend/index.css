@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+/* SkyShift design tokens, taken from the team's draft:
+   near-black navy console, violet accent, teal reticles, mono labels. */
+@theme {
+  --color-ink-950: #06080e;
+  --color-ink-900: #0a0d16;
+  --color-ink-850: #0d111c;
+  --color-ink-800: #121827;
+  --color-ink-700: #1a2133;
+  --color-line: #1b2233;
+  --color-line-strong: #2a3249;
+  --color-fg: #e9ebf3;
+  --color-muted: #8c93a8;
+  --color-faint: #5b6378;
+  --color-accent: #7c6cf5;
+  --color-accent-strong: #6a59e6;
+  --color-accent-soft: #221d47;
+  --color-accent-fg: #b8afff;
+  --color-teal: #45d3b8;
+  --color-amber: #ffb15c;
+  --color-good: #4ade80;
+  --color-bad: #f87171;
+
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+}
+
+/* Small uppercase instrument label used across the console. */
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+:root { color-scheme: dark; }
+html, body { background: var(--color-ink-950); color: var(--color-fg); }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+input[type="range"] { accent-color: var(--color-accent); }
+.tabular { font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* driver.js guided tour, themed to the console */
+.driver-popover.skyshift-tour {
+  background: var(--color-ink-800);
+  color: var(--color-fg);
+  border: 1px solid var(--color-line-strong);
+  border-radius: 10px;
+  max-width: 320px;
+}
+.driver-popover.skyshift-tour .driver-popover-title { font-family: var(--font-sans); font-size: 15px; font-weight: 600; }
+.driver-popover.skyshift-tour .driver-popover-description { color: var(--color-muted); font-size: 13.5px; line-height: 1.5; }
+.driver-popover.skyshift-tour .driver-popover-progress-text { color: var(--color-faint); font-family: var(--font-mono); }
+.driver-popover.skyshift-tour button {
+  background: var(--color-ink-700); color: var(--color-fg); text-shadow: none;
+  border: 1px solid var(--color-line-strong); border-radius: 6px; padding: 5px 10px;
+}
+.driver-popover.skyshift-tour .driver-popover-next-btn { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
+.driver-popover.skyshift-tour .driver-popover-close-btn { background: transparent; border: 0; color: var(--color-muted); }
+.driver-popover.skyshift-tour .driver-popover-arrow-side-left.driver-popover-arrow { border-left-color: var(--color-ink-800); }
+.driver-popover.skyshift-tour .driver-popover-arrow-side-right.driver-popover-arrow { border-right-color: var(--color-ink-800); }
+.driver-popover.skyshift-tour .driver-popover-arrow-side-top.driver-popover-arrow { border-top-color: var(--color-ink-800); }
+.driver-popover.skyshift-tour .driver-popover-arrow-side-bottom.driver-popover-arrow { border-bottom-color: var(--color-ink-800); }
