@@ -26,8 +26,8 @@ def test_env_overrides(monkeypatch):
 
 
 def test_unknown_data_mode_fails_fast():
-    with pytest.raises(ValueError, match="only 'mock'"):
-        make_provider(Settings(data_mode="irsa"))
+    with pytest.raises(ValueError, match="unknown DATA_MODE"):
+        make_provider(Settings(data_mode="dr2"))
 
 
 def test_irsa_defaults_and_release_mapping():
