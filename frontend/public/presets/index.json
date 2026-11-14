@@ -19,19 +19,22 @@
           "fov_arcmin": 12.0,
           "url": "/presets/barnards-star/manifest.json",
           "count": 18,
-          "visits": 3
+          "visits": 3,
+          "stacks": 3
         },
         {
           "fov_arcmin": 6.0,
           "url": "/presets/barnards-star/fov-6/manifest.json",
           "count": 18,
-          "visits": 3
+          "visits": 3,
+          "stacks": 3
         },
         {
           "fov_arcmin": 3.0,
           "url": "/presets/barnards-star/fov-3/manifest.json",
           "count": 18,
-          "visits": 3
+          "visits": 3,
+          "stacks": 3
         }
       ]
     },
@@ -42,25 +45,28 @@
       "dec": -56.8007,
       "band": "D2",
       "default_fov_arcmin": 6.0,
-      "look_for": "Faint brown dwarf that moves about one pixel a year; easiest to see in the difference image.",
+      "look_for": "Faint brown dwarf that moves about one pixel a year; compare the first and last visit stacks, or see the stack difference, where it shows as a dark and bright pair.",
       "manifests": [
         {
           "fov_arcmin": 12.0,
           "url": "/presets/eps-indi-b/manifest.json",
           "count": 24,
-          "visits": 4
+          "visits": 4,
+          "stacks": 4
         },
         {
           "fov_arcmin": 6.0,
           "url": "/presets/eps-indi-b/fov-6/manifest.json",
           "count": 24,
-          "visits": 4
+          "visits": 4,
+          "stacks": 4
         },
         {
           "fov_arcmin": 3.0,
           "url": "/presets/eps-indi-b/fov-3/manifest.json",
           "count": 24,
-          "visits": 4
+          "visits": 4,
+          "stacks": 4
         }
       ]
     },
@@ -71,25 +77,28 @@
       "dec": -7.2423,
       "band": "D6",
       "default_fov_arcmin": 6.0,
-      "look_for": "Too faint to see in single SPHEREx snapshots at 4–5 µm; it only shows up when a visit's exposures are stacked. It moves about one pixel (8″) west per year.",
+      "look_for": "Too faint to see in single SPHEREx snapshots at 4–5 µm. In the visit stacks it is at best a faint smudge at the centre, clearest in the last visit; its motion (about one pixel, 8″, west per year) is too small to see here.",
       "manifests": [
         {
           "fov_arcmin": 12.0,
           "url": "/presets/wise-0855/manifest.json",
           "count": 14,
-          "visits": 3
+          "visits": 3,
+          "stacks": 3
         },
         {
           "fov_arcmin": 6.0,
           "url": "/presets/wise-0855/fov-6/manifest.json",
           "count": 14,
-          "visits": 3
+          "visits": 3,
+          "stacks": 3
         },
         {
           "fov_arcmin": 3.0,
           "url": "/presets/wise-0855/fov-3/manifest.json",
           "count": 14,
-          "visits": 3
+          "visits": 3,
+          "stacks": 3
         }
       ]
     },
@@ -106,19 +115,22 @@
           "fov_arcmin": 12.0,
           "url": "/presets/rw-aur/manifest.json",
           "count": 18,
-          "visits": 3
+          "visits": 3,
+          "stacks": 3
         },
         {
           "fov_arcmin": 6.0,
           "url": "/presets/rw-aur/fov-6/manifest.json",
           "count": 18,
-          "visits": 3
+          "visits": 3,
+          "stacks": 3
         },
         {
           "fov_arcmin": 3.0,
           "url": "/presets/rw-aur/fov-3/manifest.json",
           "count": 18,
-          "visits": 3
+          "visits": 3,
+          "stacks": 3
         }
       ]
     },
@@ -135,19 +147,22 @@
           "fov_arcmin": 12.0,
           "url": "/presets/r-dra/manifest.json",
           "count": 18,
-          "visits": 3
+          "visits": 3,
+          "stacks": 3
         },
         {
           "fov_arcmin": 6.0,
           "url": "/presets/r-dra/fov-6/manifest.json",
           "count": 18,
-          "visits": 3
+          "visits": 3,
+          "stacks": 3
         },
         {
           "fov_arcmin": 3.0,
           "url": "/presets/r-dra/fov-3/manifest.json",
           "count": 18,
-          "visits": 3
+          "visits": 3,
+          "stacks": 3
         }
       ]
     }

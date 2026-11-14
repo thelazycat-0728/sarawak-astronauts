@@ -447,5 +447,105 @@
       "url": "/presets/rw-aur/diff/sx_dr1_2025W37_1A_0366_2_D2__sx_qr3_2026W37_2A_0516_3_D2.png",
       "scale": 2.1705
     }
-  ]
+  ],
+  "stacks": {
+    "method": "mean",
+    "note": "Each visit stack is the mean of that visit's frames over their valid pixels, with the frames' stretch, so faint sources and small shifts show better. The frames are at slightly different wavelengths, so a stack is a broadband average, not a colour or brightness measurement.",
+    "visits": [
+      {
+        "visit": 1,
+        "n_frames": 6,
+        "epoch_ids": [
+          "sx_dr1_2025W37_1A_0366_2_D2",
+          "sx_dr1_2025W37_1A_0366_3_D2",
+          "sx_dr1_2025W37_1A_0366_4_D2",
+          "sx_dr1_2025W37_1A_0379_1_D2",
+          "sx_dr1_2025W37_1A_0379_2_D2",
+          "sx_dr1_2025W37_1A_0379_3_D2"
+        ],
+        "time_utc": "2025-09-09T21:00:49Z",
+        "mjd": 60927.87557,
+        "wavelength_min_um": 1.21403,
+        "wavelength_max_um": 1.36488,
+        "wavelength_mean_um": 1.28836,
+        "url": "/presets/rw-aur/stacks/visit-1.png",
+        "quality": {
+          "status": "good",
+          "flagged_fraction": 0.001,
+          "flags": [
+            "NONFUNC",
+            "COLD",
+            "PERSIST",
+            "OUTLIER",
+            "HALO",
+            "SNOWBALL"
+          ]
+        }
+      },
+      {
+        "visit": 2,
+        "n_frames": 6,
+        "epoch_ids": [
+          "sx_dr1_2026W10_1A_0602_1_D2",
+          "sx_dr1_2026W10_1A_0602_2_D2",
+          "sx_dr1_2026W10_1A_0602_3_D2",
+          "sx_dr1_2026W10_1A_0639_4_D2",
+          "sx_dr1_2026W10_2B_0340_1_D2",
+          "sx_dr1_2026W10_2B_0340_2_D2"
+        ],
+        "time_utc": "2026-03-05T22:47:19Z",
+        "mjd": 61104.949523,
+        "wavelength_min_um": 1.11999,
+        "wavelength_max_um": 1.60783,
+        "wavelength_mean_um": 1.35847,
+        "url": "/presets/rw-aur/stacks/visit-2.png",
+        "quality": {
+          "status": "good",
+          "flagged_fraction": 0.0013,
+          "flags": [
+            "NONFUNC",
+            "PERSIST",
+            "OUTLIER",
+            "HALO",
+            "COLD"
+          ]
+        }
+      },
+      {
+        "visit": 3,
+        "n_frames": 6,
+        "epoch_ids": [
+          "sx_qr3_2026W37_2A_0287_4_D2",
+          "sx_qr3_2026W37_2A_0516_1_D2",
+          "sx_qr3_2026W37_2A_0516_2_D2",
+          "sx_qr3_2026W37_2A_0516_3_D2",
+          "sx_qr3_2026W37_2A_0516_4_D2",
+          "sx_qr3_2026W37_2A_0630_1_D2"
+        ],
+        "time_utc": "2026-09-12T21:10:02Z",
+        "mjd": 61295.881962,
+        "wavelength_min_um": 1.12165,
+        "wavelength_max_um": 1.60799,
+        "wavelength_mean_um": 1.24791,
+        "url": "/presets/rw-aur/stacks/visit-3.png",
+        "quality": {
+          "status": "good",
+          "flagged_fraction": 0.0013,
+          "flags": [
+            "NONFUNC",
+            "COLD",
+            "PERSIST",
+            "OUTLIER",
+            "HALO"
+          ]
+        }
+      }
+    ],
+    "diff": {
+      "a_visit": 1,
+      "b_visit": 3,
+      "url": "/presets/rw-aur/stacks/diff/visit-1__visit-3.png",
+      "scale": 1.4771
+    }
+  }
 }

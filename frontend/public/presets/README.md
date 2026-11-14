@@ -22,6 +22,11 @@ SPHEREx data: NASA/IPAC Infrared Science Archive (IRSA)
   difference (grey 128 = no change); RW Aur and R Dra also hold a first-visit /
   last-visit pair at the closest wavelength, because each frame is at a slightly
   different wavelength and red stars change colour across the band.
+- `stacks` in each manifest (files in `<folder>/stacks/`): one mean image per
+  visit, with the frames' stretch, and a last-visit-minus-first-visit stack diff.
+  Stacks show faint targets and ~1 px motions better than single frames; they
+  are broadband averages (the frames differ in wavelength), not colour or
+  brightness measurements.
 
 ## Regenerate
 
@@ -35,5 +40,7 @@ backend/.venv/Scripts/python backend/scripts/check_presets.py
 
 IRSA often answers 503. `build_presets.py` exits with code 1 when any cutout
 download failed; run it again until it reports 0 failures. On Linux or macOS use
-`backend/.venv/bin/python`. `backend/scripts/preset_science.py` measures the
-targets' motion and brightness on the cleaned float images.
+`backend/.venv/bin/python`. `backend/scripts/build_stacks.py` adds or refreshes
+the stacks offline from the cutout cache without touching the frames.
+`backend/scripts/preset_science.py` measures the targets' motion and brightness
+on the cleaned float images.
