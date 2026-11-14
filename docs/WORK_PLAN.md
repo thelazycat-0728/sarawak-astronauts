@@ -10,20 +10,20 @@ This plan fits [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) into a **2-day hackathon
 
 People can work in parallel because the interfaces are **agreed in the first hour, and each track then builds against mocks**. Nobody should have to wait for someone else's code to be finished.
 
-| Track | Person | Focus |
-| --- | --- | --- |
-| A | _TBD_ | Frontend and viewer |
-| B | _TBD_ | Science backend and data pipeline |
-| C | _TBD_ | Platform, plain language, AI explainer and pitch |
+| Track | Person   | Focus                                            |
+| ----- | -------- | ------------------------------------------------ |
+| A     | Daryl    | Frontend and viewer                              |
+| B     | Noah     | Science backend and data pipeline                |
+| C     | Jonathan | Platform, plain language, AI explainer and pitch |
 
 ## 1. Scope for 2 days
 
-| Tier | Features |
-| --- | --- |
-| **Must** | Coordinate input (sexagesimal and decimal), SPHEREx image retrieval, date/epoch selection, time-series viewer, playback controls, five target presets, pre-computed demo frames, shareable URL, deployed site |
-| **Should** | Blink comparison, image subtraction, brightness-over-time chart, metadata panel, FOV control, band selection (6 co-added arrays), plain-language labels and glossary tooltips, Beginner/Expert toggle, guided first-run tour, AI explainer assistant |
-| **Stretch** | Gaia overlay (Aladin Lite), individual-band selection (102 bands), spectrum at a pixel, object tracking, "Spot the mover" game, accounts and observation submission (Supabase) |
-| **Cut** (future work, mention in the pitch) | AI priority ranking (no training data yet), scientist review dashboard, points and ranks, note moderation, image-score CNN, WISE overlay, 25-year time machine, "Did it change?" game |
+| Tier                                        | Features                                                                                                                                                                                                                                             |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Must**                                    | Coordinate input (sexagesimal and decimal), SPHEREx image retrieval, date/epoch selection, time-series viewer, playback controls, five target presets, pre-computed demo frames, shareable URL, deployed site                                        |
+| **Should**                                  | Blink comparison, image subtraction, brightness-over-time chart, metadata panel, FOV control, band selection (6 co-added arrays), plain-language labels and glossary tooltips, Beginner/Expert toggle, guided first-run tour, AI explainer assistant |
+| **Stretch**                                 | Gaia overlay (Aladin Lite), individual-band selection (102 bands), spectrum at a pixel, object tracking, "Spot the mover" game, accounts and observation submission (Supabase)                                                                       |
+| **Cut** (future work, mention in the pitch) | AI priority ranking (no training data yet), scientist review dashboard, points and ranks, note moderation, image-score CNN, WISE overlay, 25-year time machine, "Did it change?" game                                                                |
 
 Hackathon simplifications to the [TECH_STACK.md](TECH_STACK.md):
 
@@ -35,12 +35,12 @@ Hackathon simplifications to the [TECH_STACK.md](TECH_STACK.md):
 
 Agree these before splitting up, and commit them to `docs/`:
 
-| Contract | Owner | Consumers |
-| --- | --- | --- |
-| **API spec** (`docs/API.md`): `GET /epochs?ra&dec&fov&band`, `GET /frame/{id}.png`, `GET /diff?a&b`, `GET /lightcurve?ra&dec`, `POST /explain` | B | A, C |
-| **Mock data**: sample JSON responses plus a few PNG frames in `frontend/public/mock/` | B | A |
-| **URL params** (`ra`, `dec`, `fov`, `band`, `epochs`, `mode`) and the Zustand store shape | A | B, C |
-| **Repo layout** (`frontend/`, `backend/`) and environment variable names | C | All |
+| Contract                                                                                                                                       | Owner | Consumers |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ----- | --------- |
+| **API spec** (`docs/API.md`): `GET /epochs?ra&dec&fov&band`, `GET /frame/{id}.png`, `GET /diff?a&b`, `GET /lightcurve?ra&dec`, `POST /explain` | B     | A, C      |
+| **Mock data**: sample JSON responses plus a few PNG frames in `frontend/public/mock/`                                                          | B     | A         |
+| **URL params** (`ra`, `dec`, `fov`, `band`, `epochs`, `mode`) and the Zustand store shape                                                      | A     | B, C      |
+| **Repo layout** (`frontend/`, `backend/`) and environment variable names                                                                       | C     | All       |
 
 Also in hour 0–1: whoever has `spherex_blink.py` and `time_machine.py` (listed as existing pipelines in the tech stack) commits them, so B can start from them.
 
@@ -55,23 +55,23 @@ Also in hour 0–1: whoever has `spherex_blink.py` and `time_machine.py` (listed
 
 **Owns:** `frontend/` (except `glossary.json` and the explainer panel, owned by C)
 
-| When | Tasks |
-| --- | --- |
-| **Day 1 AM** (Must) | Vite + React + Tailwind + shadcn scaffold; RA/Dec input with sexagesimal and decimal parsing; five preset buttons; `<canvas>` time-series viewer running on mock frames |
-| **Day 1 PM** (Must) | Play/pause/next/prev/speed; epoch picker; URL sync for shareable views; switch from mocks to B's real API |
-| **Day 2 AM** (Should) | Blink comparison; subtraction view; brightness chart (Recharts); metadata panel; FOV and band (6 arrays) controls |
-| **Day 2 PM** (Should, then Stretch) | Beginner/Expert toggle; guided tour (driver.js) using the presets; then Aladin Lite Gaia overlay or "Spot the mover" game |
+| When                                | Tasks                                                                                                                                                                   |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Day 1 AM** (Must)                 | Vite + React + Tailwind + shadcn scaffold; RA/Dec input with sexagesimal and decimal parsing; five preset buttons; `<canvas>` time-series viewer running on mock frames |
+| **Day 1 PM** (Must)                 | Play/pause/next/prev/speed; epoch picker; URL sync for shareable views; switch from mocks to B's real API                                                               |
+| **Day 2 AM** (Should)               | Blink comparison; subtraction view; brightness chart (Recharts); metadata panel; FOV and band (6 arrays) controls                                                       |
+| **Day 2 PM** (Should, then Stretch) | Beginner/Expert toggle; guided tour (driver.js) using the presets; then Aladin Lite Gaia overlay or "Spot the mover" game                                               |
 
 ## 4. Person B: Science backend and data pipeline
 
 **Owns:** `backend/`, except `/explain` (owned by C)
 
-| When | Tasks |
-| --- | --- |
-| **Day 1 AM** (Must) | Mock data for A (first hour); FastAPI scaffold; IRSA TAP query for SPHEREx DR1/QR3 epochs at a position; cutout retrieval and cache |
-| **Day 1 PM** (Must) | Cleaning pipeline (ZODI subtraction, FLAGS mask, reproject north-up, one shared stretch, de-duplication); PNG frames; **pre-computed frames for all five presets**, committed to `frontend/public/presets/`; confirm Barnard's Star and WISE 0855 visibly move and RW Aur and R Dra visibly change brightness |
-| **Day 2 AM** (Should) | Difference images; co-added images per detector array; photometry endpoint (photutils) for the light curve; quality and contamination metadata |
-| **Day 2 PM** (Stretch) | Gaia DR3 cone search for the overlay; spectrum at a pixel; centroid-based motion tracking |
+| When                   | Tasks                                                                                                                                                                                                                                                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Day 1 AM** (Must)    | Mock data for A (first hour); FastAPI scaffold; IRSA TAP query for SPHEREx DR1/QR3 epochs at a position; cutout retrieval and cache                                                                                                                                                                           |
+| **Day 1 PM** (Must)    | Cleaning pipeline (ZODI subtraction, FLAGS mask, reproject north-up, one shared stretch, de-duplication); PNG frames; **pre-computed frames for all five presets**, committed to `frontend/public/presets/`; confirm Barnard's Star and WISE 0855 visibly move and RW Aur and R Dra visibly change brightness |
+| **Day 2 AM** (Should)  | Difference images; co-added images per detector array; photometry endpoint (photutils) for the light curve; quality and contamination metadata                                                                                                                                                                |
+| **Day 2 PM** (Stretch) | Gaia DR3 cone search for the overlay; spectrum at a pixel; centroid-based motion tracking                                                                                                                                                                                                                     |
 
 **Note:** the pre-computed preset frames are the most important deliverable in the whole plan. The demo must work even if IRSA or the hosted API is slow during judging.
 
@@ -79,12 +79,12 @@ Also in hour 0–1: whoever has `spherex_blink.py` and `time_machine.py` (listed
 
 **Owns:** repo setup, CI/deploy, `frontend/src/glossary.json`, the explainer panel, `backend/app/ai/`, the pitch
 
-| When | Tasks |
-| --- | --- |
-| **Day 1 AM** (Must) | Repo scaffold and layout; GitHub Actions (lint and build); Vercel deploy for the frontend; Dockerfile and API deploy on Render/Railway; CORS and secrets |
-| **Day 1 PM** (Should) | `glossary.json` with plain-language labels and "?" tooltip text, each checked against its source definition; tooltip component for A to drop in; draft the pitch outline |
-| **Day 2 AM** (Should) | AI explainer: `POST /explain` calling an LLM with the glossary and current frame metadata as context, rate-limited, answers labelled "AI-generated"; chat panel in the frontend |
-| **Day 2 PM** (Stretch, then pitch) | Supabase magic-link login and a simple `submissions` table with a submit form, if time allows; **from 14:00, slides, demo script and backup screen recording** |
+| When                               | Tasks                                                                                                                                                                           |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Day 1 AM** (Must)                | Repo scaffold and layout; GitHub Actions (lint and build); Vercel deploy for the frontend; Dockerfile and API deploy on Render/Railway; CORS and secrets                        |
+| **Day 1 PM** (Should)              | `glossary.json` with plain-language labels and "?" tooltip text, each checked against its source definition; tooltip component for A to drop in; draft the pitch outline        |
+| **Day 2 AM** (Should)              | AI explainer: `POST /explain` calling an LLM with the glossary and current frame metadata as context, rate-limited, answers labelled "AI-generated"; chat panel in the frontend |
+| **Day 2 PM** (Stretch, then pitch) | Supabase magic-link login and a simple `submissions` table with a submit form, if time allows; **from 14:00, slides, demo script and backup screen recording**                  |
 
 ## 6. Timeline
 
