@@ -1,0 +1,435 @@
+{
+  "synthetic": false,
+  "target": {
+    "ra": 76.9564,
+    "dec": 30.4014,
+    "name": "RW Aurigae",
+    "frame": "ICRS"
+  },
+  "fov_arcmin": 6.0,
+  "band": {
+    "id": "D2",
+    "wavelength_min_um": 1.1,
+    "wavelength_max_um": 1.62
+  },
+  "image": {
+    "width_px": 59,
+    "height_px": 59,
+    "pixel_scale_arcsec": 6.2,
+    "orientation": "north-up-east-left",
+    "format": "png-gray8",
+    "nodata_gray": 0
+  },
+  "stretch": {
+    "shared": true,
+    "method": "asinh",
+    "vmin": 0.036424,
+    "vmax": 11.575,
+    "asinh_a": 0.1,
+    "unit": "MJy/sr",
+    "note": "One stretch is shared by every frame in this sequence, so brightness changes between frames are real."
+  },
+  "releases": [
+    "DR1",
+    "QR3"
+  ],
+  "duplicates_removed": 0,
+  "count": 18,
+  "epochs": [
+    {
+      "id": "sx_dr1_2025W37_1A_0366_1_D2",
+      "time_utc": "2025-09-09T20:08:26Z",
+      "mjd": 60927.839187,
+      "visit": 1,
+      "release": "DR1",
+      "obs_id": "2025W37_1A_0366_1",
+      "band": "D2",
+      "wavelength_um": 1.18546,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0511,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_dr1_2025W37_1A_0366_1_D2.png"
+    },
+    {
+      "id": "sx_dr1_2025W37_1A_0366_2_D2",
+      "time_utc": "2025-09-09T20:10:35Z",
+      "mjd": 60927.84068,
+      "visit": 1,
+      "release": "DR1",
+      "obs_id": "2025W37_1A_0366_2",
+      "band": "D2",
+      "wavelength_um": 1.21403,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0931,
+        "flags": [
+          "NONFUNC",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_dr1_2025W37_1A_0366_2_D2.png"
+    },
+    {
+      "id": "sx_dr1_2025W37_1A_0366_3_D2",
+      "time_utc": "2025-09-09T20:12:44Z",
+      "mjd": 60927.842172,
+      "visit": 1,
+      "release": "DR1",
+      "obs_id": "2025W37_1A_0366_3",
+      "band": "D2",
+      "wavelength_um": 1.24284,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0575,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_dr1_2025W37_1A_0366_3_D2.png"
+    },
+    {
+      "id": "sx_dr1_2025W37_1A_0366_4_D2",
+      "time_utc": "2025-09-09T20:14:53Z",
+      "mjd": 60927.843664,
+      "visit": 1,
+      "release": "DR1",
+      "obs_id": "2025W37_1A_0366_4",
+      "band": "D2",
+      "wavelength_um": 1.27259,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0839,
+        "flags": [
+          "NONFUNC",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_dr1_2025W37_1A_0366_4_D2.png"
+    },
+    {
+      "id": "sx_dr1_2025W37_1A_0379_1_D2",
+      "time_utc": "2025-09-09T21:46:46Z",
+      "mjd": 60927.907476,
+      "visit": 1,
+      "release": "DR1",
+      "obs_id": "2025W37_1A_0379_1",
+      "band": "D2",
+      "wavelength_um": 1.30249,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0641,
+        "flags": [
+          "NONFUNC",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_dr1_2025W37_1A_0379_1_D2.png"
+    },
+    {
+      "id": "sx_dr1_2025W37_1A_0379_2_D2",
+      "time_utc": "2025-09-09T21:48:55Z",
+      "mjd": 60927.908968,
+      "visit": 1,
+      "release": "DR1",
+      "obs_id": "2025W37_1A_0379_2",
+      "band": "D2",
+      "wavelength_um": 1.33331,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0721,
+        "flags": [
+          "NONFUNC",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_dr1_2025W37_1A_0379_2_D2.png"
+    },
+    {
+      "id": "sx_dr1_2026W10_1A_0602_1_D2",
+      "time_utc": "2026-03-05T05:06:04Z",
+      "mjd": 61104.212551,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "2026W10_1A_0602_1",
+      "band": "D2",
+      "wavelength_um": 1.53286,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0621,
+        "flags": [
+          "NONFUNC",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_dr1_2026W10_1A_0602_1_D2.png"
+    },
+    {
+      "id": "sx_dr1_2026W10_1A_0602_2_D2",
+      "time_utc": "2026-03-05T05:08:13Z",
+      "mjd": 61104.214043,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "2026W10_1A_0602_2",
+      "band": "D2",
+      "wavelength_um": 1.57017,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0572,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_dr1_2026W10_1A_0602_2_D2.png"
+    },
+    {
+      "id": "sx_dr1_2026W10_1A_0602_3_D2",
+      "time_utc": "2026-03-05T05:10:22Z",
+      "mjd": 61104.215535,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "2026W10_1A_0602_3",
+      "band": "D2",
+      "wavelength_um": 1.60783,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0879,
+        "flags": [
+          "NONFUNC",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_dr1_2026W10_1A_0602_3_D2.png"
+    },
+    {
+      "id": "sx_dr1_2026W10_1A_0639_4_D2",
+      "time_utc": "2026-03-05T10:04:49Z",
+      "mjd": 61104.420009,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "2026W10_1A_0639_4",
+      "band": "D2",
+      "wavelength_um": 1.11999,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.077,
+        "flags": [
+          "NONFUNC",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_dr1_2026W10_1A_0639_4_D2.png"
+    },
+    {
+      "id": "sx_dr1_2026W10_2B_0340_1_D2",
+      "time_utc": "2026-03-07T07:36:08Z",
+      "mjd": 61106.316754,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "2026W10_2B_0340_1",
+      "band": "D2",
+      "wavelength_um": 1.1462,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.073,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_dr1_2026W10_2B_0340_1_D2.png"
+    },
+    {
+      "id": "sx_dr1_2026W10_2B_0340_2_D2",
+      "time_utc": "2026-03-07T07:38:16Z",
+      "mjd": 61106.318246,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "2026W10_2B_0340_2",
+      "band": "D2",
+      "wavelength_um": 1.17374,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.0437,
+        "flags": [
+          "NONFUNC",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_dr1_2026W10_2B_0340_2_D2.png"
+    },
+    {
+      "id": "sx_qr3_2026W37_2A_0287_4_D2",
+      "time_utc": "2026-09-11T21:02:29Z",
+      "mjd": 61294.876724,
+      "visit": 3,
+      "release": "QR3",
+      "obs_id": "2026W37_2A_0287_4",
+      "band": "D2",
+      "wavelength_um": 1.12165,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0911,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_qr3_2026W37_2A_0287_4_D2.png"
+    },
+    {
+      "id": "sx_qr3_2026W37_2A_0516_1_D2",
+      "time_utc": "2026-09-12T23:00:56Z",
+      "mjd": 61295.958982,
+      "visit": 3,
+      "release": "QR3",
+      "obs_id": "2026W37_2A_0516_1",
+      "band": "D2",
+      "wavelength_um": 1.14764,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.0463,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_qr3_2026W37_2A_0516_1_D2.png"
+    },
+    {
+      "id": "sx_qr3_2026W37_2A_0516_2_D2",
+      "time_utc": "2026-09-12T23:03:05Z",
+      "mjd": 61295.960474,
+      "visit": 3,
+      "release": "QR3",
+      "obs_id": "2026W37_2A_0516_2",
+      "band": "D2",
+      "wavelength_um": 1.17521,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.079,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_qr3_2026W37_2A_0516_2_D2.png"
+    },
+    {
+      "id": "sx_qr3_2026W37_2A_0516_3_D2",
+      "time_utc": "2026-09-12T23:05:14Z",
+      "mjd": 61295.961967,
+      "visit": 3,
+      "release": "QR3",
+      "obs_id": "2026W37_2A_0516_3",
+      "band": "D2",
+      "wavelength_um": 1.20318,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.058,
+        "flags": [
+          "NONFUNC",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_qr3_2026W37_2A_0516_3_D2.png"
+    },
+    {
+      "id": "sx_qr3_2026W37_2A_0516_4_D2",
+      "time_utc": "2026-09-12T23:07:23Z",
+      "mjd": 61295.963459,
+      "visit": 3,
+      "release": "QR3",
+      "obs_id": "2026W37_2A_0516_4",
+      "band": "D2",
+      "wavelength_um": 1.23177,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.1181,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_qr3_2026W37_2A_0516_4_D2.png"
+    },
+    {
+      "id": "sx_qr3_2026W37_2A_0630_1_D2",
+      "time_utc": "2026-09-13T13:41:02Z",
+      "mjd": 61296.570167,
+      "visit": 3,
+      "release": "QR3",
+      "obs_id": "2026W37_2A_0630_1",
+      "band": "D2",
+      "wavelength_um": 1.60799,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0807,
+        "flags": [
+          "NONFUNC",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/rw-aur/fov-6/frames/sx_qr3_2026W37_2A_0630_1_D2.png"
+    }
+  ],
+  "diff_url_template": null,
+  "diffs": [
+    {
+      "a": "sx_dr1_2025W37_1A_0366_1_D2",
+      "b": "sx_qr3_2026W37_2A_0630_1_D2",
+      "url": "/presets/rw-aur/fov-6/diff/sx_dr1_2025W37_1A_0366_1_D2__sx_qr3_2026W37_2A_0630_1_D2.png",
+      "scale": 3.0777
+    }
+  ]
+}

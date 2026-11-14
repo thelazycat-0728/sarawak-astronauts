@@ -1,0 +1,355 @@
+{
+  "synthetic": false,
+  "target": {
+    "ra": 133.7609,
+    "dec": -7.2423,
+    "name": "WISE 0855-0714",
+    "frame": "ICRS"
+  },
+  "fov_arcmin": 12.0,
+  "band": {
+    "id": "D6",
+    "wavelength_min_um": 4.42,
+    "wavelength_max_um": 5.0
+  },
+  "image": {
+    "width_px": 117,
+    "height_px": 117,
+    "pixel_scale_arcsec": 6.2,
+    "orientation": "north-up-east-left",
+    "format": "png-gray8",
+    "nodata_gray": 0
+  },
+  "stretch": {
+    "shared": true,
+    "method": "asinh",
+    "vmin": -0.075735,
+    "vmax": 0.40195,
+    "asinh_a": 0.1,
+    "unit": "MJy/sr",
+    "note": "One stretch is shared by every frame in this sequence, so brightness changes between frames are real."
+  },
+  "releases": [
+    "DR1"
+  ],
+  "duplicates_removed": 0,
+  "count": 14,
+  "epochs": [
+    {
+      "id": "sx_dr1_2025W19_1B_0116_1_D6",
+      "time_utc": "2025-05-05T16:49:00Z",
+      "mjd": 60800.700695,
+      "visit": 1,
+      "release": "DR1",
+      "obs_id": "2025W19_1B_0116_1",
+      "band": "D6",
+      "wavelength_um": 4.96738,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0984,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/wise-0855/frames/sx_dr1_2025W19_1B_0116_1_D6.png"
+    },
+    {
+      "id": "sx_dr1_2025W19_1B_0138_1_D6",
+      "time_utc": "2025-05-05T20:02:33Z",
+      "mjd": 60800.835104,
+      "visit": 1,
+      "release": "DR1",
+      "obs_id": "2025W19_1B_0138_1",
+      "band": "D6",
+      "wavelength_um": 4.85988,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.1042,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/wise-0855/frames/sx_dr1_2025W19_1B_0138_1_D6.png"
+    },
+    {
+      "id": "sx_dr1_2025W46_2A_0214_3_D6",
+      "time_utc": "2025-11-14T12:12:37Z",
+      "mjd": 60993.508759,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "2025W46_2A_0214_3",
+      "band": "D6",
+      "wavelength_um": 4.77025,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.1126,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/wise-0855/frames/sx_dr1_2025W46_2A_0214_3_D6.png"
+    },
+    {
+      "id": "sx_dr1_2025W46_2A_0214_4_D6",
+      "time_utc": "2025-11-14T12:14:46Z",
+      "mjd": 60993.510252,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "2025W46_2A_0214_4",
+      "band": "D6",
+      "wavelength_um": 4.80486,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.1013,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/wise-0855/frames/sx_dr1_2025W46_2A_0214_4_D6.png"
+    },
+    {
+      "id": "sx_dr1_2025W46_2A_0226_1_D6",
+      "time_utc": "2025-11-14T13:47:53Z",
+      "mjd": 60993.574916,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "2025W46_2A_0226_1",
+      "band": "D6",
+      "wavelength_um": 4.8393,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0875,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/wise-0855/frames/sx_dr1_2025W46_2A_0226_1_D6.png"
+    },
+    {
+      "id": "sx_dr1_2025W46_2A_0226_2_D6",
+      "time_utc": "2025-11-14T13:50:02Z",
+      "mjd": 60993.576408,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "2025W46_2A_0226_2",
+      "band": "D6",
+      "wavelength_um": 4.87477,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0983,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/wise-0855/frames/sx_dr1_2025W46_2A_0226_2_D6.png"
+    },
+    {
+      "id": "sx_dr1_2025W46_2A_0226_3_D6",
+      "time_utc": "2025-11-14T13:52:11Z",
+      "mjd": 60993.5779,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "2025W46_2A_0226_3",
+      "band": "D6",
+      "wavelength_um": 4.91054,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.1138,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/wise-0855/frames/sx_dr1_2025W46_2A_0226_3_D6.png"
+    },
+    {
+      "id": "sx_dr1_2025W46_2A_0226_4_D6",
+      "time_utc": "2025-11-14T13:54:20Z",
+      "mjd": 60993.579393,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "2025W46_2A_0226_4",
+      "band": "D6",
+      "wavelength_um": 4.94639,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.1068,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/wise-0855/frames/sx_dr1_2025W46_2A_0226_4_D6.png"
+    },
+    {
+      "id": "sx_dr1_2026W17_2A_0591_1_D6",
+      "time_utc": "2026-04-26T02:04:06Z",
+      "mjd": 61156.086177,
+      "visit": 3,
+      "release": "DR1",
+      "obs_id": "2026W17_2A_0591_1",
+      "band": "D6",
+      "wavelength_um": 4.82162,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.1141,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/wise-0855/frames/sx_dr1_2026W17_2A_0591_1_D6.png"
+    },
+    {
+      "id": "sx_dr1_2026W17_2A_0609_1_D6",
+      "time_utc": "2026-04-26T03:40:52Z",
+      "mjd": 61156.153382,
+      "visit": 3,
+      "release": "DR1",
+      "obs_id": "2026W17_2A_0609_1",
+      "band": "D6",
+      "wavelength_um": 4.75318,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0999,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/wise-0855/frames/sx_dr1_2026W17_2A_0609_1_D6.png"
+    },
+    {
+      "id": "sx_dr1_2026W17_2A_0609_2_D6",
+      "time_utc": "2026-04-26T03:43:03Z",
+      "mjd": 61156.154892,
+      "visit": 3,
+      "release": "DR1",
+      "obs_id": "2026W17_2A_0609_2",
+      "band": "D6",
+      "wavelength_um": 4.78722,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.1082,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/wise-0855/frames/sx_dr1_2026W17_2A_0609_2_D6.png"
+    },
+    {
+      "id": "sx_dr1_2026W17_2A_0692_1_D6",
+      "time_utc": "2026-04-26T11:51:08Z",
+      "mjd": 61156.493847,
+      "visit": 3,
+      "release": "DR1",
+      "obs_id": "2026W17_2A_0692_1",
+      "band": "D6",
+      "wavelength_um": 4.89549,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.1012,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/wise-0855/frames/sx_dr1_2026W17_2A_0692_1_D6.png"
+    },
+    {
+      "id": "sx_dr1_2026W17_2A_0692_2_D6",
+      "time_utc": "2026-04-26T11:53:17Z",
+      "mjd": 61156.495339,
+      "visit": 3,
+      "release": "DR1",
+      "obs_id": "2026W17_2A_0692_2",
+      "band": "D6",
+      "wavelength_um": 4.93131,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0968,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/wise-0855/frames/sx_dr1_2026W17_2A_0692_2_D6.png"
+    },
+    {
+      "id": "sx_dr1_2026W18_2A_0065_1_D6",
+      "time_utc": "2026-04-30T18:30:56Z",
+      "mjd": 61160.771483,
+      "visit": 3,
+      "release": "DR1",
+      "obs_id": "2026W18_2A_0065_1",
+      "band": "D6",
+      "wavelength_um": 4.82494,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.1021,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/wise-0855/frames/sx_dr1_2026W18_2A_0065_1_D6.png"
+    }
+  ],
+  "diff_url_template": null,
+  "diffs": [
+    {
+      "a": "sx_dr1_2025W19_1B_0116_1_D6",
+      "b": "sx_dr1_2026W18_2A_0065_1_D6",
+      "url": "/presets/wise-0855/diff/sx_dr1_2025W19_1B_0116_1_D6__sx_dr1_2026W18_2A_0065_1_D6.png",
+      "scale": 0.22068
+    }
+  ]
+}

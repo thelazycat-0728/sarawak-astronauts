@@ -1,0 +1,445 @@
+{
+  "synthetic": false,
+  "target": {
+    "ra": 269.4464,
+    "dec": 4.7668,
+    "name": "Barnard's Star",
+    "frame": "ICRS"
+  },
+  "fov_arcmin": 12.0,
+  "band": {
+    "id": "D2",
+    "wavelength_min_um": 1.1,
+    "wavelength_max_um": 1.62
+  },
+  "image": {
+    "width_px": 117,
+    "height_px": 117,
+    "pixel_scale_arcsec": 6.2,
+    "orientation": "north-up-east-left",
+    "format": "png-gray8",
+    "nodata_gray": 0
+  },
+  "stretch": {
+    "shared": true,
+    "method": "asinh",
+    "vmin": 0.063789,
+    "vmax": 13.872,
+    "asinh_a": 0.1,
+    "unit": "MJy/sr",
+    "note": "One stretch is shared by every frame in this sequence, so brightness changes between frames are real."
+  },
+  "releases": [
+    "DR1",
+    "QR3"
+  ],
+  "duplicates_removed": 0,
+  "count": 18,
+  "epochs": [
+    {
+      "id": "sx_dr1_2025W35_1A_0146_1_D2",
+      "time_utc": "2025-08-25T17:09:20Z",
+      "mjd": 60912.714813,
+      "visit": 1,
+      "release": "DR1",
+      "obs_id": "2025W35_1A_0146_1",
+      "band": "D2",
+      "wavelength_um": 1.51651,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.0305,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/barnards-star/frames/sx_dr1_2025W35_1A_0146_1_D2.png"
+    },
+    {
+      "id": "sx_dr1_2025W35_1A_0146_2_D2",
+      "time_utc": "2025-08-25T17:11:29Z",
+      "mjd": 60912.716305,
+      "visit": 1,
+      "release": "DR1",
+      "obs_id": "2025W35_1A_0146_2",
+      "band": "D2",
+      "wavelength_um": 1.55338,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.0431,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/barnards-star/frames/sx_dr1_2025W35_1A_0146_2_D2.png"
+    },
+    {
+      "id": "sx_dr1_2025W35_1A_0146_3_D2",
+      "time_utc": "2025-08-25T17:13:38Z",
+      "mjd": 60912.717797,
+      "visit": 1,
+      "release": "DR1",
+      "obs_id": "2025W35_1A_0146_3",
+      "band": "D2",
+      "wavelength_um": 1.59071,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.0468,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/barnards-star/frames/sx_dr1_2025W35_1A_0146_3_D2.png"
+    },
+    {
+      "id": "sx_dr1_2025W35_1A_0146_4_D2",
+      "time_utc": "2025-08-25T17:15:47Z",
+      "mjd": 60912.71929,
+      "visit": 1,
+      "release": "DR1",
+      "obs_id": "2025W35_1A_0146_4",
+      "band": "D2",
+      "wavelength_um": 1.62887,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0661,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/barnards-star/frames/sx_dr1_2025W35_1A_0146_4_D2.png"
+    },
+    {
+      "id": "sx_dr1_2025W35_1A_0444_1_D2",
+      "time_utc": "2025-08-27T06:38:47Z",
+      "mjd": 60914.276937,
+      "visit": 1,
+      "release": "DR1",
+      "obs_id": "2025W35_1A_0444_1",
+      "band": "D2",
+      "wavelength_um": 1.23823,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.0313,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/barnards-star/frames/sx_dr1_2025W35_1A_0444_1_D2.png"
+    },
+    {
+      "id": "sx_dr1_2025W35_1A_0444_2_D2",
+      "time_utc": "2025-08-27T06:40:56Z",
+      "mjd": 60914.27843,
+      "visit": 1,
+      "release": "DR1",
+      "obs_id": "2025W35_1A_0444_2",
+      "band": "D2",
+      "wavelength_um": 1.26794,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.03,
+        "flags": [
+          "NONFUNC",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/barnards-star/frames/sx_dr1_2025W35_1A_0444_2_D2.png"
+    },
+    {
+      "id": "sx_dr1_2026W12_1A_0311_1_D2",
+      "time_utc": "2026-03-17T16:20:23Z",
+      "mjd": 61116.680818,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "2026W12_1A_0311_1",
+      "band": "D2",
+      "wavelength_um": 1.31574,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.1265,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/barnards-star/frames/sx_dr1_2026W12_1A_0311_1_D2.png"
+    },
+    {
+      "id": "sx_dr1_2026W12_1A_0311_2_D2",
+      "time_utc": "2026-03-17T16:22:32Z",
+      "mjd": 61116.682309,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "2026W12_1A_0311_2",
+      "band": "D2",
+      "wavelength_um": 1.34693,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.1032,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/barnards-star/frames/sx_dr1_2026W12_1A_0311_2_D2.png"
+    },
+    {
+      "id": "sx_dr1_2026W12_1A_0311_3_D2",
+      "time_utc": "2026-03-17T16:24:40Z",
+      "mjd": 61116.683802,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "2026W12_1A_0311_3",
+      "band": "D2",
+      "wavelength_um": 1.37902,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.091,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/barnards-star/frames/sx_dr1_2026W12_1A_0311_3_D2.png"
+    },
+    {
+      "id": "sx_dr1_2026W12_1A_0311_4_D2",
+      "time_utc": "2026-03-17T16:26:49Z",
+      "mjd": 61116.685294,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "2026W12_1A_0311_4",
+      "band": "D2",
+      "wavelength_um": 1.41198,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0811,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/barnards-star/frames/sx_dr1_2026W12_1A_0311_4_D2.png"
+    },
+    {
+      "id": "sx_dr1_2026W12_2A_0371_2_D2",
+      "time_utc": "2026-03-21T13:13:48Z",
+      "mjd": 61120.551246,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "2026W12_2A_0371_2",
+      "band": "D2",
+      "wavelength_um": 1.11853,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0909,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/barnards-star/frames/sx_dr1_2026W12_2A_0371_2_D2.png"
+    },
+    {
+      "id": "sx_dr1_2026W12_2A_0371_3_D2",
+      "time_utc": "2026-03-21T13:15:57Z",
+      "mjd": 61120.552738,
+      "visit": 2,
+      "release": "DR1",
+      "obs_id": "2026W12_2A_0371_3",
+      "band": "D2",
+      "wavelength_um": 1.14455,
+      "quality": {
+        "status": "warn",
+        "flagged_fraction": 0.0895,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/barnards-star/frames/sx_dr1_2026W12_2A_0371_3_D2.png"
+    },
+    {
+      "id": "sx_qr3_2026W34_2A_0249_2_D2",
+      "time_utc": "2026-08-21T17:19:27Z",
+      "mjd": 61273.721843,
+      "visit": 3,
+      "release": "QR3",
+      "obs_id": "2026W34_2A_0249_2",
+      "band": "D2",
+      "wavelength_um": 1.44219,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.0397,
+        "flags": [
+          "NONFUNC",
+          "HOT",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/barnards-star/frames/sx_qr3_2026W34_2A_0249_2_D2.png"
+    },
+    {
+      "id": "sx_qr3_2026W34_2A_0249_3_D2",
+      "time_utc": "2026-08-21T17:21:36Z",
+      "mjd": 61273.723336,
+      "visit": 3,
+      "release": "QR3",
+      "obs_id": "2026W34_2A_0249_3",
+      "band": "D2",
+      "wavelength_um": 1.47719,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.0308,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/barnards-star/frames/sx_qr3_2026W34_2A_0249_3_D2.png"
+    },
+    {
+      "id": "sx_qr3_2026W34_2A_0264_1_D2",
+      "time_utc": "2026-08-21T18:56:00Z",
+      "mjd": 61273.788888,
+      "visit": 3,
+      "release": "QR3",
+      "obs_id": "2026W34_2A_0264_1",
+      "band": "D2",
+      "wavelength_um": 1.50229,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.0375,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/barnards-star/frames/sx_qr3_2026W34_2A_0264_1_D2.png"
+    },
+    {
+      "id": "sx_qr3_2026W34_2A_0264_2_D2",
+      "time_utc": "2026-08-21T18:58:09Z",
+      "mjd": 61273.79038,
+      "visit": 3,
+      "release": "QR3",
+      "obs_id": "2026W34_2A_0264_2",
+      "band": "D2",
+      "wavelength_um": 1.53859,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.0408,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/barnards-star/frames/sx_qr3_2026W34_2A_0264_2_D2.png"
+    },
+    {
+      "id": "sx_qr3_2026W35_1A_0038_1_D2",
+      "time_utc": "2026-08-24T04:00:25Z",
+      "mjd": 61276.166956,
+      "visit": 3,
+      "release": "QR3",
+      "obs_id": "2026W35_1A_0038_1",
+      "band": "D2",
+      "wavelength_um": 1.57588,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.0369,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/barnards-star/frames/sx_qr3_2026W35_1A_0038_1_D2.png"
+    },
+    {
+      "id": "sx_qr3_2026W35_1A_0092_1_D2",
+      "time_utc": "2026-08-24T10:31:14Z",
+      "mjd": 61276.438351,
+      "visit": 3,
+      "release": "QR3",
+      "obs_id": "2026W35_1A_0092_1",
+      "band": "D2",
+      "wavelength_um": 1.61362,
+      "quality": {
+        "status": "good",
+        "flagged_fraction": 0.0354,
+        "flags": [
+          "NONFUNC",
+          "COLD",
+          "PERSIST",
+          "OUTLIER",
+          "HALO"
+        ]
+      },
+      "frame_url": "/presets/barnards-star/frames/sx_qr3_2026W35_1A_0092_1_D2.png"
+    }
+  ],
+  "diff_url_template": null,
+  "diffs": [
+    {
+      "a": "sx_dr1_2025W35_1A_0146_1_D2",
+      "b": "sx_qr3_2026W35_1A_0092_1_D2",
+      "url": "/presets/barnards-star/diff/sx_dr1_2025W35_1A_0146_1_D2__sx_qr3_2026W35_1A_0092_1_D2.png",
+      "scale": 5.0603
+    }
+  ]
+}
