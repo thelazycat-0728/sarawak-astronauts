@@ -152,10 +152,11 @@ Everything except submitting is **open to everyone without logging in**. An acco
 
 | Area | Status |
 | --- | --- |
-| Repository set-up | Done |
-| Project summary / scope | Done (this document) |
-| Level 1 features | Not started |
-| Level 2 features | Not started |
-| Level 3 features | Not started |
-| Public engagement (tutorials, games) | Not started |
-| Accounts, submissions & AI services | Not started |
+| Repository set-up, CI and deploys | Done: GitHub Actions CI, Netlify (frontend) and Render Blueprint (API) |
+| Project summary, tech stack, work plan, API contract | Done (`docs/`) |
+| Level 1 features | Viewer, playback, presets, epoch selection and share URLs built. The presets play **simulated** fields; real SPHEREx frames are not wired in yet |
+| Level 2 features | Blink, difference, stack, brightness chart, FOV and array controls built on simulated data |
+| Level 3 features | Spectrum view, simulated Gaia overlay and a 25-year time machine page built on simulated data. Object tracking, WISE overlay and real catalogues not started |
+| Public engagement (tutorials, games) | Glossary tooltips, Beginner/Expert mode, guided tour, lessons and training game built |
+| Accounts, submissions & AI services | Submit, review and profile pages work with browser-only accounts. Supabase login is wired but no tables exist yet. `/explain` uses offline answers until the backend endpoint is built |
+| Science backend | API endpoints serve synthetic mock data. IRSA SPHEREx exposure lookup is built and tested but not yet connected to the endpoints |
