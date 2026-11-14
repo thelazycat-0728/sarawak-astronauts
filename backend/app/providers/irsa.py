@@ -34,8 +34,9 @@ live builds.
 
 ``/frame/{id}.png`` uses the stateless ``render_frame`` (cached cutouts need no
 IRSA call) with an overall ``frame_deadline_s`` (60 s). At most
-``frame_max_concurrent`` (4) renders run at once; more answer ``503 unavailable``
-at once. A render that passed its deadline keeps its slot until it ends, so slow
+``frame_max_concurrent`` (8) renders run at once; a request beyond that waits up
+to ``frame_slot_wait_s`` (3 s) for a free slot (the wait counts against the
+deadline) and then answers ``503 unavailable``. A render that passed its deadline keeps its slot until it ends, so slow
 renders cannot pile up threads. A well-formed id that resolves to nothing (404)
 is remembered for ``frame_not_found_ttl_s`` (60 s) per rounded position and band,
 so repeating it costs no IRSA query. ``/diff`` and ``/lightcurve`` answer
@@ -178,7 +179,9 @@ class IrsaProvider:
         self._queue: queue.SimpleQueue[tuple[Future, Callable[[], Built]]] = \
             queue.SimpleQueue()
         self._workers: list[threading.Thread] = []
+        self._frame_cond = threading.Condition(threading.Lock())
         self._rendering = 0  # frame renders holding a slot
+        self._frames_waiting = 0  # frame requests waiting for a slot
         self._not_found = TtlCache(settings.frame_not_found_ttl_s, NOT_FOUND_MAX_ENTRIES,
                                    clock)
         self._query_cache = QueryCache(clock=clock)
@@ -345,9 +348,10 @@ class IrsaProvider:
     def frame_png(self, epoch_id: str, q: FrameQuery) -> bytes:
         """``render_frame`` with an overall deadline and a concurrency cap.
 
-        On timeout the render keeps running on its daemon thread (and keeps its
-        slot) and fills the cutout cache for a retry. A 404 is remembered for
-        ``frame_not_found_ttl_s``.
+        Beyond the cap, the request waits up to ``frame_slot_wait_s`` for a slot,
+        then answers 503. On timeout the render keeps running on its daemon
+        thread (and keeps its slot) and fills the cutout cache for a retry. A 404
+        is remembered for ``frame_not_found_ttl_s``.
         """
         s = self._settings
         ra, dec = round_position(q.ra, q.dec)
@@ -355,9 +359,13 @@ class IrsaProvider:
         known_missing = self._not_found.get(miss_key)
         if known_missing is not None:
             raise NotFound(known_missing)
-        if not self._take_frame_slot():
+        started = time.monotonic()
+        wait = max(0.0, min(s.frame_slot_wait_s, s.frame_deadline_s))
+        if not self._take_frame_slot(wait):
             raise Unavailable("Too many live SPHEREx frames are being rendered right "
                               "now. " + FALLBACK_HINT)
+        # The wait for a slot counts against the frame deadline.
+        left = max(0.0, s.frame_deadline_s - (time.monotonic() - started))
 
         def render() -> bytes:
             from app.pipeline import render_frame  # heavy: reproject, dask
@@ -380,7 +388,7 @@ class IrsaProvider:
             self._free_frame_slot()
             raise
         try:
-            return future.result(timeout=s.frame_deadline_s)
+            return future.result(timeout=left)
         except FutureTimeout:
             raise UpstreamTimeout(
                 f"IRSA did not deliver this SPHEREx frame within {s.frame_deadline_s:g} "
@@ -389,22 +397,36 @@ class IrsaProvider:
             self._not_found.put(miss_key, exc.message)
             raise
 
-    def _take_frame_slot(self) -> bool:
-        with self._lock:
-            if self._rendering >= max(1, int(self._settings.frame_max_concurrent)):
-                return False
-            self._rendering += 1
-            return True
+    def _take_frame_slot(self, wait_s: float) -> bool:
+        """Take a render slot, waiting up to ``wait_s`` for one to free up."""
+        cap = max(1, int(self._settings.frame_max_concurrent))
+        with self._frame_cond:
+            self._frames_waiting += 1
+            try:
+                if not self._frame_cond.wait_for(lambda: self._rendering < cap,
+                                                 timeout=wait_s):
+                    return False
+                self._rendering += 1
+                return True
+            finally:
+                self._frames_waiting -= 1
 
     def _free_frame_slot(self) -> None:
-        with self._lock:
+        with self._frame_cond:
             self._rendering -= 1
+            self._frame_cond.notify()
 
     @property
     def frames_rendering(self) -> int:
         """Frame renders holding a slot now (including ones past their deadline)."""
-        with self._lock:
+        with self._frame_cond:
             return self._rendering
+
+    @property
+    def frames_waiting(self) -> int:
+        """Frame requests waiting for a render slot now."""
+        with self._frame_cond:
+            return self._frames_waiting
 
     def diff_png(self, q: DiffQuery) -> bytes:
         raise Unavailable("Difference images are not available for live SPHEREx data "

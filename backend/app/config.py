@@ -102,9 +102,13 @@ class Settings:
     epochs_max_waiters: int = 16
     # Whole-request limit for /frame/{id}.png in irsa mode (504 upstream_timeout).
     frame_deadline_s: float = 60.0
-    # Most /frame renders running at once in irsa mode; more answer 503 unavailable
-    # at once. A render that passed its deadline keeps its slot until it ends.
-    frame_max_concurrent: int = 4
+    # Most /frame renders running at once in irsa mode. A request beyond that
+    # waits up to frame_slot_wait_s for a free slot (the wait counts against
+    # frame_deadline_s), then answers 503 unavailable. A render that passed its
+    # deadline keeps its slot until it ends. A live view loads all its frames at
+    # once (3 per view), so 8 slots and a short wait let a few users load together.
+    frame_max_concurrent: int = 8
+    frame_slot_wait_s: float = 3.0
     # How long a well-formed epoch id that resolved to nothing (404) at a position
     # is remembered, so repeating it costs no IRSA query and no render.
     frame_not_found_ttl_s: float = 60.0

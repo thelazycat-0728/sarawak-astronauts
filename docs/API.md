@@ -8,7 +8,7 @@ This is the contract between the frontend and the FastAPI science backend. Mock 
 - T-005 fix-1: `image.nodata_gray` (always 0) and `stretch.asinh_a`; frames use grey 1–255 for data and 0 for no data, with the documented inverse; `quality.flags` lists masked bits only.
 - T-014 (live API, `DATA_MODE=irsa`): `/epochs` returns one exposure per visit, `target.name: null`, `diff_url_template: null` and `diffs: []`; `502`/`504` when no cutout could be downloaded; `503` when too many requests wait.
 - T-014: `/diff` and `/lightcurve` answer `503 unavailable` from the live API; `/health` sends an `X-Data-Mode` header (`mock` or `irsa`), readable through CORS.
-- T-015: `/frame` answers `503 unavailable` from the live API when too many frames are being rendered at once.
+- T-015: `/frame` answers `503 unavailable` from the live API when every render slot stays busy for the few seconds a request waits for one.
 - T-006: presets at fov 12, 6 and 3 (`<id>/manifest.json`, `<id>/fov-6/`, `<id>/fov-3/`), listed in `presets/index.json`; up to 6 exposures per visit; a wavelength-matched diff for variable stars; WISE 0855 re-centred to 133.7609, −7.2423.
 
 ## 1. Conventions
@@ -168,7 +168,7 @@ Returns one cleaned frame as `image/png` (8-bit grey, `image.width_px` × `image
 | `ra`, `dec`, `fov`, `band` | as `/epochs` | | required | Same values as the sequence |
 | `vmin`, `vmax` | float | MJy/sr | per-frame stretch | Pass both or neither; `frame_url` always passes the shared stretch |
 
-Example: `200`, `Content-Type: image/png`, body is the PNG. Errors (JSON): `400 invalid_parameter`, `404 not_found`, `502 upstream_error`, `503 unavailable` (live API: too many frames are being rendered at once, 4 by default; retry a moment later), `504 upstream_timeout`.
+Example: `200`, `Content-Type: image/png`, body is the PNG. Errors (JSON): `400 invalid_parameter`, `404 not_found`, `502 upstream_error`, `503 unavailable` (live API: every render slot, 8 by default, stayed busy for the few seconds the request waited for one; retry a moment later), `504 upstream_timeout`.
 
 ### `GET /diff?a&b`
 
