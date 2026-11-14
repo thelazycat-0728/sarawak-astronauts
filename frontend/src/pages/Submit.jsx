@@ -5,7 +5,7 @@ import { Button, Kicker, Panel, Chip, SkyCanvas, Term } from '../components/ui';
 import { useViewer, useAuth, useUi, useProgress, useSubmissions } from '../store';
 import { useField, vet } from '../lib/api';
 import { PRESET_BY_ID, LESSONS, LEVELS } from '../lib/data';
-import { paintImage, lutForArray } from '../lib/sim';
+import { paintImage, lutForArray, crop } from '../lib/sim';
 import { parseRA, parseDec, formatRA, formatDec, formatDate, cn, uid } from '../lib/util';
 
 const CHECKS = [
@@ -44,6 +44,16 @@ export default function Submit() {
   return <SubmitForm />;
 }
 
+/** 19×19 cut-outs around the marks, as plain JSON (NaN, meaning no data, becomes null). */
+function reviewStamps(field, ea, eb, marks) {
+  const cx = (marks[ea].x + marks[eb].x) / 2, cy = (marks[ea].y + marks[eb].y) / 2;
+  const cut = (e) => {
+    const { data, n } = crop(field.stacks[e], field.nx, field.ny, cx, cy, 9);
+    return { n, data: Array.from(data, (v) => (Number.isNaN(v) ? null : +v.toFixed(2))) };
+  };
+  return { a: cut(ea), b: cut(eb), vmin: field.vmin, vmax: field.vmax, labels: [field.epochs[ea].label, field.epochs[eb].label] };
+}
+
 function Gate({ icon: Icon, title, text, children }) {
   return (
     <div className="mx-auto max-w-xl px-[max(16px,env(safe-area-inset-left,0px))] py-20 text-center">
@@ -64,7 +74,7 @@ function SubmitForm() {
   const navigate = useNavigate();
   const preset = v.targetId ? PRESET_BY_ID[v.targetId] : null;
   const raDeg = parseRA(v.ra), decDeg = parseDec(v.dec);
-  const { data: field } = useField({ targetId: v.targetId, raDeg, decDeg, fov: v.fov, arrayIdx: v.arrayIdx, channel: v.channel });
+  const { data: field, loading, error } = useField({ targetId: v.targetId, raDeg, decDeg, fov: v.fov, arrayIdx: v.arrayIdx, channel: v.channel });
 
   const included = useMemo(() => {
     if (!field) return [];
@@ -78,6 +88,12 @@ function SubmitForm() {
   const [note, setNote] = useState('');
   const [result, setResult] = useState(null);
 
+  if (loading) {
+    return <Gate icon={Flag} title="Loading SPHEREx images…" text="The first look at a new patch of sky can take a minute or two. This page fills in as soon as the images arrive." />;
+  }
+  if (error) {
+    return <Gate icon={Flag} title="This field couldn’t load" text={error}><Button variant="primary" onClick={() => navigate('/')}>Open Explore</Button></Gate>;
+  }
   if (!field || included.length < 2) {
     return <Gate icon={Flag} title="Pick a field first" text="Open a field in Explore with at least two snapshots ticked, then come back to flag what you found."><Button variant="primary" onClick={() => navigate('/')}>Open Explore</Button></Gate>;
   }
@@ -90,6 +106,8 @@ function SubmitForm() {
       by: user.name, fieldName: preset?.name ?? 'Custom field', targetId: v.targetId, ra: v.ra, dec: v.dec, fov: v.fov,
       arrayIdx: v.arrayIdx, epochs: [ea, eb], marks: [{ epoch: ea, ...marks[ea] }, { epoch: eb, ...marks[eb] }],
       note, ...r, status: r.outcome === 'candidate' ? 'in-review' : 'auto-resolved',
+      // Real data can’t be rebuilt later like demo fields, so keep the reviewer’s cut-outs.
+      ...(field.live ? { live: true, stamps: reviewStamps(field, ea, eb, marks) } : {}),
     };
     add(item);
     addPoints(2, `Submission ${item.code}`);

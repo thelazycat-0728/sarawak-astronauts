@@ -30,6 +30,12 @@ function demoCandidate(d) {
   return { field, a: 0, b: 3, pa: field.posAt(0), pb: field.posAt(3) };
 }
 
+/** Cut-outs saved with a live-data submission (null = no data). */
+function storedStamps(s) {
+  const read = ({ n, data }) => ({ n, data: Float32Array.from(data, (v) => (v == null ? NaN : v)) });
+  return { stampA: read(s.a), stampB: read(s.b), vmin: s.vmin, vmax: s.vmax, labels: s.labels };
+}
+
 function userCandidate(it) {
   const field = demoField({ targetId: it.targetId, raDeg: parseRA(it.ra), decDeg: parseDec(it.dec), fov: it.fov, arrayIdx: it.arrayIdx, channel: null });
   const [ma, mb] = it.marks;
@@ -54,7 +60,7 @@ export default function Review() {
         motion: it.checks.find((c) => c.id === 'motion')?.detail, snr: +(it.snr ?? 0).toFixed(1), flags: 'Clear',
         catalogue: it.checks.find((c) => c.id === 'catalogue')?.detail, asteroid: 'Checked against SkyBoT',
       },
-      build: () => userCandidate(it), fieldName: it.fieldName,
+      build: () => userCandidate(it), stamps: it.stamps, fieldName: it.fieldName,
     }));
     const demo = DEMO_QUEUE.map((d) => ({ ...d, verdict: demoVerdicts[d.id], build: () => demoCandidate(d) }));
     const all = [...mine, ...demo].filter((q) => (tab === 'pending' ? !q.verdict : q.verdict));
@@ -123,6 +129,7 @@ function Candidate({ q }) {
   const navigate = useNavigate();
 
   const { stampA, stampB, vmin, vmax, labels } = useMemo(() => {
+    if (q.stamps) return storedStamps(q.stamps); // live-data submission
     const c = q.build();
     const cx = (c.pa[0] + c.pb[0]) / 2, cy = (c.pa[1] + c.pb[1]) / 2;
     const A = crop(c.field.stacks[c.a], c.field.nx, c.field.ny, cx, cy, 9);
