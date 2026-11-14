@@ -17,7 +17,7 @@ from typing import Any
 from astropy.io import fits
 
 from app.config import Settings
-from app.cutouts.cache import CutoutCache, cutout_key, discard_file
+from app.cutouts.cache import CutoutCache, cutout_key, is_resource_error, open_cached
 from app.cutouts.download import (
     StreamingSession,
     build_cutout_url,
@@ -178,12 +178,19 @@ def get_cutout(
     started = time.monotonic()
     path, from_cache = cache.get_or_create(key, create)
     elapsed = time.monotonic() - started
-    try:
-        with fits.open(path, memmap=False) as hdul:
+    # Headers only (measure needs no image data). A file that cannot be read is
+    # evicted by open_cached; a geometry problem in measure is not a damaged file,
+    # so it keeps the file (re-downloading would give the same bytes).
+    with open_cached(path, load_data=False) as hdul:
+        try:
             wavelength, coverage = measure(hdul, view.ra, view.dec, view.fov_arcmin)
+        except (KeyError, ValueError) as exc:
+            raise UpstreamError("cached cutout has no usable sky geometry") from exc
+    try:
         size = path.stat().st_size
-    except (OSError, KeyError, ValueError) as exc:
-        discard_file(path)  # so a retry downloads it again
+    except OSError as exc:
+        if is_resource_error(exc):
+            raise
         raise UpstreamError("cached cutout could not be read") from exc
     return Cutout(exposure, epoch_id, path, from_cache, size, elapsed, wavelength, coverage)
 
@@ -221,6 +228,8 @@ def fetch_cutouts(
             log.info("cutout %s failed: %s", exposure.obs_id, exc.message)
             return CutoutFailure(exposure, epoch_id, exc.code, exc.message)
         except Exception as exc:  # keep the batch alive whatever happens
+            if is_resource_error(exc):
+                raise  # out of memory or file handles: a 500, not a per-file failure
             log.exception("cutout %s failed unexpectedly", exposure.obs_id)
             return CutoutFailure(exposure, epoch_id, "internal_error", type(exc).__name__)
 

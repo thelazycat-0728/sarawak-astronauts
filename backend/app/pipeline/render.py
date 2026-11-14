@@ -24,7 +24,6 @@ import math
 from collections.abc import Iterable
 
 import numpy as np
-from astropy.io import fits
 from PIL import Image
 
 from app.config import Settings
@@ -37,9 +36,9 @@ from app.cutouts import (
     make_view,
     resolve_epoch,
 )
-from app.cutouts.cache import discard_file
+from app.cutouts.cache import open_cached
 from app.cutouts.download import StreamingSession
-from app.errors import InvalidParameter, NotFound, UpstreamError
+from app.errors import InvalidParameter, NotFound
 from app.irsa.epochs import parse_epoch_id
 from app.irsa.sia import HttpSession, validate_band
 from app.pipeline.clean import CleanFrame, clean_cutout
@@ -113,21 +112,12 @@ def clean_path(path, ra: float, dec: float, fov: float, settings: Settings) -> C
 
     A file that cannot be opened or read (missing, just evicted, truncated or
     otherwise damaged) is removed from the cache, so the next request downloads
-    it again, and raises UpstreamError. Errors from ``clean_cutout`` itself (for
-    example an unexpected ``BUNIT``) propagate unchanged and keep the file.
+    it again, and raises UpstreamError (``open_cached``). A MemoryError or a
+    "too many open files" error propagates unchanged and keeps the file. Errors
+    from ``clean_cutout`` itself (for example an unexpected ``BUNIT``) propagate
+    unchanged and keep the file.
     """
-    try:
-        hdul = fits.open(path, memmap=False)
-        try:
-            for hdu in hdul:
-                _ = hdu.data  # read every extension now, so damage shows up here
-        except BaseException:
-            hdul.close()
-            raise
-    except Exception as exc:  # OSError, or astropy's many types for a bad file
-        discard_file(path)
-        raise UpstreamError("cached cutout could not be read") from exc
-    with hdul:
+    with open_cached(path) as hdul:
         return clean_cutout(hdul, ra, dec, fov, settings)
 
 

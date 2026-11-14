@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+import errno
 import logging
 import os
 import re
@@ -31,6 +32,9 @@ import uuid
 from collections.abc import Callable
 from pathlib import Path
 
+from astropy.io import fits
+
+from app.errors import UpstreamError
 from app.models import BAND_IDS
 
 log = logging.getLogger("app.cutouts")
@@ -40,6 +44,42 @@ _RELEASE_RE = re.compile(r"^[A-Za-z0-9]{1,16}$")
 _OBS_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,56}$")  # as app.irsa accepts
 STALE_TEMP_S = 3600.0
 _replace = os.replace  # replaced in tests
+# The process ran out of a resource: the file may be fine, so never evict for these.
+_RESOURCE_ERRNOS = frozenset({errno.EMFILE, errno.ENFILE, errno.ENOMEM})
+
+
+def is_resource_error(exc: BaseException) -> bool:
+    """True for MemoryError and for an OSError meaning "too many open files" or
+    "out of memory". These say nothing about the file, so callers let them
+    surface (a 500) instead of evicting or recording a per-cutout failure."""
+    return isinstance(exc, MemoryError) or (
+        isinstance(exc, OSError) and exc.errno in _RESOURCE_ERRNOS)
+
+
+def open_cached(path: str | os.PathLike[str], *, load_data: bool = True) -> fits.HDUList:
+    """Open a cached cutout and parse every header (and, with ``load_data``,
+    read every array), so a damaged file fails here and not later.
+
+    A file that cannot be opened, read or parsed is evicted (``discard_file``),
+    so the next request downloads it again, and UpstreamError is raised. A
+    resource error (``is_resource_error``) propagates unchanged and keeps the file.
+    """
+    try:
+        hdul = fits.open(path, memmap=False)
+        try:
+            for hdu in hdul:
+                _ = hdu.header
+                if load_data:
+                    _ = hdu.data
+        except BaseException:
+            hdul.close()
+            raise
+    except Exception as exc:  # OSError, or astropy's many types for a bad file
+        if is_resource_error(exc):
+            raise
+        discard_file(path)
+        raise UpstreamError("cached cutout could not be read") from exc
+    return hdul
 
 
 def discard_file(path: str | os.PathLike[str]) -> bool:

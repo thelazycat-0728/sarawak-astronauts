@@ -3,6 +3,7 @@ failures are per-cutout outcomes, and unreadable cached files are evicted."""
 
 from __future__ import annotations
 
+import errno
 import io
 from pathlib import Path
 
@@ -148,3 +149,92 @@ def test_a_unit_error_keeps_the_cached_file(tmp_path):
     with pytest.raises(UpstreamError, match="surface brightness"):
         clean_path(cutout.path, RA, DEC, 10, settings)
     assert cutout.path.exists()  # readable, so re-downloading would not help
+
+
+# ------------------------------------------------- T-015 fix-1: narrow eviction
+
+
+def _cached(tmp_path):
+    settings = make_settings(tmp_path)
+    session = StreamSession(replies=[ok(FOV10)])
+    cutout = get_cutout(fixture_epoch(FOV10), RA, DEC, 10, settings=settings, session=session)
+    return settings, session, cutout
+
+
+@pytest.mark.parametrize("error", [MemoryError(), OSError(errno.EMFILE, "Too many open files"),
+                                   OSError(errno.ENFILE, "File table overflow")],
+                         ids=["MemoryError", "EMFILE", "ENFILE"])
+def test_a_resource_error_while_reading_keeps_the_file_and_surfaces(tmp_path, monkeypatch,
+                                                                     error):
+    from app.cutouts import cache as cache_mod
+
+    settings, _session, cutout = _cached(tmp_path)
+
+    def fail(*args, **kwargs):
+        raise error
+
+    monkeypatch.setattr(cache_mod.fits, "open", fail)
+    with pytest.raises(type(error)):
+        clean_path(cutout.path, RA, DEC, 10, settings)
+    assert cutout.path.exists()  # not evicted
+
+
+def test_a_memory_error_in_cleaning_is_not_a_clean_failure(tmp_path, monkeypatch):
+    import app.pipeline.sequence as seq_mod
+
+    settings = make_settings(tmp_path)
+    session = StreamSession(replies=[ok(FOV10)])
+
+    def fetch(items):
+        return fetch_cutouts(items, RA, DEC, 10, settings=settings, session=session).results
+
+    def clean(*args, **kwargs):
+        raise MemoryError()
+
+    with pytest.raises(MemoryError):
+        select_per_visit(visits(), RA, DEC, 10, fetch=fetch, clean=clean, settings=settings)
+    monkeypatch.setattr(seq_mod, "clean_path", clean)
+    with pytest.raises(MemoryError):  # all mode: the same
+        build_sequence(RA, DEC, "D2", 10, frame_url=lambda i, lo, hi: i, mode="all",
+                       settings=settings, session=session, query=query_of(visits()))
+    files = list((tmp_path / "cache").glob("*.fits"))
+    assert files and all(p.exists() for p in files)
+
+
+def test_a_memory_error_in_a_download_batch_surfaces(tmp_path, monkeypatch):
+    import app.cutouts.service as service
+
+    def fail(*args, **kwargs):
+        raise MemoryError()
+
+    monkeypatch.setattr(service, "download_cutout", fail)
+    with pytest.raises(MemoryError):
+        fetch_cutouts(visits(), RA, DEC, 10, settings=make_settings(tmp_path),
+                      session=StreamSession(replies=[ok(FOV10)]))
+
+
+def test_a_geometry_error_does_not_evict_the_cached_file(tmp_path, monkeypatch):
+    import app.cutouts.service as service
+
+    settings, session, first = _cached(tmp_path)
+
+    def bad_geometry(*args, **kwargs):
+        raise ValueError("WCS quirk")
+
+    monkeypatch.setattr(service, "measure", bad_geometry)
+    with pytest.raises(UpstreamError, match="no usable sky geometry"):
+        get_cutout(fixture_epoch(FOV10), RA, DEC, 10, settings=settings, session=session)
+    assert first.path.exists()
+    monkeypatch.undo()
+    again = get_cutout(fixture_epoch(FOV10), RA, DEC, 10, settings=settings, session=session)
+    assert again.from_cache and len(session.calls) == 1  # never downloaded again
+
+
+def test_a_read_error_in_get_cutout_still_evicts(tmp_path):
+    settings, session, first = _cached(tmp_path)
+    first.path.write_bytes(b"SIMPLE  = not a fits file" + b" " * 3000)
+    with pytest.raises(UpstreamError, match="could not be read"):
+        get_cutout(fixture_epoch(FOV10), RA, DEC, 10, settings=settings, session=session)
+    assert not first.path.exists()
+    again = get_cutout(fixture_epoch(FOV10), RA, DEC, 10, settings=settings, session=session)
+    assert not again.from_cache and len(session.calls) == 2

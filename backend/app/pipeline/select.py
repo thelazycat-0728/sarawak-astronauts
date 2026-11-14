@@ -36,6 +36,7 @@ from dataclasses import dataclass, field
 
 from app.config import Settings
 from app.cutouts import Cutout, CutoutFailure
+from app.cutouts.cache import is_resource_error
 from app.errors import ApiError, InvalidParameter
 from app.irsa.records import EpochRecord
 from app.pipeline.clean import CleanFrame
@@ -136,7 +137,13 @@ class Attempt:
 
 def clean_failure(exc: Exception) -> str:
     """``"<code>: <message>"`` for a cutout that downloaded but could not be
-    cleaned (an unreadable cached file, an unexpected BUNIT, or a bug, logged)."""
+    cleaned (an unreadable cached file, an unexpected BUNIT, or a bug, logged).
+
+    A resource error (MemoryError, too many open files) is re-raised instead:
+    it says nothing about this cutout, so it surfaces as a 500.
+    """
+    if is_resource_error(exc):
+        raise exc
     if isinstance(exc, ApiError):
         log.info("cleaning a cutout failed: %s", exc.message)
         return f"{exc.code}: {exc.message}"
