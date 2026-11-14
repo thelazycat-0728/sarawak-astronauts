@@ -209,7 +209,8 @@ export function aperture(img, nx, ny, x, y, r = 2.2) {
   for (let j = Math.floor(y - r); j <= Math.ceil(y + r); j++) {
     for (let i = Math.floor(x - r); i <= Math.ceil(x + r); i++) {
       if (i < 0 || j < 0 || i >= nx || j >= ny) continue;
-      if (Math.hypot(i + 0.5 - x, j + 0.5 - y) <= r) s += img[j * nx + i];
+      const v = img[j * nx + i];
+      if (Math.hypot(i + 0.5 - x, j + 0.5 - y) <= r && !Number.isNaN(v)) s += v; // NaN = no data (live frames)
     }
   }
   return s;
@@ -219,15 +220,21 @@ export function centroid(img, nx, ny, x, y, r = 3) {
   for (let j = Math.floor(y - r); j <= Math.ceil(y + r); j++) {
     for (let i = Math.floor(x - r); i <= Math.ceil(x + r); i++) {
       if (i < 0 || j < 0 || i >= nx || j >= ny) continue;
-      const w = Math.max(0, img[j * nx + i]);
+      const w = Math.max(0, img[j * nx + i]) || 0; // NaN (no data) weighs nothing
       sw += w; sx += w * (i + 0.5); sy += w * (j + 0.5);
     }
   }
   return sw > 0 ? [sx / sw, sy / sw] : [x, y];
 }
+/** Mean of the chosen snapshots; no-data pixels (NaN) are skipped, and stay NaN only if no snapshot has data. */
 export function meanOf(stacks, idx) {
-  const out = new Float32Array(stacks[0].length);
-  for (const i of idx) { const s = stacks[i]; for (let k = 0; k < out.length; k++) out[k] += s[k] / idx.length; }
+  const n = stacks[0].length;
+  const out = new Float32Array(n), cnt = new Uint8Array(n);
+  for (const i of idx) {
+    const s = stacks[i];
+    for (let k = 0; k < n; k++) { const v = s[k]; if (!Number.isNaN(v)) { out[k] += v; cnt[k]++; } }
+  }
+  for (let k = 0; k < n; k++) out[k] = cnt[k] ? out[k] / cnt[k] : NaN;
   return out;
 }
 export function crop(img, nx, ny, cx, cy, half = 10) {
