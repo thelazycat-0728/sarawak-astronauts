@@ -59,7 +59,7 @@ export const useUi = create(
         setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 3600);
       },
     }),
-    { name: 'skyshift-ui', storage: safeStorage, partialize: (s) => ({ expert: s.expert }) },
+    { name: 'starxplorer-ui', storage: safeStorage, partialize: (s) => ({ expert: s.expert }) },
   ),
 );
 
@@ -82,7 +82,7 @@ export const useAuth = create(
         set({ user: { ...u, points: u.points + n, events: [{ n, reason, at: new Date().toISOString() }, ...u.events].slice(0, 50) } });
       },
     }),
-    { name: 'skyshift-auth', storage: safeStorage },
+    { name: 'starxplorer-auth', storage: safeStorage },
   ),
 );
 
@@ -102,7 +102,7 @@ export const useProgress = create(
       saveView: (view) => set((s) => ({ savedViews: [{ ...view, id: uid(), at: new Date().toISOString() }, ...s.savedViews].slice(0, 20) })),
       removeView: (id) => set((s) => ({ savedViews: s.savedViews.filter((v) => v.id !== id) })),
     }),
-    { name: 'skyshift-progress', storage: safeStorage },
+    { name: 'starxplorer-progress', storage: safeStorage },
   ),
 );
 
@@ -115,7 +115,7 @@ export const useSubmissions = create(
       review: (id, verdict) => set((s) => ({ items: s.items.map((it) => (it.id === id ? { ...it, verdict, status: 'reviewed' } : it)) })),
       reviewDemo: (id, verdict) => set((s) => ({ demoVerdicts: { ...s.demoVerdicts, [id]: verdict } })),
     }),
-    { name: 'skyshift-submissions', storage: safeStorage },
+    { name: 'starxplorer-submissions', storage: safeStorage },
   ),
 );
 

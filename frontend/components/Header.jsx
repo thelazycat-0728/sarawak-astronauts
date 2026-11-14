@@ -48,9 +48,9 @@ export function Header() {
   return (
     <header className="sticky z-40 border-b border-line bg-ink-950/90 backdrop-blur" style={{ top: 'env(safe-area-inset-top, 0px)' }}>
       <div className="mx-auto flex max-w-[1680px] flex-wrap items-center gap-x-6 gap-y-2 px-[max(16px,env(safe-area-inset-left,0px))] py-3 lg:px-10">
-        <button type="button" onClick={() => navigate('/')} className="flex items-center gap-3" aria-label="SkyShift home">
+        <button type="button" onClick={() => navigate('/')} className="flex items-center gap-3" aria-label="StarXplorer home">
           <Logo className="size-7 text-accent-fg" />
-          <span className="text-[17px] font-semibold tracking-[0.18em]">SKYSHIFT</span>
+          <span className="text-[17px] font-semibold tracking-[0.18em]">STARXPLORER</span>
           <span className="hidden h-5 w-px bg-line-strong sm:block" />
           <span className="label-mono hidden text-muted sm:block">SPHEREx explorer</span>
         </button>
@@ -109,7 +109,7 @@ export function Header() {
 export function Footer() {
   return (
     <footer className="mx-auto flex max-w-[1680px] flex-wrap justify-between gap-3 px-[max(16px,env(safe-area-inset-left,0px))] py-8 lg:px-10">
-      <p className="label-mono text-faint">SkyShift · Sarawak Astronauts · Sarawak Space Challenge 2026</p>
+      <p className="label-mono text-faint">StarXplorer · Sarawak Astronauts · Sarawak Space Challenge 2026</p>
       <p className="label-mono text-faint">
         {IS_LIVE ? 'SPHEREx data: NASA/IPAC Infrared Science Archive' : 'Imagery shown is simulated for this draft'}
       </p>

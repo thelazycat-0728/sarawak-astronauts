@@ -60,7 +60,7 @@ export function SignInDialog() {
   };
 
   return (
-    <Modal open={open} onOpenChange={setOpen} title="Sign in to SkyShift" description="An account lets you submit findings to scientists, earn points and keep progress across devices. Everything else works without one.">
+    <Modal open={open} onOpenChange={setOpen} title="Sign in to StarXplorer" description="An account lets you submit findings to scientists, earn points and keep progress across devices. Everything else works without one.">
       <form onSubmit={submit} className="grid gap-4">
         <label className="grid gap-1.5 text-sm">
           <span className="label-mono text-muted">Display name</span>
@@ -108,7 +108,7 @@ export function Assistant() {
 
   const arr = ARRAYS[v.arrayIdx - 1];
   return (
-    <Sheet open={open} onOpenChange={setOpen} title="Ask SkyShift" description="Plain-language answers about what’s on screen.">
+    <Sheet open={open} onOpenChange={setOpen} title="Ask StarXplorer" description="Plain-language answers about what’s on screen.">
       <div className="flex items-center gap-2 border-b border-line px-5 py-3 text-xs text-muted">
         <span className="label-mono">Looking at</span>
         <span className="truncate text-fg">{preset ? preset.name : `${v.ra} ${v.dec}`} · array {arr.n} · {v.mode}</span>

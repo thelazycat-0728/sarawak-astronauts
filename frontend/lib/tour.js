@@ -12,5 +12,5 @@ export function startTour() {
     { element: '#tour-expert', popover: { title: 'Ready for more?', description: 'Expert mode adds bands, spectra, brightness charts, catalogue overlays and data-quality flags.' } },
     { element: '#tour-ask', popover: { title: 'Stuck? Ask', description: 'The assistant explains whatever is on screen in plain language.' } },
   ].filter((s) => document.querySelector(s.element));
-  driver({ showProgress: true, popoverClass: 'skyshift-tour', steps, nextBtnText: 'Next', prevBtnText: 'Back', doneBtnText: 'Done' }).drive();
+  driver({ showProgress: true, popoverClass: 'starxplorer-tour', steps, nextBtnText: 'Next', prevBtnText: 'Back', doneBtnText: 'Done' }).drive();
 }
