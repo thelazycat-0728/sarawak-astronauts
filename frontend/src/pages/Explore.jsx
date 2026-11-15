@@ -43,6 +43,14 @@ export default function Explore() {
   const track = useMemo(() => (motion && science.entry
     ? { ra: science.entry.ra, dec: science.entry.dec, pm: motion.proper_motion_mas_yr, name: science.entry.name }
     : null), [motion, science.entry]);
+  // Beginner hint: which real science the Expert tools show for this preset.
+  const expertExtras = science.entry ? [
+    science.spectrum && 'its real spectrum',
+    science.lightcurve?.points?.some((p) => p.flux != null) && 'measured brightness',
+    science.entry.coadds && 'all six detector arrays',
+    motion && 'measured motion',
+    science.gaia && 'the Gaia stars around it',
+  ].filter(Boolean) : [];
 
   // Read a shared link once (?target=… or ?ra=…&dec=…, plus fov, array, mode).
   useEffect(() => {
@@ -116,7 +124,7 @@ export default function Explore() {
           <ViewerHead preset={preset} raDeg={raDeg} decDeg={decDeg} expert={expert} field={field} />
           <Stage
             field={field} loading={loading} attempt={attempt} error={error} tryAgain={tryAgain} preset={preset} cur={cur} base={base} incIdx={incIdx}
-            expert={expert} selection={selection} onPick={expert ? onPick : undefined} gaia={science.gaia} track={track}
+            expert={expert} selection={selection} onPick={expert ? onPick : undefined} gaia={science.gaia} track={track} expertExtras={expertExtras}
           />
           {field && <TimelineBar field={field} included={included} cur={cur} />}
           <ModeBar expert={expert} hasField={Boolean(field)} />
@@ -189,8 +197,14 @@ function ViewerHead({ preset, raDeg, decDeg, expert, field }) {
   );
 }
 
-function Stage({ field, loading, attempt, error, tryAgain, preset, cur, base, incIdx, expert, selection, onPick, gaia, track }) {
+/** "a", "a and b", "a, b and c". */
+function listText(items) {
+  return items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+function Stage({ field, loading, attempt, error, tryAgain, preset, cur, base, incIdx, expert, selection, onPick, gaia, track, expertExtras = [] }) {
   const v = useViewer();
+  const setExpert = useUi((s) => s.setExpert);
   const lessonDone = useProgress((s) => s.lessons);
   const lesson = v.lessonId ? LESSONS.find((l) => l.id === v.lessonId) : null;
 
@@ -305,6 +319,17 @@ function Stage({ field, loading, attempt, error, tryAgain, preset, cur, base, in
                   </p>
                 </>
               ) : <p className="mt-1 text-[13px] text-muted">{preset.lesson.text}</p>}
+              {expertExtras.length > 0 && (
+                <div className="mt-3 border-t border-line pt-2.5">
+                  <p className="text-[12.5px] leading-snug text-muted">
+                    <span className="text-fg">Real SPHEREx science:</span> Expert mode shows {listText(expertExtras)}.
+                  </p>
+                  <button type="button" onClick={() => setExpert(true)}
+                    className="mt-1.5 inline-flex items-center gap-1.5 text-[13px] font-medium text-accent-fg hover:text-fg">
+                    <Sparkles className="size-3.5" />Switch to Expert
+                  </button>
+                </div>
+              )}
             </div>
           )}
           {v.mode === 'diff' && cur === base && incIdx.length > 1 && (
