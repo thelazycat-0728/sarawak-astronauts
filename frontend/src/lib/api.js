@@ -297,7 +297,7 @@ function localExplain(q, ctx) {
   if (/variab|bright|fade|dim|puls/.test(s)) return `${GLOSSARY.variable.short} In Expert mode, click a star to see its brightness chart. Compare snapshots taken in the same array so colour differences don’t look like brightness changes.`;
   if (/spectr|molecule|water|methane|ice/.test(s)) return `${GLOSSARY.spectrum.short} In Expert mode, click any source to build its spectrum from all 102 bands. Dips are marked where water ice (3.0 µm), methane (3.3 µm), CO₂ ice (4.27 µm) and CO (4.67 µm) absorb.`;
   if (/gaia|catalog/.test(s)) return `${GLOSSARY.gaia.short} Turn on the Gaia overlay in Expert mode to see known stars and their motion arrows. A mover with no Gaia match is a candidate.`;
-  if (/submit|discover|report|found/.test(s)) return 'Finish the training lessons, then use “Flag a candidate”. Mark the object in two snapshots, add a note, and the automatic checks run straight away. Promising candidates go to scientists for review.';
+  if (/submit|discover|report|found/.test(s)) return 'Finish the training in Learn, then open Play (or use “Flag a candidate” in Explore). Mark the object in two snapshots, add a note, and the automatic checks run straight away. Promising candidates go to scientists for review.';
   return `I can explain what’s on screen. You’re viewing ${where} in array ${arr.n}. Try asking “Why does the star move?”, “What does Difference show?” or “What are contamination flags?”.`;
 }
 

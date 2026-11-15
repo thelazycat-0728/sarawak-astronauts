@@ -1,8 +1,10 @@
 import { useNavigate } from 'react-router';
 import { LogIn, LogOut, Trophy, Bookmark, Trash2, ShieldCheck, Award } from 'lucide-react';
 import { Button, Kicker, Panel, Chip, Segmented } from '../components/ui';
-import { useAuth, useUi, useProgress, useSubmissions, useViewer } from '../store';
+import { useAuth, useUi, useProgress, useViewer } from '../store';
 import { rankFor, RANKS, LESSONS, LEVELS } from '../lib/data';
+import { ReputationCard } from '../components/Reputation';
+import { useMySubmissions } from '../lib/reputationHooks';
 import { cn } from '../lib/util';
 
 const STATUS = {
@@ -18,12 +20,11 @@ export default function Profile() {
   const setRole = useAuth((s) => s.setRole);
   const setSignIn = useUi((s) => s.setSignIn);
   const { lessons, games, savedViews, removeView } = useProgress();
-  const items = useSubmissions((s) => s.items);
+  const mine = useMySubmissions();
   const navigate = useNavigate();
 
   const lessonsDone = LESSONS.filter((l) => lessons[l.id]).length;
   const levelsDone = LEVELS.filter((l) => games[l.id]?.stars > 0).length;
-  const mine = user ? items.filter((it) => it.by === user.name) : [];
 
   const badges = [
     { name: 'First steps', got: lessonsDone >= 1, text: 'Finished a lesson' },
@@ -81,9 +82,12 @@ export default function Profile() {
           <div className="label-mono mt-2 flex justify-between text-faint">
             {RANKS.map((r) => <span key={r.name} className={cn(r.name === rank.name && 'text-fg')}>{r.name}</span>)}
           </div>
-          <p className="mt-3 text-sm text-muted">{rank.next ? `${rank.next.min - user.points} points to ${rank.next.name}.` : 'Top rank reached.'} Submissions earn 2 points; a confirmed finding earns 50.</p>
+          <p className="mt-3 text-sm text-muted">{rank.next ? `${rank.next.min - user.points} points to ${rank.next.name}.` : 'Top rank reached.'} Relevant submissions earn 2 points; a confirmed finding earns 50.</p>
         </Panel>
       </div>
+
+      <h2 className="label-mono mt-10 mb-3 text-muted">Reputation</h2>
+      <ReputationCard mine={mine} />
 
       <h2 className="label-mono mt-10 mb-3 text-muted">Badges</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -100,8 +104,8 @@ export default function Profile() {
       <Panel className="overflow-x-auto">
         {mine.length === 0 ? (
           <div className="flex flex-wrap items-center justify-between gap-3 p-6 text-sm text-muted">
-            No submissions yet. Flag a candidate from the Explore screen.
-            <Button size="sm" variant="primary" onClick={() => navigate('/')}>Open Explore</Button>
+            No submissions yet. Find something in Explore, then submit it in Play.
+            <Button size="sm" variant="primary" onClick={() => navigate('/play')}>Open Play</Button>
           </div>
         ) : (
           <table className="w-full min-w-[640px] text-left text-sm tabular">

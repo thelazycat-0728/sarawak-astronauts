@@ -11,7 +11,6 @@ const NAV = [
   { to: '/learn', label: 'Learn' },
   { to: '/play', label: 'Play' },
   { to: '/time-machine', label: 'Time machine' },
-  { to: '/submit', label: 'Submit' },
 ];
 
 export function Header() {

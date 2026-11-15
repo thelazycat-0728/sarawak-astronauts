@@ -27,7 +27,7 @@ Supabase (Auth + Postgres)     Python API (FastAPI on Render)
 | Need | Technology | Used for |
 | --- | --- | --- |
 | Framework and build | **React + Vite** | Whole app; Netlify detects Vite automatically |
-| Screens | **React Router** (`react-router` v7) | `/` (Explore), `/learn`, `/play`, `/time-machine`, `/submit`, `/review`, `/profile` |
+| Screens | **React Router** (`react-router` v7) | `/` (Explore), `/learn` (lessons; training games at `/learn/game`), `/play` (submit discoveries; `/submit` redirects here), `/time-machine`, `/review`, `/profile` |
 | Styling and UI components | **Tailwind CSS v4** + **Radix UI** primitives, shadcn-style components in `components/ui.jsx` (`clsx`, `tailwind-merge`), **lucide-react** icons | Consistent controls, dialogs and the "?" tooltips for plain-language labels |
 | Shared state | **Zustand** | Current target, band, selected epochs, Beginner/Expert mode |
 | Shareable views | URL search params | `?target=barnard` or `?ra=…&dec=…`, plus `fov` (3, 6 or 12 arcmin), `array` (1–6) and `mode` (`blink`, `diff`, `stack`), reproduces a view (Level 3 public sharing) |
