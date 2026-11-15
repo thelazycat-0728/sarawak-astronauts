@@ -1,6 +1,7 @@
-# Render Blueprint for the Python science API (see docs/TECH_STACK.md §7).
-# Create once in the Render dashboard: New → Blueprint → select this repo.
-# After that, every push to main redeploys the API automatically.
+# Render Blueprint for the Python science API and the frontend static site
+# (see docs/TECH_STACK.md §7). Create once in the Render dashboard:
+# New → Blueprint → select this repo. After that, every push to main redeploys
+# both services automatically.
 
 services:
   - type: web
@@ -18,7 +19,7 @@ services:
       - key: DATA_MODE
         value: irsa
       - key: CORS_ORIGINS
-        sync: false   # set in the dashboard, e.g. https://<site>.netlify.app
+        sync: false   # set in the dashboard, e.g. https://sarawak-frontend.onrender.com
       # Netlify deploy previews (one per pull request) may call the API too.
       - key: CORS_ORIGIN_REGEX
         value: ^https://deploy-preview-\d+--aesthetic-parfait-36a9c2\.netlify\.app$
@@ -30,3 +31,25 @@ services:
         value: gemini-3.8-flash
       - key: GEMINI_FALLBACK_MODEL   # used when the main model is busy
         value: gemini-3.5-flash-lite
+
+  # Frontend (React + Vite) as a free static site. Replaces Netlify, whose free
+  # credits ran out. Static sites don't sleep, unlike the free API service.
+  - type: web
+    name: sarawak-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run lint && npm run build
+    staticPublishPath: dist          # relative to rootDir
+    autoDeploy: true
+    buildFilter:                     # skip rebuilds for backend- or docs-only commits
+      paths:
+        - frontend/**
+    envVars:
+      - key: NODE_VERSION            # match GitHub Actions CI
+        value: "22"
+      - key: VITE_API_URL            # baked in at build time: https://<api>.onrender.com
+        sync: false
+    routes:
+      - type: rewrite                # React Router: serve index.html for /learn, /play, ...
+        source: /*
+        destination: /index.html

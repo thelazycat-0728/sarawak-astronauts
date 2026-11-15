@@ -29,8 +29,8 @@ Hackathon simplifications to the [TECH_STACK.md](TECH_STACK.md):
 
 - No Redis or background job queue. Slow requests fall back to the pre-computed frames.
 - No Supabase. Accounts are hard-coded so the judges can sign in with one click, and progress and submissions use `localStorage` only. A scientist sees submissions made on the same device and browser (see TECH_STACK §5).
-- The frontend is hosted on **Netlify** (configured in `netlify.toml`). If Netlify fails, use Cloudflare Pages or a Render static site, or run the built site from a laptop with `npx serve -s dist`.
-- The API runs on **Render**'s free tier with the native Python runtime (`render.yaml`, no Docker). If Render fails, run the API on a laptop, behind a tunnel if the Netlify site needs it (see TECH_STACK §7). If all hosting fails, the demo runs on the pre-computed frames alone.
+- The frontend is hosted on a **Render static site** (`sarawak-frontend` in `render.yaml`), after Netlify's free credits ran out. Netlify (`netlify.toml`) and Cloudflare Pages are fallbacks, or run the built site from a laptop with `npx serve -s dist`.
+- The API runs on **Render**'s free tier with the native Python runtime (`render.yaml`, no Docker). If Render fails, run the API on a laptop, behind a tunnel if the deployed frontend needs it (see TECH_STACK §7). If all hosting fails, the demo runs on the pre-computed frames alone.
 
 ## 2. Hour 0–1: shared contracts (everyone together)
 
