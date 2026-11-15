@@ -11,7 +11,8 @@ Two data modes, chosen with the `DATA_MODE` environment variable:
   visit (survey pass), rendered by the cleaning pipeline in `app/pipeline/`, with
   `"synthetic": false`. `/frame/{id}.png` renders frames from the cutout cache, and
   `/diff` subtracts two of them (`/epochs` gives a `diff_url_template` for it and
-  `diffs: []`). `/lightcurve` answers `503 unavailable` for now.
+  `diffs: []`). `/lightcurve` measures aperture photometry on the same exposures
+  as `/epochs` at fov 10 (`app/pipeline/photometry.py`).
 
 `GET /health` always returns `{"status": "ok"}`; the `X-Data-Mode` response header
 (readable from browser JavaScript through CORS) says which mode is running. `POST /explain`

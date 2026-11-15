@@ -7,6 +7,8 @@ This is the contract between the frontend and the FastAPI science backend. Mock 
 **Changes in 0.5** (since 0.4):
 - T-007 (live difference images, `DATA_MODE=irsa`): `/diff` works on the live API for any two epochs of a live `/epochs` response; it no longer answers `503 unavailable` for being unimplemented. Its two frames are rendered like `/frame` and share the `/frame` render slots and 60 s deadline, so `503` now means busy and `504` a timeout (section 1 and `/diff`).
 - T-007: live `/epochs` returns a non-null `diff_url_template` (absolute, with the sequence's `ra`, `dec`, `fov` and `band`); `diffs` stays `[]`. Mock and preset responses are unchanged, and no shape changed.
+- T-009 (live light curves, `DATA_MODE=irsa`): `/lightcurve` works on the live API; it no longer answers `503 unavailable` for being unimplemented. It measures the exposures of the live `/epochs` sequence at the default fov (10), so `points[].epoch_id` are that sequence's ids, and it shares that request's cache, 90 s deadline (`504`), waiter cap (`503`, now meaning busy) and `502`/`504` when no cutout could be downloaded. The response shape is unchanged; `/lightcurve` documents the photometry, the `quality` rules and the `method` text.
+- T-009: saturated targets (for example Barnard's Star) come back as `flux: null`, `flux_err: null`, `quality: "bad"` on every point. Mock responses are unchanged.
 
 **Changes in 0.4** (since 0.3):
 - T-015 (live API limits, `DATA_MODE=irsa`): `/frame` renders run in at most 8 slots; a request waits up to 3 s for a free one (the wait counts against the frame deadline), then answers `503 unavailable` (section 1 error table and `/frame`). `/epochs` still answers `502`/`504` when no cutout could be downloaded (a cutout that downloads but cannot be cleaned now counts as a failed download) and `503` when too many requests wait. All other shapes are unchanged.
@@ -50,10 +52,10 @@ Every error, including errors from the PNG endpoints, returns JSON in one shape:
 | 429 | `rate_limited` | Too many requests (mainly `/explain`) |
 | 500 | `internal_error` | Unexpected server error |
 | 502 | `upstream_error` | IRSA or another archive returned an error |
-| 503 | `unavailable` | A service is not configured (for example no LLM key for `/explain`), a feature is not available from the live API yet (`/lightcurve` with `DATA_MODE=irsa`), or the live API is busy: too many requests are already waiting (`/epochs`) or too many frames are being rendered (`/frame` and `/diff`, which share the render slots). The frontend should fall back to preset frames, or retry a frame or diff a moment later |
+| 503 | `unavailable` | A service is not configured (for example no LLM key for `/explain`), or the live API is busy: too many requests are already waiting (`/epochs` and `/lightcurve`, which share one build path) or too many frames are being rendered (`/frame` and `/diff`, which share the render slots). The frontend should fall back to preset frames, or retry a frame or diff a moment later |
 | 504 | `upstream_timeout` | An archive did not answer in time. The frontend should fall back to preset frames |
 
-No SPHEREx coverage at a position is **not** an error: `/epochs` returns `200` with `"count": 0` and an empty `epochs` list. When IRSA lists exposures but none of their cutouts could be downloaded, the live API returns `502 upstream_error` (or `504 upstream_timeout` if every download timed out), not `count: 0`.
+No SPHEREx coverage at a position is **not** an error: `/epochs` returns `200` with `"count": 0` and an empty `epochs` list (`/lightcurve`: an empty `points` list). When IRSA lists exposures but none of their cutouts could be downloaded, the live API returns `502 upstream_error` (or `504 upstream_timeout` if every download timed out), not `count: 0`.
 
 ## 2. Bands
 
@@ -207,6 +209,17 @@ Aperture photometry at a fixed sky position on every epoch, sorted by time.
 
 `points[]` has `epoch_id` (matches `/epochs` ids for the same band), `time_utc`, `mjd`, `release`, `wavelength_um`, `flux` and `flux_err` (µJy, nullable when the position is masked or off the frame) and `quality` (`good`, `warn` or `bad`). The position is fixed, so a fast-moving star drifts out of the aperture; motion-aware photometry is a Stretch item.
 
+**Live API** (`DATA_MODE=irsa`). The points are the exposures of the live `/epochs` sequence at the same `ra`, `dec`, `band` and the default `fov` (10), one per visit, so `epoch_id` equals those `/epochs` ids (`/epochs` at another fov may pick other exposures). The request shares that `/epochs` request's cache entry, single build, 90 s deadline and limits; a light curve after `/epochs` at fov 10 (or after another light curve at the same position, with any `aperture`) needs no IRSA call.
+
+- **Pixels:** the exposure's native detector pixels (about 6.15″, from the IMAGE WCS with its distortion), `IMAGE − ZODI` in MJy/sr, masked with the same `FLAGS` bits as the frames. Saturated star cores are not filled here (frames fill them for display only), so they are never measured. Native pixels are used rather than the north-up frame grid because they carry their own `VARIANCE` and the grid's interpolation would spread every masked pixel and correlate the noise.
+- **Aperture:** a circle of radius `aperture` (arcsec) at the requested position, with exact fractional pixel overlap.
+- **Sky:** the median of the measurable pixels in an annulus from `aperture + 12″` to `aperture + 36″` (24–48″ for the default 12″), subtracted from every aperture pixel.
+- **Flux:** the sum over the aperture times the pixel solid angle, MJy/sr × sr → µJy (1 MJy = 10¹² µJy). No aperture correction: a point source loses the part of its image outside the aperture, so fluxes are lower bounds (the default 12″ holds most, not all, of a star).
+- **`flux_err`:** from the `VARIANCE` plane over the aperture plus the error of the sky median (annulus scatter, 1.4826 × MAD).
+- **`quality`:** `bad`, with `flux` and `flux_err` null, when any aperture pixel (any overlap) is not measurable (masked, a saturated core, or off the frame), or fewer than 10 annulus pixels are measurable. A bright star saturated in every exposure (Barnard's Star) is therefore `bad` everywhere, never a wrong number; large apertures are `bad` more often because they hold more pixels. `warn` when fewer than half of the annulus pixels are measurable (a thin annulus) or the epoch's frame `quality.status` is `warn` or `bad`. Otherwise `good`.
+- **Colour:** each point is at its own `wavelength_um` (SPHEREx's filters vary across the detector), so part of a change between points can be colour (the star's spectrum), not time. Compare points at similar `wavelength_um` to see changes in time.
+- **`method`:** a sentence stating the above (aperture, annulus, error source, no aperture correction, the null rule and the colour caveat). The mock's `method` is the short text in the example.
+
 ```json
 {
   "synthetic": false,
@@ -224,7 +237,7 @@ Aperture photometry at a fixed sky position on every epoch, sorted by time.
 }
 ```
 
-Errors: `400 invalid_parameter`, `502 upstream_error`, `503 unavailable` (live API: not implemented yet), `504 upstream_timeout`. No coverage returns `200` with an empty `points` list.
+Errors: `400 invalid_parameter` (also `aperture` outside 3–60), `502 upstream_error`, `503 unavailable` (live API: too many requests already waiting, as `/epochs`; use the presets), `504 upstream_timeout` (live API: the sequence was not ready within 90 s, or every download timed out). No coverage returns `200` with an empty `points` list.
 
 ### `POST /explain` (implemented by Track C)
 
