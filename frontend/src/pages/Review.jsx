@@ -95,7 +95,7 @@ export default function Review() {
         <div>
           <h1 className="text-4xl font-medium tracking-tight">Submissions</h1>
           <p className="mt-2 text-muted">{pending} candidates waiting. Each has passed automatic quality, motion and catalogue checks. Ranked by AI score weighted by the submitter’s reputation.</p>
-          <p className="mt-1 text-sm text-faint">Volunteers’ submissions are saved in this browser, so you see the ones made on this device. To try it, submit as the demo volunteer in Play, then switch back to this account.</p>
+          <p className="mt-1 text-sm text-faint">Volunteers’ submissions are saved in this browser, so you see the ones made on this device. To try it, submit as the demo volunteer in Discover, then switch back to this account.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Segmented value={tab} onChange={setTab} label="Queue" options={[{ value: 'pending', label: 'Pending' }, { value: 'done', label: 'Reviewed' }]} />

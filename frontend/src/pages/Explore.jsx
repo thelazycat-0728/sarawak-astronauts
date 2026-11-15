@@ -390,7 +390,8 @@ function ModeBar({ expert, hasField }) {
       {hasField && (
         <div className="ml-auto flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => setAssistant(true)}><Sparkles className="size-4 text-accent-fg" />Ask about this view</Button>
-          <Button variant="subtle" size="sm" onClick={() => navigate('/play')}><Flag className="size-4 text-amber" />Flag a candidate</Button>
+          {/* Discover takes new finds only, so known objects (presets) can't be flagged. */}
+          {!v.targetId && <Button variant="subtle" size="sm" onClick={() => navigate('/discover')}><Flag className="size-4 text-amber" />Flag a candidate</Button>}
         </div>
       )}
     </div>

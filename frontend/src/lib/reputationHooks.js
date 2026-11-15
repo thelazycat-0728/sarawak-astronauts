@@ -1,4 +1,4 @@
-// React hooks for the reputation UI (components/Reputation.jsx and the Play page).
+// React hooks for the reputation UI (components/Reputation.jsx and the Discover page).
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth, useSubmissions } from '../store';
 import { isAuthor } from './reputation';

@@ -103,8 +103,8 @@ export default function Profile() {
       <Panel className="overflow-x-auto">
         {mine.length === 0 ? (
           <div className="flex flex-wrap items-center justify-between gap-3 p-6 text-sm text-muted">
-            No submissions yet. Find something in Explore, then submit it in Play.
-            <Button size="sm" variant="primary" onClick={() => navigate('/play')}>Open Play</Button>
+            No submissions yet. Find something in Explore, then submit it in Discover.
+            <Button size="sm" variant="primary" onClick={() => navigate('/discover')}>Open Discover</Button>
           </div>
         ) : (
           <table className="w-full min-w-[640px] text-left text-sm tabular">
