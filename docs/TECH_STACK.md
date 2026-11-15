@@ -115,7 +115,7 @@ With no shared database, the volunteer and the scientist hand submissions over t
 
 | Piece | Platform |
 | --- | --- |
-| Frontend | **Render static site** (`sarawak-frontend` in `render.yaml`), deployed from GitHub on every push to `main`. Netlify was the first host; its free credits ran out, so `netlify.toml` stays only as a fallback |
+| Frontend | **Render static site** (`sarawak-frontend` in `render.yaml`, live at <https://sarawak-frontend.onrender.com>), deployed from GitHub on every push to `main`. Netlify was the first host; its free credits ran out, so `netlify.toml` stays only as a fallback |
 | Python API | **Render** web service on the native Python runtime (no Docker), configured in `render.yaml`. Fallbacks: a local laptop, optionally behind a tunnel (see below) |
 | Source control and CI | **GitHub** + **GitHub Actions**: frontend lint and build; backend `ruff` and a syntax check (the pytest suite is not run in CI yet) |
 | Secrets | Environment variables on Render (both services); never in the frontend bundle |
