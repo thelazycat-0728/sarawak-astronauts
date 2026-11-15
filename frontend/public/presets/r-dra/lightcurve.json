@@ -1,0 +1,218 @@
+{
+  "synthetic": false,
+  "target": {
+    "ra": 248.1674,
+    "dec": 66.755,
+    "name": "R Draconis",
+    "frame": "ICRS"
+  },
+  "band": {
+    "id": "D2",
+    "wavelength_min_um": 1.1,
+    "wavelength_max_um": 1.62
+  },
+  "aperture_arcsec": 12.0,
+  "unit": "uJy",
+  "method": "Aperture photometry at a fixed position on the native SPHEREx pixels (IMAGE - ZODI, MJy/sr) of each epoch's exposure: a circular aperture of radius aperture_arcsec with exact pixel overlap, minus the median of a sky annulus from aperture + 12\" to aperture + 36\"; flux_err from the VARIANCE plane plus the sky-median error. No aperture correction, so point-source fluxes are low. Any masked, saturated or off-frame pixel in the aperture gives a null flux and quality bad. Each epoch is at its own wavelength (wavelength_um), so part of a change between points can be colour, not time. Presets measure every exposure of the sequence (up to 6 per visit), so points within a visit sample several wavelengths a few hours apart.",
+  "points": [
+    {
+      "epoch_id": "sx_dr1_2025W24_2D_0534_1_D2",
+      "time_utc": "2025-06-15T10:43:00Z",
+      "mjd": 60841.446532,
+      "release": "DR1",
+      "wavelength_um": 1.27864,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 1
+    },
+    {
+      "epoch_id": "sx_dr1_2025W24_2D_0534_2_D2",
+      "time_utc": "2025-06-15T10:45:09Z",
+      "mjd": 60841.448025,
+      "release": "DR1",
+      "wavelength_um": 1.30928,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 1
+    },
+    {
+      "epoch_id": "sx_dr1_2025W24_2D_0534_3_D2",
+      "time_utc": "2025-06-15T10:47:18Z",
+      "mjd": 60841.449516,
+      "release": "DR1",
+      "wavelength_um": 1.34019,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 1
+    },
+    {
+      "epoch_id": "sx_dr1_2025W24_2D_0534_4_D2",
+      "time_utc": "2025-06-15T10:49:27Z",
+      "mjd": 60841.451009,
+      "release": "DR1",
+      "wavelength_um": 1.37233,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 1
+    },
+    {
+      "epoch_id": "sx_dr1_2025W25_2A_0633_2_D2",
+      "time_utc": "2025-06-22T15:34:52Z",
+      "mjd": 60848.649213,
+      "release": "DR1",
+      "wavelength_um": 1.10969,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 1
+    },
+    {
+      "epoch_id": "sx_dr1_2025W25_2A_0633_3_D2",
+      "time_utc": "2025-06-22T15:37:01Z",
+      "mjd": 60848.650705,
+      "release": "DR1",
+      "wavelength_um": 1.13541,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 1
+    },
+    {
+      "epoch_id": "sx_dr1_2025W49_1A_0009_3_D2",
+      "time_utc": "2025-12-01T00:37:47Z",
+      "mjd": 61010.026244,
+      "release": "DR1",
+      "wavelength_um": 1.2174,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 2
+    },
+    {
+      "epoch_id": "sx_dr1_2025W49_1A_0009_4_D2",
+      "time_utc": "2025-12-01T00:39:56Z",
+      "mjd": 61010.027736,
+      "release": "DR1",
+      "wavelength_um": 1.24649,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 2
+    },
+    {
+      "epoch_id": "sx_dr1_2025W49_1A_0280_1_D2",
+      "time_utc": "2025-12-02T05:54:42Z",
+      "mjd": 61011.246322,
+      "release": "DR1",
+      "wavelength_um": 1.276,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 2
+    },
+    {
+      "epoch_id": "sx_dr1_2025W49_1A_0280_2_D2",
+      "time_utc": "2025-12-02T05:56:51Z",
+      "mjd": 61011.247814,
+      "release": "DR1",
+      "wavelength_um": 1.30655,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 2
+    },
+    {
+      "epoch_id": "sx_dr1_2025W49_1A_0280_3_D2",
+      "time_utc": "2025-12-02T05:59:00Z",
+      "mjd": 61011.249307,
+      "release": "DR1",
+      "wavelength_um": 1.33739,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 2
+    },
+    {
+      "epoch_id": "sx_dr1_2025W49_1A_0280_4_D2",
+      "time_utc": "2025-12-02T06:01:09Z",
+      "mjd": 61011.250798,
+      "release": "DR1",
+      "wavelength_um": 1.36944,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 2
+    },
+    {
+      "epoch_id": "sx_qr3_2026W25_2A_0661_2_D2",
+      "time_utc": "2026-06-21T14:53:25Z",
+      "mjd": 61212.620432,
+      "release": "QR3",
+      "wavelength_um": 1.48982,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 3
+    },
+    {
+      "epoch_id": "sx_qr3_2026W25_2A_0661_3_D2",
+      "time_utc": "2026-06-21T14:55:34Z",
+      "mjd": 61212.621925,
+      "release": "QR3",
+      "wavelength_um": 1.5258,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 3
+    },
+    {
+      "epoch_id": "sx_qr3_2026W25_2A_0661_4_D2",
+      "time_utc": "2026-06-21T14:57:43Z",
+      "mjd": 61212.623417,
+      "release": "QR3",
+      "wavelength_um": 1.56303,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 3
+    },
+    {
+      "epoch_id": "sx_qr3_2026W25_2A_0674_1_D2",
+      "time_utc": "2026-06-21T16:28:29Z",
+      "mjd": 61212.686447,
+      "release": "QR3",
+      "wavelength_um": 1.60061,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 3
+    },
+    {
+      "epoch_id": "sx_qr3_2026W26_1A_0047_1_D2",
+      "time_utc": "2026-06-22T05:30:48Z",
+      "mjd": 61213.229717,
+      "release": "QR3",
+      "wavelength_um": 1.38698,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 3
+    },
+    {
+      "epoch_id": "sx_qr3_2026W26_1A_0047_2_D2",
+      "time_utc": "2026-06-22T05:32:56Z",
+      "mjd": 61213.231209,
+      "release": "QR3",
+      "wavelength_um": 1.42043,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 3
+    }
+  ],
+  "tracking": null
+}

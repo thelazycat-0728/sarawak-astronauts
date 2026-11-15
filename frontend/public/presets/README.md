@@ -27,6 +27,16 @@ SPHEREx data: NASA/IPAC Infrared Science Archive (IRSA)
   Stacks show faint targets and ~1 px motions better than single frames; they
   are broadband averages (the frames differ in wavelength), not colour or
   brightness measurements.
+- `<id>/lightcurve.json` (`lightcurve_url` in `index.json`): aperture photometry
+  of the target on every exposure, in the `GET /lightcurve` shape plus `visit`
+  per point (and `tracking` for the movers, whose aperture follows their proper
+  motion). Saturated targets (Barnard's Star, R Dra) are `bad` with null flux.
+- `motion` on the movers' entries in `index.json`: the target's position on
+  each visit stack and the measured first-to-last shift against the catalogue
+  proper motion (`backend/scripts/build_preset_motion.py`).
+- `<id>/spectrum.json` (`spectrum_url`, only `eps-indi-b` for now): the same
+  photometry on one visit of every detector array, sorted by wavelength
+  (about 0.75-5 um).
 
 ## Regenerate
 
@@ -44,3 +54,7 @@ download failed; run it again until it reports 0 failures. On Linux or macOS use
 the stacks offline from the cutout cache without touching the frames.
 `backend/scripts/preset_science.py` measures the targets' motion and brightness
 on the cleaned float images.
+`backend/scripts/build_preset_photometry.py` writes the light curves (offline,
+from the same cache) and the spectra; a spectrum first needs its cutouts:
+`backend/scripts/fetch_spectrum_cutouts.py --preset eps-indi-b` (network, into
+the separate `backend/.cache/spectra/`).

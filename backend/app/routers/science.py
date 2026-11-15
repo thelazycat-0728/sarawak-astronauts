@@ -37,13 +37,13 @@ _PNG: dict[int | str, dict] = {
     404: {"model": ErrorResponse, "description": "Unknown epoch id"},
     **_ERRORS,
 }
-# /frame with DATA_MODE=irsa: too many frames rendering at once.
+# /frame and /diff with DATA_MODE=irsa: too many frames rendering at once.
 _BUSY: dict[int | str, dict] = {
     503: {"model": ErrorResponse, "description": "Too many live frames rendering"},
 }
-# /diff and /lightcurve are not available yet with DATA_MODE=irsa.
+# /lightcurve with DATA_MODE=irsa: too many requests already wait for IRSA (as /epochs).
 _UNAVAILABLE: dict[int | str, dict] = {
-    503: {"model": ErrorResponse, "description": "Not available for live data yet"},
+    503: {"model": ErrorResponse, "description": "Too many live requests waiting"},
 }
 
 
@@ -123,7 +123,7 @@ def get_frame(
     return _png(provider.frame_png(id, q))
 
 
-@router.get("/diff", response_class=Response, responses=_PNG | _UNAVAILABLE,
+@router.get("/diff", response_class=Response, responses=_PNG | _BUSY,
             name="get_diff")
 def get_diff(q: Annotated[DiffQuery, Query()], provider: Provider) -> Response:
     return _png(provider.diff_png(q))

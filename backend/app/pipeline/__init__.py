@@ -9,6 +9,8 @@ Not wired into the routes yet (T-014 adds the IRSA provider). Modules:
 - ``sequence``: ``build_sequence`` returning an ``/epochs`` response plus PNGs.
 - ``diff``: ``b - a`` difference PNGs (grey 128 = no change).
 - ``stack``: per-visit mean of cleaned frames over their valid pixels.
+- ``photometry``: native-pixel aperture photometry for live ``/lightcurve`` (T-009);
+  imported on its own, not re-exported here.
 """
 
 from app.pipeline.clean import (
@@ -18,8 +20,14 @@ from app.pipeline.clean import (
     quality_status,
     view_wcs,
 )
-from app.pipeline.diff import diff_png
-from app.pipeline.render import compute_stretch, encode_png, render_frame, to_gray8
+from app.pipeline.diff import diff_frames, diff_png
+from app.pipeline.render import (
+    compute_stretch,
+    encode_png,
+    load_frame,
+    render_frame,
+    to_gray8,
+)
 from app.pipeline.select import edge_distance_arcmin, rank_visit, select_per_visit
 from app.pipeline.sequence import Sequence, build_sequence
 from app.pipeline.stack import StackFrame, stack_frames, stack_png
@@ -31,10 +39,12 @@ __all__ = [
     "build_sequence",
     "clean_cutout",
     "compute_stretch",
+    "diff_frames",
     "diff_png",
     "edge_distance_arcmin",
     "encode_png",
     "grid_side",
+    "load_frame",
     "quality_status",
     "rank_visit",
     "render_frame",

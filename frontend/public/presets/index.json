@@ -36,7 +36,67 @@
           "visits": 3,
           "stacks": 3
         }
-      ]
+      ],
+      "lightcurve_url": "/presets/barnards-star/lightcurve.json",
+      "motion": {
+        "method": "Target position on each visit stack (the mean of the visit's cleaned, north-up exposures, fov 12): the flux-weighted centroid, or for a saturated star the centre of its saturated-core mask. x grows to the right (west) and y downwards (south), in pixels of pixel_scale_arcsec; shifts are last visit minus first visit, and pa_deg is the direction east of north.",
+        "pixel_scale_arcsec": 6.2,
+        "first_visit": 1,
+        "last_visit": 3,
+        "dt_yr": 0.989,
+        "proper_motion_mas_yr": [
+          -802.0,
+          10362.0
+        ],
+        "visits": [
+          {
+            "visit": 1,
+            "n_frames": 6,
+            "time_utc": "2025-08-25T17:09:20Z",
+            "mjd": 60913.237262,
+            "x_px": 58.0,
+            "y_px": 58.0,
+            "snr": null,
+            "saturated": true
+          },
+          {
+            "visit": 2,
+            "n_frames": 6,
+            "time_utc": "2026-03-17T16:20:23Z",
+            "mjd": 61117.972701,
+            "x_px": 58.0,
+            "y_px": 56.5,
+            "snr": null,
+            "saturated": true
+          },
+          {
+            "visit": 3,
+            "n_frames": 6,
+            "time_utc": "2026-08-21T17:19:27Z",
+            "mjd": 61274.604959,
+            "x_px": 58.36,
+            "y_px": 56.09,
+            "snr": null,
+            "saturated": true
+          }
+        ],
+        "measured": {
+          "dx_px": 0.36,
+          "dy_px": -1.91,
+          "shift_arcsec": 12.05,
+          "rate_arcsec_yr": 12.18,
+          "pa_deg": 349.3
+        },
+        "expected": {
+          "dx_px": 0.13,
+          "dy_px": -1.65,
+          "shift_arcsec": 10.28,
+          "rate_arcsec_yr": 10.39,
+          "pa_deg": 355.6
+        },
+        "verdict": "visible",
+        "note": "Measured 12.1″ towards PA 349° against 10.3″ towards 356° expected over 0.99 yr."
+      }
     },
     {
       "id": "eps-indi-b",
@@ -68,7 +128,78 @@
           "visits": 4,
           "stacks": 4
         }
-      ]
+      ],
+      "lightcurve_url": "/presets/eps-indi-b/lightcurve.json",
+      "motion": {
+        "method": "Target position on each visit stack (the mean of the visit's cleaned, north-up exposures, fov 12): the flux-weighted centroid, or for a saturated star the centre of its saturated-core mask. x grows to the right (west) and y downwards (south), in pixels of pixel_scale_arcsec; shifts are last visit minus first visit, and pa_deg is the direction east of north.",
+        "pixel_scale_arcsec": 6.2,
+        "first_visit": 1,
+        "last_visit": 4,
+        "dt_yr": 1.427,
+        "proper_motion_mas_yr": [
+          3982.0,
+          -2467.0
+        ],
+        "visits": [
+          {
+            "visit": 1,
+            "n_frames": 6,
+            "time_utc": "2025-04-26T05:06:23Z",
+            "mjd": 60792.209454,
+            "x_px": 57.85,
+            "y_px": 57.76,
+            "snr": 283.2,
+            "saturated": false
+          },
+          {
+            "visit": 2,
+            "n_frames": 6,
+            "time_utc": "2025-10-06T07:10:23Z",
+            "mjd": 60957.818471,
+            "x_px": 57.69,
+            "y_px": 57.97,
+            "snr": 272.7,
+            "saturated": false
+          },
+          {
+            "visit": 3,
+            "n_frames": 6,
+            "time_utc": "2026-04-24T21:21:00Z",
+            "mjd": 61155.975887,
+            "x_px": 57.19,
+            "y_px": 58.14,
+            "snr": 203.4,
+            "saturated": false
+          },
+          {
+            "visit": 4,
+            "n_frames": 6,
+            "time_utc": "2026-09-29T20:00:15Z",
+            "mjd": 61313.318034,
+            "x_px": 57.05,
+            "y_px": 58.47,
+            "snr": 256.1,
+            "saturated": false
+          }
+        ],
+        "measured": {
+          "dx_px": -0.8,
+          "dy_px": 0.71,
+          "shift_arcsec": 6.63,
+          "rate_arcsec_yr": 4.65,
+          "pa_deg": 131.6
+        },
+        "expected": {
+          "dx_px": -0.92,
+          "dy_px": 0.57,
+          "shift_arcsec": 6.68,
+          "rate_arcsec_yr": 4.68,
+          "pa_deg": 121.8
+        },
+        "verdict": "visible",
+        "note": "Measured 6.6″ towards PA 132° against 6.7″ towards 122° expected over 1.43 yr."
+      },
+      "spectrum_url": "/presets/eps-indi-b/spectrum.json"
     },
     {
       "id": "wise-0855",
@@ -100,7 +231,67 @@
           "visits": 3,
           "stacks": 3
         }
-      ]
+      ],
+      "lightcurve_url": "/presets/wise-0855/lightcurve.json",
+      "motion": {
+        "method": "Target position on each visit stack (the mean of the visit's cleaned, north-up exposures, fov 12): the flux-weighted centroid, or for a saturated star the centre of its saturated-core mask. x grows to the right (west) and y downwards (south), in pixels of pixel_scale_arcsec; shifts are last visit minus first visit, and pa_deg is the direction east of north.",
+        "pixel_scale_arcsec": 6.2,
+        "first_visit": 1,
+        "last_visit": 3,
+        "dt_yr": 0.975,
+        "proper_motion_mas_yr": [
+          -8124.0,
+          673.0
+        ],
+        "visits": [
+          {
+            "visit": 1,
+            "n_frames": 2,
+            "time_utc": "2025-05-05T16:49:00Z",
+            "mjd": 60800.7679,
+            "x_px": 58.17,
+            "y_px": 58.41,
+            "snr": 4.0,
+            "saturated": false
+          },
+          {
+            "visit": 2,
+            "n_frames": 6,
+            "time_utc": "2025-11-14T12:12:37Z",
+            "mjd": 60993.554605,
+            "x_px": 58.46,
+            "y_px": 57.68,
+            "snr": 7.9,
+            "saturated": false
+          },
+          {
+            "visit": 3,
+            "n_frames": 6,
+            "time_utc": "2026-04-26T02:04:06Z",
+            "mjd": 61157.025853,
+            "x_px": 58.86,
+            "y_px": 57.64,
+            "snr": 10.1,
+            "saturated": false
+          }
+        ],
+        "measured": {
+          "dx_px": 0.69,
+          "dy_px": -0.77,
+          "shift_arcsec": 6.41,
+          "rate_arcsec_yr": 6.57,
+          "pa_deg": 318.1
+        },
+        "expected": {
+          "dx_px": 1.28,
+          "dy_px": -0.11,
+          "shift_arcsec": 7.95,
+          "rate_arcsec_yr": 8.15,
+          "pa_deg": 274.7
+        },
+        "verdict": "not visible",
+        "note": "Measured 6.4″ towards PA 318° against 8.0″ towards 275° expected over 0.98 yr. The target is too faint in these stacks to measure its motion; the expected track is from the catalogue proper motion."
+      }
     },
     {
       "id": "rw-aur",
@@ -132,7 +323,8 @@
           "visits": 3,
           "stacks": 3
         }
-      ]
+      ],
+      "lightcurve_url": "/presets/rw-aur/lightcurve.json"
     },
     {
       "id": "r-dra",
@@ -164,7 +356,8 @@
           "visits": 3,
           "stacks": 3
         }
-      ]
+      ],
+      "lightcurve_url": "/presets/r-dra/lightcurve.json"
     }
   ]
 }

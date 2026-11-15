@@ -63,6 +63,8 @@ class Sequence:
     frames: dict[str, bytes]  # epoch id -> PNG, in time order
     cleaned: dict[str, CleanFrame]
     attempts: list[Attempt] = field(default_factory=list)  # per_visit only
+    # epoch id -> the cached cutout it was cleaned from (live photometry, T-009)
+    cutouts: dict[str, Cutout] = field(default_factory=dict)
     skipped_visits: list[int] = field(default_factory=list)
     failures: list[CutoutFailure] = field(default_factory=list)
     downloads: int = 0
@@ -262,6 +264,7 @@ def build_sequence(
         frames=frames,
         cleaned={epoch.id: frame for epoch, _, frame in picked},
         attempts=seq_attempts,
+        cutouts={epoch.id: cutout for epoch, cutout, _ in picked},
         skipped_visits=skipped,
         failures=failures,
         downloads=downloads,

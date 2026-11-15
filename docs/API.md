@@ -1,8 +1,15 @@
 # Science API contract
 
-**Version:** 0.4 (2026-11-15) · **Owner:** Track B (Noah) · **Consumers:** Track A (viewer), Track C (AI explainer)
+**Version:** 0.5 (2026-11-15) · **Owner:** Track B (Noah) · **Consumers:** Track A (viewer), Track C (AI explainer)
 
 This is the contract between the frontend and the FastAPI science backend. Mock responses that follow it live in `frontend/public/mock/` (see its `README.md`). Any change to this file is announced in the team chat first.
+
+**Changes in 0.5** (since 0.4):
+- T-007 (live difference images, `DATA_MODE=irsa`): `/diff` works on the live API for any two epochs of a live `/epochs` response; it no longer answers `503 unavailable` for being unimplemented. Its two frames are rendered like `/frame` and share the `/frame` render slots and 60 s deadline, so `503` now means busy and `504` a timeout (section 1 and `/diff`).
+- T-007: live `/epochs` returns a non-null `diff_url_template` (absolute, with the sequence's `ra`, `dec`, `fov` and `band`); `diffs` stays `[]`. Mock and preset responses are unchanged, and no shape changed.
+- T-009 (live light curves, `DATA_MODE=irsa`): `/lightcurve` works on the live API; it no longer answers `503 unavailable` for being unimplemented. It measures the exposures of the live `/epochs` sequence at the default fov (10), so `points[].epoch_id` are that sequence's ids, and it shares that request's cache, 90 s deadline (`504`), waiter cap (`503`, now meaning busy) and `502`/`504` when no cutout could be downloaded. The response shape is unchanged; `/lightcurve` documents the photometry, the `quality` rules and the `method` text.
+- Preset photometry (static files, no API call): every preset in `presets/index.json` gains `lightcurve_url`, a light curve in the `/lightcurve` shape measured on every preset exposure, and `eps-indi-b` gains `spectrum_url`, a spectrum across all six detector arrays, and the three fast movers gain `motion`, their measured shift between the first and last visit stacks against the catalogue proper motion (section 4). All three are optional, additive fields; nothing else in the presets changed.
+- T-009: saturated targets (for example Barnard's Star) come back as `flux: null`, `flux_err: null`, `quality: "bad"` on every point. Mock responses are unchanged.
 
 **Changes in 0.4** (since 0.3):
 - T-015 (live API limits, `DATA_MODE=irsa`): `/frame` renders run in at most 8 slots; a request waits up to 3 s for a free one (the wait counts against the frame deadline), then answers `503 unavailable` (section 1 error table and `/frame`). `/epochs` still answers `502`/`504` when no cutout could be downloaded (a cutout that downloads but cannot be cleaned now counts as a failed download) and `503` when too many requests wait. All other shapes are unchanged.
@@ -46,10 +53,10 @@ Every error, including errors from the PNG endpoints, returns JSON in one shape:
 | 429 | `rate_limited` | Too many requests (mainly `/explain`) |
 | 500 | `internal_error` | Unexpected server error |
 | 502 | `upstream_error` | IRSA or another archive returned an error |
-| 503 | `unavailable` | A service is not configured (for example no LLM key for `/explain`), a feature is not available from the live API yet (`/diff` and `/lightcurve` with `DATA_MODE=irsa`), or the live API is busy: too many requests are already waiting (`/epochs`) or too many frames are being rendered (`/frame`). The frontend should fall back to preset frames, or retry a frame a moment later |
+| 503 | `unavailable` | A service is not configured (for example no LLM key for `/explain`), or the live API is busy: too many requests are already waiting (`/epochs` and `/lightcurve`, which share one build path) or too many frames are being rendered (`/frame` and `/diff`, which share the render slots). The frontend should fall back to preset frames, or retry a frame or diff a moment later |
 | 504 | `upstream_timeout` | An archive did not answer in time. The frontend should fall back to preset frames |
 
-No SPHEREx coverage at a position is **not** an error: `/epochs` returns `200` with `"count": 0` and an empty `epochs` list. When IRSA lists exposures but none of their cutouts could be downloaded, the live API returns `502 upstream_error` (or `504 upstream_timeout` if every download timed out), not `count: 0`.
+No SPHEREx coverage at a position is **not** an error: `/epochs` returns `200` with `"count": 0` and an empty `epochs` list (`/lightcurve`: an empty `points` list). When IRSA lists exposures but none of their cutouts could be downloaded, the live API returns `502 upstream_error` (or `504 upstream_timeout` if every download timed out), not `count: 0`.
 
 ## 2. Bands
 
@@ -105,7 +112,7 @@ Response fields (all required unless marked nullable):
 | `count` | Length of `epochs` |
 | `epochs[]` | `id`, `time_utc`, `mjd`, `visit` (survey pass, 1-based, about every 6 months), `release` (`DR1` or `QR3`), `obs_id` (IRSA exposure id, nullable), `band`, `wavelength_um`, `quality`, `frame_url` |
 | `epochs[].quality` | `{status, flagged_fraction, flags}`. `flagged_fraction` is the share of the frame's pixels rendered as no-data (grey 0): masked pixels and pixels off the detector. `status` is `good` (`flagged_fraction` < 5 %), `warn` (< 25 %) or `bad`. `flags` lists the names of the **masked** SPHEREx `FLAGS` bits present in the view, never `SOURCE` (which is never masked). Informational bits that do not mask a pixel are not listed |
-| `diff_url_template` | Nullable string containing `{a}` and `{b}`. Replace them with two epoch ids to get a difference image URL. `null` for static mocks and presets, and currently `null` from the live API (`/diff` is not live yet) |
+| `diff_url_template` | Nullable string containing `{a}` and `{b}`. Replace them with two epoch ids to get a difference image URL. The live API always sets it (an absolute URL carrying the sequence's `ra`, `dec`, `fov` and `band`); `null` for static mocks and presets |
 | `diffs[]` | Pre-rendered differences `{a, b, url, scale}`. Empty (`[]`) from the live API |
 
 **Grey levels.** A frame pixel with value `v` (MJy/sr) is drawn as
@@ -158,7 +165,7 @@ Example (live API, shortened to two epochs; the full mock is `frontend/public/mo
       "frame_url": "<API_BASE>/frame/sx_2026W20_0412_D2.png?ra=269.4464&dec=4.7668&fov=10&band=D2&vmin=0.0079&vmax=1.9739"
     }
   ],
-  "diff_url_template": null,
+  "diff_url_template": "<API_BASE>/diff?a={a}&b={b}&ra=269.4464&dec=4.7668&fov=10&band=D2",
   "diffs": []
 }
 ```
@@ -179,7 +186,9 @@ Example: `200`, `Content-Type: image/png`, body is the PNG. Errors (JSON): `400 
 
 ### `GET /diff?a&b`
 
-Returns `image/png`, the difference **b − a** of two frames from the same sequence, same size as the frames. Grey 128 means no change, white means brighter in `b`, black means fainter in `b`. A source that moved shows as a black and white pair. The frontend calls this through `diff_url_template`.
+Returns `image/png`, the difference **b − a** of two frames from the same sequence, same size as the frames. Grey 128 means no change, white means brighter in `b`, black means fainter in `b`. A source that moved shows as a black and white pair. A pixel with no data in either frame is drawn as 128 (no change), so diffs have no grey-0 no-data level. The frontend calls this through `diff_url_template`.
+
+Live API: both frames are re-created from their ids like `/frame` (cutout cache, cleaning, north-up grid) and subtracted with the same renderer as the preset diffs. The default `scale` leaves out filled saturated star cores. The two frames take two of the `/frame` render slots together and share its 60 s deadline. Live epochs are one exposure per visit at different wavelengths (`wavelength_um`), so part of a difference can be colour, not time.
 
 | Param | Type | Unit | Default | Notes |
 | --- | --- | --- | --- | --- |
@@ -187,7 +196,7 @@ Returns `image/png`, the difference **b − a** of two frames from the same sequ
 | `ra`, `dec`, `fov`, `band` | as `/epochs` | | required | Filled in by the template |
 | `scale` | float | MJy/sr | 99.5th percentile of abs(b − a) | Value mapped to pure white or black; > 0 |
 
-Errors (JSON): `400 invalid_parameter` (also when `a` equals `b`), `404 not_found`, `502 upstream_error`, `503 unavailable` (live API: not implemented yet; use `diffs[]` from presets), `504 upstream_timeout`.
+Errors (JSON): `400 invalid_parameter` (also when `a` equals `b`), `404 not_found` (either id unknown, or not of this `band`), `502 upstream_error`, `503 unavailable` (live API: two render slots did not free up within the few seconds the request waited; retry a moment later or use a preset), `504 upstream_timeout` (live API: the two frames were not ready within 60 s).
 
 ### `GET /lightcurve?ra&dec&band`
 
@@ -200,6 +209,17 @@ Aperture photometry at a fixed sky position on every epoch, sorted by time.
 | `aperture` | float | arcsec | 12 | 3–60 (radius) |
 
 `points[]` has `epoch_id` (matches `/epochs` ids for the same band), `time_utc`, `mjd`, `release`, `wavelength_um`, `flux` and `flux_err` (µJy, nullable when the position is masked or off the frame) and `quality` (`good`, `warn` or `bad`). The position is fixed, so a fast-moving star drifts out of the aperture; motion-aware photometry is a Stretch item.
+
+**Live API** (`DATA_MODE=irsa`). The points are the exposures of the live `/epochs` sequence at the same `ra`, `dec`, `band` and the default `fov` (10), one per visit, so `epoch_id` equals those `/epochs` ids (`/epochs` at another fov may pick other exposures). The request shares that `/epochs` request's cache entry, single build, 90 s deadline and limits; a light curve after `/epochs` at fov 10 (or after another light curve at the same position, with any `aperture`) needs no IRSA call.
+
+- **Pixels:** the exposure's native detector pixels (about 6.15″, from the IMAGE WCS with its distortion), `IMAGE − ZODI` in MJy/sr, masked with the same `FLAGS` bits as the frames. Saturated star cores are not filled here (frames fill them for display only), so they are never measured. Native pixels are used rather than the north-up frame grid because they carry their own `VARIANCE` and the grid's interpolation would spread every masked pixel and correlate the noise.
+- **Aperture:** a circle of radius `aperture` (arcsec) at the requested position, with exact fractional pixel overlap.
+- **Sky:** the median of the measurable pixels in an annulus from `aperture + 12″` to `aperture + 36″` (24–48″ for the default 12″), subtracted from every aperture pixel.
+- **Flux:** the sum over the aperture times the pixel solid angle, MJy/sr × sr → µJy (1 MJy = 10¹² µJy). No aperture correction: a point source loses the part of its image outside the aperture, so fluxes are lower bounds (the default 12″ holds most, not all, of a star).
+- **`flux_err`:** from the `VARIANCE` plane over the aperture plus the error of the sky median (annulus scatter, 1.4826 × MAD).
+- **`quality`:** `bad`, with `flux` and `flux_err` null, when any aperture pixel (any overlap) is not measurable (masked, a saturated core, or off the frame), or fewer than 10 annulus pixels are measurable. A bright star saturated in every exposure (Barnard's Star) is therefore `bad` everywhere, never a wrong number; large apertures are `bad` more often because they hold more pixels. `warn` when fewer than half of the annulus pixels are measurable (a thin annulus) or the epoch's frame `quality.status` is `warn` or `bad`. Otherwise `good`.
+- **Colour:** each point is at its own `wavelength_um` (SPHEREx's filters vary across the detector), so part of a change between points can be colour (the star's spectrum), not time. Compare points at similar `wavelength_um` to see changes in time.
+- **`method`:** a sentence stating the above (aperture, annulus, error source, no aperture correction, the null rule and the colour caveat). The mock's `method` is the short text in the example.
 
 ```json
 {
@@ -218,7 +238,7 @@ Aperture photometry at a fixed sky position on every epoch, sorted by time.
 }
 ```
 
-Errors: `400 invalid_parameter`, `502 upstream_error`, `503 unavailable` (live API: not implemented yet), `504 upstream_timeout`. No coverage returns `200` with an empty `points` list.
+Errors: `400 invalid_parameter` (also `aperture` outside 3–60), `502 upstream_error`, `503 unavailable` (live API: too many requests already waiting, as `/epochs`; use the presets), `504 upstream_timeout` (live API: the sequence was not ready within 90 s, or every download timed out). No coverage returns `200` with an empty `points` list.
 
 ### `POST /explain` (implemented by Track C)
 
@@ -290,6 +310,7 @@ Pre-computed demo data for the five test targets lives in static files so the de
   "presets": [
     {"id": "barnards-star", "name": "Barnard's Star", "ra": 269.4464, "dec": 4.7668, "band": "D2",
      "default_fov_arcmin": 6.0, "look_for": "Position shift between visits",
+     "lightcurve_url": "/presets/barnards-star/lightcurve.json",
      "manifests": [
        {"fov_arcmin": 12.0, "url": "/presets/barnards-star/manifest.json", "count": 18, "visits": 3, "stacks": 3},
        {"fov_arcmin": 6.0, "url": "/presets/barnards-star/fov-6/manifest.json", "count": 18, "visits": 3, "stacks": 3},
@@ -297,6 +318,31 @@ Pre-computed demo data for the five test targets lives in static files so the de
      ]}
   ]
 }
+```
+
+- **Light curves** (optional, additive field `lightcurve_url` per preset in `index.json`; every preset has one). `<id>/lightcurve.json` has exactly the `GET /lightcurve` shape (section 3), measured with the same photometry (12″ aperture, median sky annulus, VARIANCE errors, no aperture correction, `flux: null` and `quality: "bad"` when any aperture pixel is masked or saturated), but on **every** exposure of the fov-12 manifest (up to 6 per visit). Each point also carries `visit`. For the fast movers (`barnards-star`, `eps-indi-b`, `wise-0855`) the aperture follows the target, and the file has `tracking: {proper_motion_mas_yr: [pmra_cosdec, pmdec], ref_epoch, note}`. Otherwise `tracking` is null. Points within a visit sit at different wavelengths, so plot brightness against time **per wavelength range**, or use the spectrum. What to expect:
+
+  | Preset | Points | What they show |
+  | --- | --- | --- |
+  | `barnards-star`, `r-dra` | all `bad` | Saturated in every exposure, so no flux; say so in the UI |
+  | `rw-aur` | 17 of 18 measured, S/N 190–450 | Real variability: at about 1.2 µm, visit 3 is about 30–40 % brighter than visit 1 |
+  | `eps-indi-b` | 20 of 24, S/N 60–200 | Mostly its spectrum: about 40 mJy at 1.27 µm and about 6 mJy at 1.37–1.40 µm (water absorption). The same wavelength repeats within about 5 % across visits |
+  | `wise-0855` | 11 of 14 at 4.75–4.97 µm, S/N 1–4 each | Noisy points; their median (about 450 µJy) matches its WISE 4.6 µm brightness |
+
+- **Measured motion** (optional, additive field `motion` on the entries of `barnards-star`, `eps-indi-b` and `wise-0855` in `index.json`), for the motion card and the track overlay on real frames. `motion.visits[]` gives the target's position on each visit stack: `visit`, `n_frames`, `time_utc`, `mjd`, `x_px`, `y_px` (fov-12 pixels; x grows west, y south), `snr` (null when saturated) and `saturated`. A saturated star is located by the centre of its saturated core, an unsaturated one by its centroid. `measured` and `expected` (from the SIMBAD proper motion `proper_motion_mas_yr` over `dt_yr`) are each `{dx_px, dy_px, shift_arcsec, rate_arcsec_yr, pa_deg}`, where `pa_deg` is the direction east of north. `verdict` is `visible` or `not visible`, and `note` is one sentence for the UI:
+
+  | Preset | Measured | Expected | Verdict |
+  | --- | --- | --- | --- |
+  | `barnards-star` | 12.1″ towards PA 349° | 10.3″ towards 356° | visible (saturated: core position) |
+  | `eps-indi-b` | 6.6″ towards 132° | 6.7″ towards 122° | visible |
+  | `wise-0855` | does not match | 8.0″ towards 275° | not visible (too faint; show the catalogue track) |
+
+- **Spectrum** (optional, additive field `spectrum_url`; for now only `eps-indi-b`). `<id>/spectrum.json` has the light-curve fields plus `bands` (the arrays covered, as `band` objects) and `note`. Its points add `band` and `visit` and are sorted by `wavelength_um`, across all six detector arrays (about 0.75–5 µm). Each array comes from one visit, so a static source gives one consistent spectrum; arrays can come from different visits. Eps Indi B has 120 points (87 measured, 33 `bad` where a masked pixel touches the aperture), about 20 per array from 0.75 to 5.0 µm. It shows a cool brown dwarf's fingerprints: peaks at 1.27 µm (about 40 mJy), 1.58 µm and 2.11 µm; **water** dips at 1.37, 1.9 and 2.5–2.8 µm; **methane** dips at 1.65–1.85 and 2.2–2.4 µm and the start of the 3.3 µm band (its centre, 3.31–3.50 µm, is masked); the bright 4 µm window (58 mJy at 4.03 µm); and **carbon monoxide** absorption at 4.3–4.6 µm. Example point (in the 1.8 µm methane dip):
+
+```json
+{"epoch_id": "sx_qr3_2026W39_1A_0276_4_D3", "time_utc": "2026-09-22T05:34:09Z", "mjd": 61305.232049,
+ "release": "QR3", "wavelength_um": 1.84394, "flux": 9550.7, "flux_err": 109.2, "quality": "good",
+ "band": "D3", "visit": 4}
 ```
 
 The frontend loads a preset by fetching the `url` for the chosen fov from `index.json` instead of calling `/epochs`. The preset ids and view settings are:

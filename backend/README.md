@@ -9,9 +9,10 @@ Two data modes, chosen with the `DATA_MODE` environment variable:
   `"synthetic": true`.
 - `irsa`: real SPHEREx data from IRSA. `/epochs` returns one cleaned exposure per
   visit (survey pass), rendered by the cleaning pipeline in `app/pipeline/`, with
-  `"synthetic": false`. `/frame/{id}.png` renders frames from the cutout cache.
-  `/diff` and `/lightcurve` answer `503 unavailable` for now, and `/epochs` has
-  `diff_url_template: null` and `diffs: []`.
+  `"synthetic": false`. `/frame/{id}.png` renders frames from the cutout cache, and
+  `/diff` subtracts two of them (`/epochs` gives a `diff_url_template` for it and
+  `diffs: []`). `/lightcurve` measures aperture photometry on the same exposures
+  as `/epochs` at fov 10 (`app/pipeline/photometry.py`).
 
 `GET /health` always returns `{"status": "ok"}`; the `X-Data-Mode` response header
 (readable from browser JavaScript through CORS) says which mode is running. `POST /explain`
@@ -116,7 +117,9 @@ Limits (all in `app/config.py` unless noted):
   request beyond that waits up to 3 s for a free slot (`frame_slot_wait_s`), then
   gets `503 unavailable`. `/frame` gives up after 60 s (`frame_deadline_s`, `504`),
   and the slot wait counts against it. A render that timed out keeps its slot
-  until it ends.
+  until it ends. A `/diff` renders its two frames in parallel in two of these
+  slots, taken together (it never holds one while waiting for the other), under
+  the same 60 s deadline.
 - **Unknown frame ids:** a well-formed id that is not found (404) at a position is
   remembered for 60 s (`frame_not_found_ttl_s`), so repeating it costs no IRSA query.
 - **IRSA responses:** an SIA answer larger than 16 MB is refused as a 502

@@ -33,6 +33,23 @@ Stacks (T-016, ``preset_stacks.py``), for every manifest:
 - the stack diff (first visit to last visit) exists and resolves, and the fovs of
   a preset share the stack diff scale; ``index.json`` gives ``stacks`` per manifest.
 
+Light curves and spectra (``preset_photometry.py``), for every preset:
+
+- ``index.json`` gives ``lightcurve_url`` (``/presets/<id>/lightcurve.json``;
+  required for every preset when run as a script),
+  which validates as the ``/lightcurve`` shape plus ``visit`` per point and an
+  optional ``tracking`` (present exactly for the proper-motion movers). It holds one
+  point per epoch of the fov-12 manifest (same ids and visits, in time order), with
+  the manifest's target and band;
+- a point's ``flux`` and ``flux_err`` are both null exactly when its quality is
+  ``bad``, and ``flux_err`` is positive otherwise;
+- ``spectrum_url`` is optional (``/presets/<id>/spectrum.json``). The spectrum
+  validates, its points are in wavelength order with the same flux rule, ids are
+  unique, and ``bands`` lists exactly the arrays of its points.
+- ``motion`` (``build_preset_motion.py``) sits exactly on the proper-motion movers'
+  entries (required when run as a script), validates as ``PresetMotion``, and has
+  one position per visit of the fov-12 manifest, from the first to the last visit.
+
 With ``--baseline`` (the default ``presets_baseline.json`` next to this script,
 used by ``main``), every frame and diff PNG and every manifest field other than
 ``stacks`` must have the recorded SHA-256, and the stretch the recorded values:
@@ -61,6 +78,14 @@ sys.path.insert(0, str(BACKEND / "scripts"))
 
 from build_presets import CREDIT, MIN_CORE_VALID, PRESET_FOVS, VARIABLES, manifest_url
 from irsa_coverage import PRESETS
+from preset_photometry import (
+    LIGHTCURVE_FILE,
+    SPECTRUM_FILE,
+    PresetLightcurve,
+    PresetMotion,
+    PresetSpectrum,
+)
+from preset_science import PROPER_MOTION
 from preset_stacks import STACKS_DIR, Stacks, stack_diff_name, stack_name, visit_groups
 
 from app.models import EpochsResponse
@@ -363,6 +388,121 @@ def check_index(root: Path, manifests: dict[tuple[str, float], EpochsResponse],
                             f"{len(st.visits)} visit stacks in the manifest")
 
 
+# ------------------------------------------------------------------ photometry
+
+
+def _check_points(points, where: str, errs: list[str]) -> None:
+    for p in points:
+        if (p.quality == "bad") != (p.flux is None) or (p.flux is None) != (p.flux_err is None):
+            errs.append(f"{where}: {p.epoch_id} flux, flux_err and quality disagree "
+                        "(null exactly when bad)")
+        elif p.flux_err is not None and p.flux_err <= 0:
+            errs.append(f"{where}: {p.epoch_id} flux_err is not positive")
+
+
+def _check_motion(pid: str, entry: dict, man: EpochsResponse, errs: list[str],
+                  require: bool) -> None:
+    where = f"index.json {pid} motion"
+    raw = entry.get("motion")
+    if pid not in PROPER_MOTION:
+        if raw is not None:
+            errs.append(f"{where}: only proper-motion movers have motion")
+        return
+    if raw is None:
+        if require:
+            errs.append(f"{where}: missing")
+        return
+    try:
+        motion = PresetMotion.model_validate(raw)
+    except ValueError as exc:
+        errs.append(f"{where}: not valid: {str(exc)[:200]}")
+        return
+    visits = sorted({e.visit for e in man.epochs})
+    if [v.visit for v in motion.visits] != visits:
+        errs.append(f"{where}: visits {[v.visit for v in motion.visits]} != {visits}")
+    elif (motion.first_visit, motion.last_visit) != (visits[0], visits[-1]):
+        errs.append(f"{where}: first and last visit do not match the manifest")
+    if tuple(motion.proper_motion_mas_yr) != tuple(PROPER_MOTION[pid]):
+        errs.append(f"{where}: proper motion differs from preset_science")
+
+
+def _load(path: Path | None, model, where: str, errs: list[str]):
+    if path is None or not path.is_file():
+        errs.append(f"{where}: file missing")
+        return None
+    try:
+        return model.model_validate(json.loads(path.read_text(encoding="utf-8")))
+    except (OSError, ValueError) as exc:  # ValidationError is a ValueError
+        errs.append(f"{where}: not valid: {str(exc)[:200]}")
+        return None
+
+
+def check_photometry(root: Path, manifests: dict[tuple[str, float], EpochsResponse],
+                     presets: tuple, fovs: tuple[float, ...], public: Path,
+                     errs: list[str], require: bool = False) -> dict[str, int]:
+    """Light curves and spectra listed in index.json (see the module docstring);
+    returns the number of light-curve and spectrum points. ``require``: every
+    preset must have a light curve (the committed presets do; a fresh
+    build_presets.py output has none until build_preset_photometry.py runs)."""
+    counts = {"lightcurve_points": 0, "spectra": 0, "spectrum_points": 0}
+    try:
+        entries = json.loads((root / "index.json").read_text(encoding="utf-8"))["presets"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return counts  # check_index reports it
+    by_id = {p.get("id"): p for p in entries}
+    for preset in presets:
+        pid = preset[0]
+        entry = by_id.get(pid)
+        man = manifests.get((pid, max(fovs)))
+        if entry is None or man is None:
+            continue
+        url = entry.get("lightcurve_url")
+        where = f"{pid} lightcurve"
+        if url is None and not require:
+            pass
+        elif url != f"/presets/{pid}/{LIGHTCURVE_FILE}":
+            errs.append(f"index.json {pid}: lightcurve_url {url!r} is wrong or missing")
+        else:
+            lc = _load(url_to_file(url, public), PresetLightcurve, where, errs)
+            if lc is not None:
+                counts["lightcurve_points"] += len(lc.points)
+                if lc.synthetic or lc.target != man.target or lc.band != man.band:
+                    errs.append(f"{where}: synthetic, target or band differs from the manifest")
+                want = [(e.id, e.visit) for e in man.epochs]
+                got = [(p.epoch_id, p.visit) for p in lc.points]
+                if sorted(got) != sorted(want):
+                    errs.append(f"{where}: points are not one per manifest epoch (ids, visits)")
+                if [p.mjd for p in lc.points] != sorted(p.mjd for p in lc.points):
+                    errs.append(f"{where}: points are not in time order")
+                if (lc.tracking is not None) != (pid in PROPER_MOTION):
+                    errs.append(f"{where}: tracking must be set exactly for proper-motion movers")
+                _check_points(lc.points, where, errs)
+        _check_motion(pid, entry, man, errs, require)
+        url = entry.get("spectrum_url")
+        if url is None:
+            continue
+        where = f"{pid} spectrum"
+        if url != f"/presets/{pid}/{SPECTRUM_FILE}":
+            errs.append(f"index.json {pid}: spectrum_url {url!r} is wrong")
+            continue
+        sp = _load(url_to_file(url, public), PresetSpectrum, where, errs)
+        if sp is None:
+            continue
+        counts["spectra"] += 1
+        counts["spectrum_points"] += len(sp.points)
+        if sp.synthetic or sp.target != man.target:
+            errs.append(f"{where}: synthetic or target differs from the manifest")
+        waves = [p.wavelength_um for p in sp.points]
+        if not sp.points or waves != sorted(waves):
+            errs.append(f"{where}: points are empty or not in wavelength order")
+        if len({p.epoch_id for p in sp.points}) != len(sp.points):
+            errs.append(f"{where}: epoch ids repeat")
+        if [b.id for b in sp.bands] != sorted({p.band for p in sp.points}):
+            errs.append(f"{where}: bands do not list exactly the arrays of the points")
+        _check_points(sp.points, where, errs)
+    return counts
+
+
 # ------------------------------------------------------------------ baseline
 
 
@@ -376,10 +516,14 @@ def _canonical_sha256(obj: object) -> str:
 
 
 def _index_without_additions(doc: dict) -> dict:
-    """index.json minus the fields T-016 may change (``stacks``, ``look_for``)."""
+    """index.json minus the additive fields (T-016 ``stacks`` and ``look_for``; the
+    ``lightcurve_url``, ``spectrum_url`` and ``motion`` of the preset photometry)."""
     out = json.loads(json.dumps(doc))
     for p in out.get("presets", []):
         p.pop("look_for", None)
+        p.pop("lightcurve_url", None)
+        p.pop("spectrum_url", None)
+        p.pop("motion", None)
         for m in p.get("manifests", []):
             m.pop("stacks", None)
     return out
@@ -444,7 +588,8 @@ def check_baseline(baseline: Path, public: Path, root: Path, presets: tuple,
 def check(root: Path | None = None, public: Path | None = None, presets: tuple = PRESETS,
           fovs: tuple[float, ...] = PRESET_FOVS,
           max_bytes: int = MAX_FOLDER_BYTES,
-          baseline: Path | None = None) -> tuple[list[str], dict]:
+          baseline: Path | None = None,
+          require_photometry: bool = False) -> tuple[list[str], dict]:
     """(errors, summary). ``root`` is the presets folder inside ``public``.
     ``baseline``: also compare the frames and manifest fields with that record."""
     public = public or PUBLIC
@@ -463,6 +608,8 @@ def check(root: Path | None = None, public: Path | None = None, presets: tuple =
                     stacks[(preset[0], fov)] = st
     check_fovs(manifests, presets, fovs, errs, stacks)
     check_index(root, manifests, presets, fovs, public, errs, stacks)
+    photometry = check_photometry(root, manifests, presets, fovs, public, errs,
+                                  require_photometry)
     compared = 0
     if baseline is not None:
         compared = check_baseline(baseline, public, root, presets, fovs, errs)
@@ -474,7 +621,7 @@ def check(root: Path | None = None, public: Path | None = None, presets: tuple =
     frames = sum(m.count for m in manifests.values())
     n_stacks = sum(len(s.visits) for s in stacks.values())
     return errs, {"manifests": len(manifests), "frames": frames, "stacks": n_stacks,
-                  "baseline_files": compared, "bytes": total}
+                  "baseline_files": compared, "bytes": total, **photometry}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -491,7 +638,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"wrote {args.baseline} ({len(doc['files'])} files, "
               f"{len(doc['manifests'])} manifests)")
         return 0
-    errs, summary = check(baseline=args.baseline)
+    errs, summary = check(baseline=args.baseline, require_photometry=True)
     if errs:
         print("PRESET CHECK FAILED:")
         for e in errs:
@@ -499,7 +646,9 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     print(f"PRESET CHECK OK: {summary['manifests']} manifests "
           f"({len(PRESETS)} presets x {len(PRESET_FOVS)} fovs), {summary['frames']} frames, "
-          f"{summary['stacks']} visit stacks, {summary['baseline_files']} frame and diff "
+          f"{summary['stacks']} visit stacks, {summary['lightcurve_points']} light-curve "
+          f"points, {summary['spectra']} spectra ({summary['spectrum_points']} points), "
+          f"{summary['baseline_files']} frame and diff "
           f"PNGs and every manifest field unchanged from the baseline, "
           f"folder {summary['bytes']} bytes")
     return 0
