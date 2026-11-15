@@ -1,11 +1,13 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router';
-import { Flag, LogIn, Lock, Timer, CircleCheck, CircleX, CircleHelp, Send, RotateCcw, ArrowRight } from 'lucide-react';
-import { Button, Kicker, Panel, Chip, SkyCanvas, Term } from '../components/ui';
+import { LogIn, Lock, Timer, CircleCheck, CircleX, CircleHelp, Send, RotateCcw, ArrowRight, Play as PlayIcon, Pause, SkipBack, SkipForward } from 'lucide-react';
+import { Button, Kicker, Panel, Chip, SkyCanvas, Term, Segmented, StepBadge } from '../components/ui';
+import { TargetPanel } from '../components/TargetPanel';
+import { WindowTimeline } from '../components/WindowTimeline';
 import { useViewer, useAuth, useUi, useProgress, useSubmissions } from '../store';
 import { useField, vet } from '../lib/api';
 import { PRESET_BY_ID, LESSONS, LEVELS } from '../lib/data';
-import { paintImage, lutForArray, crop } from '../lib/sim';
+import { paintImage, paintDiff, lutForArray, crop, centroid, drawCompass, PX } from '../lib/sim';
 import { reputationFor, cooldownFor, formatWait } from '../lib/reputation';
 import { ReputationCard } from '../components/Reputation';
 import { useMySubmissions, useNow } from '../lib/reputationHooks';
@@ -93,25 +95,50 @@ function CooldownGate({ mine, remainingMs, onSkip }) {
   );
 }
 
+/**
+ * Where the flagged area's light is in one snapshot: the brightest pixel inside the box,
+ * refined by a centroid around it. null when the box has no data.
+ */
+function sourceIn(field, epoch, area) {
+  const { nx, ny } = field, img = field.stacks[epoch];
+  let best = -Infinity, bx = -1, by = -1;
+  for (let y = Math.max(0, Math.floor(area.y0)); y < Math.min(ny, Math.ceil(area.y1)); y++) {
+    for (let x = Math.max(0, Math.floor(area.x0)); x < Math.min(nx, Math.ceil(area.x1)); x++) {
+      const v = img[y * nx + x];
+      if (!Number.isNaN(v) && v > best) { best = v; bx = x; by = y; }
+    }
+  }
+  if (bx < 0) return null;
+  const [x, y] = centroid(img, nx, ny, bx + 0.5, by + 0.5, 1.5);
+  return { epoch, x, y };
+}
+
+const MIN_BOX = 3; // pixels; a click flags an 8×8 area around it
+const CLICK_BOX = 8;
+
 function SubmitForm() {
   const v = useViewer();
   const user = useAuth((s) => s.user);
   const addPoints = useAuth((s) => s.addPoints);
   const add = useSubmissions((s) => s.add);
   const toast = useUi((s) => s.toast);
-  const navigate = useNavigate();
   const preset = v.targetId ? PRESET_BY_ID[v.targetId] : null;
   const raDeg = parseRA(v.ra), decDeg = parseDec(v.dec);
-  const { data: field, loading, error } = useField({ targetId: v.targetId, raDeg, decDeg, fov: v.fov, arrayIdx: v.arrayIdx, channel: v.channel });
+  const { data: field, loading, error, attempt, tryAgain, source } = useField({ targetId: v.targetId, raDeg, decDeg, fov: v.fov, arrayIdx: v.arrayIdx, channel: v.channel });
 
-  const included = useMemo(() => {
-    if (!field) return [];
-    const inc = v.included && v.included.length === field.epochs.length ? v.included : field.epochs.map(() => true);
-    return inc.map((on, i) => (on ? i : -1)).filter((i) => i >= 0);
-  }, [field, v.included]);
-  const ea = included[0], eb = included[included.length - 1];
+  // The comparison window and flagged area belong to one field; a new field starts fresh.
+  const n = field?.epochs.length ?? 0;
+  const fieldKey = `${v.targetId}|${v.ra}|${v.dec}|${v.fov}|${v.arrayIdx}|${n}`;
+  const [selState, setSelState] = useState({ key: null });
+  const sel = selState.key === fieldKey ? selState : { key: fieldKey, win: [0, Math.max(1, n - 1)], area: null };
+  const setSel = (patch) => setSelState({ ...sel, ...patch, key: fieldKey });
+  const [a, b] = sel.win;
+  const marks = useMemo(() => {
+    if (!field || !sel.area || n < 2) return null;
+    const ma = sourceIn(field, a, sel.area), mb = sourceIn(field, b, sel.area);
+    return ma && mb ? [ma, mb] : null;
+  }, [field, sel.area, a, b, n]);
 
-  const [marks, setMarks] = useState({});
   const [checked, setChecked] = useState([false, false, false]);
   const [note, setNote] = useState('');
   const [result, setResult] = useState(null);
@@ -124,29 +151,20 @@ function SubmitForm() {
   const blocked = cool.remainingMs > 0 && cool.until !== skipUntil;
   if (waiting !== blocked) setWaiting(blocked); // adjust during render
 
-  if (result) return <SubmitResult item={result} mine={mine} onAgain={() => { setResult(null); setMarks({}); setChecked([false, false, false]); setNote(''); }} />;
+  const reset = () => { setResult(null); setSel({ area: null }); setChecked([false, false, false]); setNote(''); };
+  if (result) return <SubmitResult item={result} mine={mine} onAgain={reset} />;
   if (blocked) return <CooldownGate mine={mine} remainingMs={cool.remainingMs} onSkip={() => setSkipUntil(cool.until)} />;
 
-  if (loading) {
-    return <Gate icon={Flag} title="Loading SPHEREx images…" text="The first look at a new patch of sky can take a minute or two. This page fills in as soon as the images arrive." />;
-  }
-  if (error) {
-    return <Gate icon={Flag} title="This field couldn’t load" text={error}><Button variant="primary" onClick={() => navigate('/')}>Open Explore</Button></Gate>;
-  }
-  if (!field || included.length < 2) {
-    return <Gate icon={Flag} title="Pick a field first" text="Open a field in Explore with at least two snapshots ticked, then come back to flag what you found."><Button variant="primary" onClick={() => navigate('/')}>Open Explore</Button></Gate>;
-  }
-
-  const ready = marks[ea] && marks[eb] && checked.every(Boolean);
+  const ready = Boolean(marks) && checked.every(Boolean);
   const submit = () => {
-    const r = vet({ marks: [{ epoch: ea, ...marks[ea] }, { epoch: eb, ...marks[eb] }], field, preset, note });
+    const r = vet({ marks, field, preset, note });
     const item = {
       id: uid(), code: `SX-${String(Math.floor(Math.random() * 9000) + 1000)}`, at: new Date().toISOString(),
       userId: user.id, by: user.name, fieldName: preset?.name ?? 'Custom field', targetId: v.targetId, ra: v.ra, dec: v.dec, fov: v.fov,
-      arrayIdx: v.arrayIdx, epochs: [ea, eb], marks: [{ epoch: ea, ...marks[ea] }, { epoch: eb, ...marks[eb] }],
+      arrayIdx: v.arrayIdx, epochs: [a, b], area: sel.area, marks,
       note, ...r, status: r.outcome === 'candidate' ? 'in-review' : 'auto-resolved',
       // Real data can’t be rebuilt later like demo fields, so keep the reviewer’s cut-outs.
-      ...(field.live ? { live: true, stamps: reviewStamps(field, ea, eb, marks) } : {}),
+      ...(field.live ? { live: true, stamps: reviewStamps(field, a, b, { [a]: marks[0], [b]: marks[1] }) } : {}),
     };
     add(item);
     setResult(item);
@@ -156,37 +174,49 @@ function SubmitForm() {
   };
 
   return (
-    <div className="mx-auto max-w-[1280px] px-[max(16px,env(safe-area-inset-left,0px))] py-10 lg:px-10">
+    <div className="mx-auto max-w-[1680px] px-[max(16px,env(safe-area-inset-left,0px))] py-10 lg:px-10">
       <Kicker>Play · submit a discovery</Kicker>
       <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-start">
         <div>
           <h1 className="text-4xl font-medium tracking-tight">Flag a candidate</h1>
-          <p className="mt-2 max-w-2xl text-muted">Help sift the SPHEREx data. Find something in Explore, then mark it in the first and last snapshots. Automatic checks run straight away; promising <Term id="candidate">candidates</Term> go to scientists.</p>
+          <p className="mt-2 max-w-2xl text-muted">Help sift the SPHEREx data. Pick a patch of sky, choose which snapshots to compare, then drag a box around anything that moves or changes. Automatic checks run straight away; promising <Term id="candidate">candidates</Term> go to scientists.</p>
           <p className="mt-3 max-w-2xl text-sm text-muted">Relevant finds raise your reputation. Submissions that fail the checks or that scientists reject lower it, which pushes your candidates down the review queue and makes you wait longer between submissions.</p>
         </div>
         <ReputationCard mine={mine} showHistory={false} className="p-5" />
       </div>
 
-      <Panel className="mt-6 flex flex-wrap gap-x-8 gap-y-2 p-5 text-sm">
-        <span><span className="label-mono text-faint">Field </span>{preset?.name ?? 'Custom field'}</span>
-        <span className="tabular"><span className="label-mono text-faint">Position </span>{formatRA(raDeg)} {formatDec(decDeg)}</span>
-        <span><span className="label-mono text-faint">Array </span>{v.arrayIdx}</span>
-        <span><span className="label-mono text-faint">Snapshots </span>{included.length} ticked</span>
-        <button type="button" onClick={() => navigate('/')} className="ml-auto text-accent-fg hover:text-fg">Change field</button>
-      </Panel>
-
-      <h2 className="label-mono mt-8 mb-3 text-muted">1 · Click the object in each snapshot</h2>
-      <div className="grid gap-4 md:grid-cols-2">
-        {[ea, eb].map((e, k) => (
-          <MarkCanvas key={e} field={field} epoch={e} mark={marks[e]} other={marks[k ? ea : eb]}
-            onMark={(m) => setMarks((s) => ({ ...s, [e]: m }))} title={`${field.epochs[e].label} · ${formatDate(field.epochs[e].date)}`} />
-        ))}
+      <div className="mt-6 grid overflow-hidden rounded-xl border border-line bg-ink-900 lg:grid-cols-[360px_minmax(0,1fr)]">
+        <TargetPanel tip="Slide the window to compare snapshots months apart. A real mover shifts smoothly; a flash in one snapshot only is usually a glitch." />
+        <div className="min-w-0 border-t border-line lg:border-t-0 lg:border-l">
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-line px-6 py-4">
+            <div className="flex items-start gap-3">
+              <StepBadge n={2} />
+              <div>
+                <p className="label-mono text-muted">Flag the area</p>
+                <p className="mt-0.5 text-lg font-medium">{preset ? preset.name : 'Custom field'}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+              {raDeg != null && <p className="label-mono text-muted tabular">RA <span className="text-fg/80">{formatRA(raDeg)}</span> · Dec <span className="text-fg/80">{formatDec(decDeg)}</span></p>}
+              {field && <Chip tone={field.live && !field.synthetic ? 'good' : 'warn'}>{field.live && !field.synthetic ? (source === 'preset' ? 'Real SPHEREx frames' : 'Live SPHEREx data') : 'Simulated frames'}</Chip>}
+            </div>
+          </div>
+          {field && n >= 2 ? (
+            <FlagWorkspace key={fieldKey} field={field} win={sel.win} onWin={(win) => setSel({ win })}
+              area={sel.area} onArea={(area) => setSel({ area })} marks={marks} />
+          ) : (
+            <div className="grid aspect-[5/3] place-items-center p-6 text-center text-sm text-muted">
+              {loading ? <p>Loading SPHEREx images{attempt > 1 ? ` (attempt ${attempt})` : ''}… The first look at a new patch of sky can take a minute or two.</p>
+                : error ? <div className="grid justify-items-center gap-3"><p>{error}</p>{tryAgain && <Button variant="outline" onClick={tryAgain}>Try again</Button>}</div>
+                  : field ? 'This field has only one snapshot so far. Pick another patch of sky.' : 'Enter a sky position to begin.'}
+            </div>
+          )}
+        </div>
       </div>
-      {(marks[ea] || marks[eb]) && <button type="button" onClick={() => setMarks({})} className="mt-2 text-sm text-muted hover:text-fg">Clear marks</button>}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <div>
-          <h2 className="label-mono mb-3 text-muted">2 · Quick self-check</h2>
+          <h2 className="label-mono mb-3 text-muted">3 · Quick self-check</h2>
           <Panel className="divide-y divide-line">
             {CHECKS.map((c, i) => (
               <label key={c} htmlFor={`chk-${i}`} className="flex cursor-pointer items-start gap-3 px-5 py-4 text-sm">
@@ -197,7 +227,7 @@ function SubmitForm() {
           </Panel>
         </div>
         <div>
-          <h2 className="label-mono mb-3 text-muted">3 · Note for scientists (optional)</h2>
+          <h2 className="label-mono mb-3 text-muted">4 · Note for scientists (optional)</h2>
           <textarea id="sub-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={280} rows={5}
             placeholder="What did you notice? e.g. faint, moves south-west, brighter in array 6"
             className="w-full rounded-lg border border-line-strong bg-ink-900 p-4 text-sm outline-none focus:border-accent" />
@@ -207,34 +237,134 @@ function SubmitForm() {
 
       <div className="mt-8 flex flex-wrap items-center gap-4">
         <Button variant="primary" size="lg" disabled={!ready} onClick={submit}><Send className="size-4" />Submit for checks</Button>
-        {!ready && <p className="text-sm text-muted">Mark both snapshots and tick all three checks to submit.</p>}
+        {!ready && <p className="text-sm text-muted">{marks ? 'Tick all three checks to submit.' : 'Flag an area on the image, then tick all three checks to submit.'}</p>}
       </div>
     </div>
   );
 }
 
-function MarkCanvas({ field, epoch, mark, other, onMark, title }) {
+/** Viewer for one field: the image, the flag-an-area tool, view controls and the window timeline. */
+function FlagWorkspace({ field, win, onWin, area, onArea, marks }) {
+  const [a, b] = win;
+  const [curRaw, setCur] = useState(b);
+  const cur = Math.min(b, Math.max(a, curRaw));
+  const [mode, setMode] = useState('blink');
+  const [playing, setPlaying] = useState(false);
+  const [box, setBox] = useState(null); // area being dragged
+  const overlay = useRef(null);
+  const start = useRef(null);
+
+  // Playback through the snapshots inside the window.
+  useEffect(() => {
+    if (!playing) return undefined;
+    const id = setInterval(() => setCur((c) => {
+      const k = Math.min(b, Math.max(a, c));
+      return k >= b ? (mode === 'diff' ? Math.min(a + 1, b) : a) : k + 1;
+    }), 900);
+    return () => clearInterval(id);
+  }, [playing, a, b, mode]);
+
+  const toImage = (e) => {
+    const r = overlay.current.getBoundingClientRect();
+    return [((e.clientX - r.left) / r.width) * field.nx, ((e.clientY - r.top) / r.height) * field.ny];
+  };
+  const down = (e) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    start.current = toImage(e);
+    setBox(null);
+  };
+  const moveP = (e) => {
+    if (!start.current) return;
+    const [x, y] = toImage(e), [sx, sy] = start.current;
+    setBox({ x0: Math.min(sx, x), y0: Math.min(sy, y), x1: Math.max(sx, x), y1: Math.max(sy, y) });
+  };
+  const up = (e) => {
+    if (!start.current) return;
+    const [x, y] = toImage(e), [sx, sy] = start.current;
+    start.current = null;
+    setBox(null);
+    const clamp = (q) => ({ x0: Math.max(0, q.x0), y0: Math.max(0, q.y0), x1: Math.min(field.nx, q.x1), y1: Math.min(field.ny, q.y1) });
+    if (Math.abs(x - sx) < MIN_BOX && Math.abs(y - sy) < MIN_BOX) {
+      const h = CLICK_BOX / 2;
+      onArea(clamp({ x0: x - h, y0: y - h, x1: x + h, y1: y + h }));
+    } else {
+      onArea(clamp({ x0: Math.min(sx, x), y0: Math.min(sy, y), x1: Math.max(sx, x), y1: Math.max(sy, y) }));
+    }
+  };
+
   const draw = useCallback((ctx, W, H) => {
-    const { nx, ny } = field;
-    paintImage(ctx, W, H, field.stacks[epoch], nx, ny, { vmin: field.vmin, vmax: field.vmax, lut: lutForArray(field.arrayIdx), smooth: false });
+    const { nx, ny, stacks } = field;
     const sx = W / nx, sy = H / ny;
-    if (other) {
-      ctx.save(); ctx.strokeStyle = 'rgba(140,147,168,.6)'; ctx.setLineDash([3, 3]);
-      ctx.beginPath(); ctx.arc(other.x * sx, other.y * sy, 12, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    if (mode === 'diff') paintDiff(ctx, W, H, stacks[a], stacks[cur], nx, ny, { smooth: false });
+    else paintImage(ctx, W, H, stacks[cur], nx, ny, { vmin: field.vmin, vmax: field.vmax, lut: lutForArray(field.arrayIdx), smooth: false });
+    const rect = (q, dash, color) => {
+      ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash(dash);
+      ctx.strokeRect(q.x0 * sx, q.y0 * sy, (q.x1 - q.x0) * sx, (q.y1 - q.y0) * sy); ctx.restore();
+    };
+    if (area) rect(area, [5, 4], '#ffb15c');
+    if (box) rect(box, [2, 3], 'rgba(233,235,243,.8)');
+    if (marks) {
+      const [m0, m1] = marks;
+      ctx.save(); ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(184,175,255,.6)'; ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.moveTo(m0.x * sx, m0.y * sy); ctx.lineTo(m1.x * sx, m1.y * sy); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#45d3b8'; ctx.beginPath(); ctx.arc(m0.x * sx, m0.y * sy, 7, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = '#ffb15c'; ctx.beginPath(); ctx.arc(m1.x * sx, m1.y * sy, 7, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
     }
-    if (mark) {
-      ctx.save(); ctx.strokeStyle = '#ffb15c'; ctx.lineWidth = 2;
-      const r = 14, g = 5, x = mark.x * sx, y = mark.y * sy;
-      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.moveTo(x - r - 6, y); ctx.lineTo(x - g, y); ctx.moveTo(x + g, y); ctx.lineTo(x + r + 6, y);
-      ctx.stroke(); ctx.restore();
-    }
-  }, [field, epoch, mark, other]);
+    drawCompass(ctx, W, H, field.fov, nx, field.pxScale);
+  }, [field, mode, a, cur, area, box, marks]);
+
+  const ep = field.epochs[cur];
+  const px = field.pxScale ?? PX;
+  const shift = marks ? Math.hypot(marks[1].x - marks[0].x, marks[1].y - marks[0].y) * px : null;
+  const step = (d) => { setPlaying(false); setCur(Math.min(b, Math.max(a, cur + d))); };
+
   return (
-    <div className="overflow-hidden rounded-xl border border-line bg-ink-950">
-      <p className="label-mono flex justify-between border-b border-line px-4 py-2.5 text-muted"><span>{title}</span><span className={mark ? 'text-amber' : ''}>{mark ? 'Marked' : 'Click to mark'}</span></p>
-      <SkyCanvas nx={field.nx} ny={field.ny} draw={draw} onPick={(x, y) => onMark({ x, y })} label={`${title}: click the object to mark it`} />
-    </div>
+    <>
+      <div className="relative bg-ink-950">
+        <SkyCanvas nx={field.nx} ny={field.ny} draw={draw} label={`SPHEREx image, ${ep.label}. Drag a box, or click, to flag an area.`}>
+          <div ref={overlay} className="absolute inset-0 cursor-crosshair touch-none" onPointerDown={down} onPointerMove={moveP} onPointerUp={up}
+            onPointerCancel={() => { start.current = null; setBox(null); }} />
+          <p className="label-mono pointer-events-none absolute top-3 left-4 text-fg/90">
+            {mode === 'diff' ? `${ep.label} − ${field.epochs[a].label}` : `${ep.label} · ${formatDate(ep.date)}`}
+          </p>
+          {!area && <p className="pointer-events-none absolute inset-x-0 bottom-4 mx-auto w-fit rounded-md bg-ink-900/90 px-3 py-2 text-[13px] text-muted">Drag a box around something that moves or changes (or click it).</p>}
+        </SkyCanvas>
+        <div className="label-mono flex flex-wrap items-center justify-between gap-2 border-t border-line px-6 py-2.5 text-muted">
+          <span>SPHEREx · <Term id="array">Array {field.arrayIdx}</Term></span>
+          {marks ? (
+            <span className="normal-case tracking-normal text-fg">
+              <span className="text-teal">●</span> {field.epochs[a].label} → <span className="text-amber">●</span> {field.epochs[b].label}: brightest source in your box moved {shift.toFixed(1)}″ ({(shift / px).toFixed(1)} px)
+            </span>
+          ) : <span>{area ? 'No data in the flagged area' : 'Nothing flagged yet'}</span>}
+          {area && <button type="button" onClick={() => onArea(null)} className="normal-case tracking-normal text-accent-fg hover:text-fg">Clear flag</button>}
+        </div>
+      </div>
+
+      <div className="grid gap-4 border-t border-line px-6 pt-5 pb-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" className="rounded-full" aria-label="Previous snapshot" onClick={() => step(-1)}><SkipBack className="size-4" /></Button>
+          <Button variant="outline" size="lg" className="size-12 rounded-full border-accent/60 bg-accent-soft px-0" aria-label={playing ? 'Pause' : 'Play'} onClick={() => setPlaying(!playing)}>
+            {playing ? <Pause className="size-5" /> : <PlayIcon className="size-5" />}
+          </Button>
+          <Button variant="outline" size="icon" className="rounded-full" aria-label="Next snapshot" onClick={() => step(1)}><SkipForward className="size-4" /></Button>
+        </div>
+        <WindowTimeline epochs={field.epochs} win={win} onWin={onWin} cur={cur} onCur={(i) => { setPlaying(false); setCur(i); }} />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-line px-6 py-4">
+        <Segmented value={mode} onChange={setMode} label="View mode" options={[
+          { value: 'blink', label: 'Blink', title: 'Flip through the snapshots in the window' },
+          { value: 'diff', label: 'Difference', title: 'Subtract the window’s first snapshot' },
+        ]} />
+        <p className="max-w-xl text-[13px] text-muted">
+          {mode === 'diff' ? <><span className="text-teal">Teal</span> = was here, <span className="text-amber">amber</span> = now here, relative to the window’s first snapshot. Fixed stars cancel out.</>
+            : 'The checks compare the brightest source in your box at the start and end of the window.'}
+        </p>
+      </div>
+    </>
   );
 }
 
@@ -278,7 +408,7 @@ function SubmitResult({ item, mine, onAgain }) {
       </div>
       <div className="mt-8 flex flex-wrap gap-2">
         <Button variant="primary" onClick={() => navigate('/profile')}>View my submissions<ArrowRight className="size-4" /></Button>
-        <Button variant="outline" onClick={() => { onAgain(); navigate('/'); }}><RotateCcw className="size-4" />Find another</Button>
+        <Button variant="outline" onClick={onAgain}><RotateCcw className="size-4" />Flag another</Button>
       </div>
     </div>
   );
