@@ -45,7 +45,7 @@ const wait = (ms, signal) => new Promise((resolve, reject) => {
   signal?.addEventListener('abort', () => { clearTimeout(id); reject(signal.reason); }, { once: true });
 });
 
-async function request(url, signal) {
+export async function request(url, signal) {
   let r;
   try { r = await fetch(url, { signal }); } catch (e) {
     if (signal?.aborted) throw e;
@@ -57,7 +57,7 @@ async function request(url, signal) {
 }
 
 /** Retries 504 "still building" answers; every other error is final. */
-async function withRetry(fn, signal, onRetry) {
+export async function withRetry(fn, signal, onRetry) {
   for (let attempt = 1; ; attempt++) {
     try { return await fn(); } catch (e) {
       if (!(e instanceof ApiError) || e.status !== 504 || attempt >= EPOCH_ATTEMPTS) throw e;
@@ -137,6 +137,8 @@ async function buildField(j, p, signal) {
     nx, ny, pxScale: j.image?.pixel_scale_arcsec ?? PX, ...displayRange(stacks), fov: p.fov, arrayIdx: p.arrayIdx, channel: p.channel,
     epochs, stacks, frames, stars: [], object: null, posAt: () => null, visibleAt: () => false,
     live: true, synthetic: Boolean(j.synthetic),
+    // Sky position of the image centre (pixel nx/2, ny/2), for catalogue overlays.
+    centre: { ra: j.target?.ra ?? p.raDeg, dec: j.target?.dec ?? p.decDeg },
   };
 }
 
@@ -153,7 +155,7 @@ async function fetchField(p, signal, onRetry) {
 // presets work without the science API.
 let presetIndex = null;
 
-function loadPresetIndex() {
+export function loadPresetIndex() {
   presetIndex ??= request('/presets/index.json').then((r) => r.json())
     .catch((e) => { presetIndex = null; throw e; });
   return presetIndex;
@@ -196,7 +198,7 @@ async function cachedField(p, signal, onRetry) {
 }
 
 /** Plain-language reason for a failed live view (docs/API.md error codes). */
-function liveErrorText(e) {
+export function liveErrorText(e) {
   if (!(e instanceof ApiError)) return 'Something went wrong while loading this view.';
   if (e.status === 504) return 'SPHEREx images for this patch are still being prepared. Try again in a minute, or explore a known object meanwhile.';
   if (e.status === 502) return 'The SPHEREx archive (IRSA) didn’t answer for this view. Try again later, or explore a known object.';

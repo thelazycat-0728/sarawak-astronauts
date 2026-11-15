@@ -6,11 +6,14 @@ import {
 } from 'lucide-react';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip, CartesianGrid,
-  ComposedChart, ReferenceLine, ReferenceArea,
+  ComposedChart, ReferenceLine, ReferenceArea, Scatter, ErrorBar, Cell,
 } from 'recharts';
 import { Button, Segmented, Term, Tip, StepBadge, Kicker, Chip, Switch, SkyCanvas, Panel } from '../components/ui';
 import { useViewer, useUi, useProgress } from '../store';
 import { useField } from '../lib/api';
+import {
+  usePresetScience, useLiveLightcurve, drawGaia, drawTrack, GAIA_NOTES, LIGHTCURVE_NOTES, NO_SPECTRUM, SPECTRUM_INFO, COADD_NOTES,
+} from '../lib/science';
 import { PRESETS, PRESET_BY_ID, ARRAYS, LESSONS } from '../lib/data';
 import {
   paintImage, paintDiff, LUTS, lutForArray, meanOf, drawReticle, drawCompass, aperture, centroid,
@@ -34,6 +37,12 @@ export default function Explore() {
   const { data: field, loading, source, error, attempt, tryAgain } = useField({
     targetId: v.targetId, raDeg, decDeg, fov: v.fov, arrayIdx: v.arrayIdx, channel: v.channel,
   });
+  // Real spectrum, light curve and Gaia stars shipped with a preset (Expert tools).
+  const science = usePresetScience(v.targetId);
+  const motion = science.entry?.motion;
+  const track = useMemo(() => (motion && science.entry
+    ? { ra: science.entry.ra, dec: science.entry.dec, pm: motion.proper_motion_mas_yr, name: science.entry.name }
+    : null), [motion, science.entry]);
 
   // Read a shared link once (?target=… or ?ra=…&dec=…, plus fov, array, mode).
   useEffect(() => {
@@ -107,7 +116,7 @@ export default function Explore() {
           <ViewerHead preset={preset} raDeg={raDeg} decDeg={decDeg} expert={expert} field={field} />
           <Stage
             field={field} loading={loading} attempt={attempt} error={error} tryAgain={tryAgain} preset={preset} cur={cur} base={base} incIdx={incIdx}
-            expert={expert} selection={selection} onPick={expert ? onPick : undefined}
+            expert={expert} selection={selection} onPick={expert ? onPick : undefined} gaia={science.gaia} track={track}
           />
           {field && <TimelineBar field={field} included={included} cur={cur} />}
           <ModeBar expert={expert} hasField={Boolean(field)} />
@@ -115,7 +124,8 @@ export default function Explore() {
         <StatusBar field={field} incIdx={incIdx} source={source} error={error} />
       </div>
       {field && (expert
-        ? <Analysis field={field} preset={preset} incIdx={incIdx} cur={cur} selection={selection} />
+        ? <Analysis field={field} preset={preset} incIdx={incIdx} cur={cur} selection={selection}
+            science={science} picked={Boolean(pick)} onResetPick={() => setPick(null)} raDeg={raDeg} decDeg={decDeg} />
         : <BeginnerGuide />)}
     </div>
   );
@@ -179,7 +189,7 @@ function ViewerHead({ preset, raDeg, decDeg, expert, field }) {
   );
 }
 
-function Stage({ field, loading, attempt, error, tryAgain, preset, cur, base, incIdx, expert, selection, onPick }) {
+function Stage({ field, loading, attempt, error, tryAgain, preset, cur, base, incIdx, expert, selection, onPick, gaia, track }) {
   const v = useViewer();
   const lessonDone = useProgress((s) => s.lessons);
   const lesson = v.lessonId ? LESSONS.find((l) => l.id === v.lessonId) : null;
@@ -196,8 +206,10 @@ function Stage({ field, loading, attempt, error, tryAgain, preset, cur, base, in
     else if (v.mode === 'stack') paintImage(ctx, W, H, meanOf(stacks, incIdx.length ? incIdx : [0]), nx, ny, range);
     else paintImage(ctx, W, H, stacks[cur], nx, ny, range);
 
-    // Catalogue overlays (Expert).
-    if (expert && v.overlays.gaia) {
+    // Catalogue overlays (Expert). Real Gaia DR3 stars for a preset; simulated ones on demo fields.
+    if (expert && v.overlays.gaia && gaia && field.centre) {
+      drawGaia(ctx, W, H, field, gaia);
+    } else if (expert && v.overlays.gaia) {
       ctx.save();
       ctx.strokeStyle = 'rgba(69,211,184,.75)';
       ctx.lineWidth = 1;
@@ -255,6 +267,8 @@ function Stage({ field, loading, attempt, error, tryAgain, preset, cur, base, in
       }
       drawReticle(ctx, x * sx, y * sy, { label: preset.name, sub, r: 13 });
     }
+    // Real frames of a moving preset (Expert): where the catalogue motion puts it on each date.
+    if (expert && v.overlays.track && track && field.centre) drawTrack(ctx, W, H, field, track, incIdx, cur);
 
     // Selected source (Expert).
     if (expert && selection) {
@@ -269,7 +283,7 @@ function Stage({ field, loading, attempt, error, tryAgain, preset, cur, base, in
       }
     }
     drawCompass(ctx, W, H, field.fov, nx, field.pxScale);
-  }, [field, v.mode, v.overlays, cur, base, incIdx, expert, selection, preset]);
+  }, [field, v.mode, v.overlays, cur, base, incIdx, expert, selection, preset, gaia, track]);
 
   const arr = ARRAYS[v.arrayIdx - 1];
   const lam = v.channel != null ? `λ ${bandLambda(v.arrayIdx, v.channel).toFixed(2)} µm` : `λ ${arr.lo.toFixed(2)}–${arr.hi.toFixed(2)} µm`;
@@ -512,7 +526,7 @@ function centrePoint(field) {
   return { type: 'point', x, y };
 }
 
-function Analysis({ field, preset, incIdx, cur, selection }) {
+function Analysis({ field, preset, incIdx, cur, selection, science, picked, onResetPick, raDeg, decDeg }) {
   const v = useViewer();
   const selPos = (e) => selectionAt(field, selection, e);
   const selName = selection?.type === 'object' ? (preset?.name ?? field.object?.name ?? 'Source')
@@ -572,46 +586,14 @@ function Analysis({ field, preset, incIdx, cur, selection }) {
           </div>
         </Panel>
 
-        <Panel className="p-5">
-          <CardTitle term="variable">Brightness over time</CardTitle>
-          <div className="mt-3 h-44">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={brightness} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-                <CartesianGrid stroke="#1b2233" vertical={false} />
-                <XAxis dataKey="date" tick={axis} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                <YAxis tick={axis} tickLine={false} axisLine={false} width={44} />
-                <RTooltip contentStyle={tooltipStyle} labelStyle={{ color: '#8c93a8' }} />
-                <Line type="monotone" dataKey="flux" name="Brightness" stroke="#7c6cf5" strokeWidth={2} dot={{ r: 3, fill: '#b8afff' }} isAnimationActive={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-          <p className="text-xs text-muted">Aperture brightness of {selName} in array {arr.n}, ticked snapshots only.</p>
-        </Panel>
+        <LightcurvePanel field={field} preset={preset} science={science} picked={picked} onResetPick={onResetPick}
+          raDeg={raDeg} decDeg={decDeg} arr={arr} relative={brightness} selName={selName} />
 
-        <Panel className="p-5 md:col-span-2 xl:col-span-1">
-          <CardTitle term="spectrum">Spectrum · 102 bands</CardTitle>
-          <div className="mt-3 h-44">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={spectrum} margin={{ top: 14, right: 8, left: -18, bottom: 0 }}>
-                <CartesianGrid stroke="#1b2233" vertical={false} />
-                <ReferenceArea x1={arr.lo} x2={arr.hi} fill="#7c6cf5" fillOpacity={0.08} />
-                {MOLECULES.map((m) => (
-                  <ReferenceLine key={m.lam} x={m.lam} stroke="#ffb15c" strokeOpacity={0.5} strokeDasharray="2 3"
-                    label={{ value: m.label, position: 'top', fill: '#ffb15c', fontSize: 9.5, fontFamily: 'Geist Mono, monospace' }} />
-                ))}
-                <XAxis dataKey="lam" type="number" domain={[0.7, 5.05]} ticks={[1, 2, 3, 4, 5]} tick={axis} tickLine={false} axisLine={false} unit=" µm" />
-                <YAxis tick={axis} tickLine={false} axisLine={false} width={44} />
-                <RTooltip contentStyle={tooltipStyle} labelStyle={{ color: '#8c93a8' }} labelFormatter={(l) => `${l} µm`} />
-                <Line type="monotone" dataKey="flux" name="Brightness" stroke="#b8afff" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-          <p className="text-xs text-muted">{field.live
-            ? 'Spectra need single-band data, which the live SPHEREx service doesn’t provide yet. Try a known object to see one.'
-            : 'Built on the fly from all six arrays. Dashed lines mark where molecules absorb.'}</p>
-        </Panel>
+        <SpectrumPanel field={field} preset={preset} science={science} arr={arr} simulated={spectrum} />
 
-        <MotionCard field={field} incIdx={incIdx} />
+        <CoaddPanel preset={preset} science={science} arr={arr} />
+
+        <MotionCard field={field} incIdx={incIdx} preset={preset} science={science} />
 
         <Panel className="p-5">
           <CardTitle term="gaia">Catalogue overlays</CardTitle>
@@ -620,9 +602,12 @@ function Analysis({ field, preset, incIdx, cur, selection }) {
             <Switch id="ov-wise" label={<span>CatWISE <span className="text-muted">· squares, sees cold objects</span></span>} checked={v.overlays.wise} onChange={() => v.toggleOverlay('wise')} />
             <Switch id="ov-track" label={<span>Predicted track <span className="text-muted">· from proper motion</span></span>} checked={v.overlays.track} onChange={() => v.toggleOverlay('track')} />
           </div>
-          <p className="mt-4 text-xs text-muted">{field.live
-            ? 'Gaia and CatWISE overlays aren’t connected to live SPHEREx views yet.'
-            : 'A source moving with no Gaia or CatWISE match is a candidate worth flagging.'}</p>
+          <p className="mt-4 text-xs text-muted">{science.gaia
+            ? `Gaia DR3: ${science.gaia.truncated ? 'the brightest ' : ''}${science.gaia.count} real stars within ${science.gaia.radius_arcmin}′ brighter than G = ${science.gaia.g_mag_limit}, drawn where they were on SPHEREx’s dates (${science.gaia.epoch.toFixed(1)}). Arrows show one year of motion.${GAIA_NOTES[preset?.slug] ? ` ${GAIA_NOTES[preset.slug]}` : ''} CatWISE isn’t connected yet.`
+            : field.live
+              ? 'Catalogue overlays come with the five known objects; positions you type in don’t have them yet.'
+              : 'A source moving with no Gaia or CatWISE match is a candidate worth flagging.'}</p>
+          {science.gaia && v.overlays.gaia && <p className="mt-2 text-[11px] leading-snug text-faint">{science.gaia.credit}</p>}
         </Panel>
 
         <MetadataCard field={field} incIdx={incIdx} cur={cur} />
@@ -635,11 +620,226 @@ function CardTitle({ term, children }) {
   return <h3 className="label-mono text-muted"><Term id={term}>{children}</Term></h3>;
 }
 
-function MotionCard({ field, incIdx }) {
+const MJD_UNIX = 40587; // MJD of 1970-01-01
+const mjdLabel = (mjd) => formatDate(new Date((mjd - MJD_UNIX) * 864e5).toISOString().slice(0, 10), { month: 'short', year: '2-digit' });
+/** Blue at the short end of an array, orange at the long end. */
+const lamColour = (lam, arr) => `hsl(${Math.round(210 - 190 * Math.max(0, Math.min(1, (lam - arr.lo) / (arr.hi - arr.lo))))} 85% 66%)`;
+
+function TipBox({ lines }) {
+  return <div style={tooltipStyle} className="px-2.5 py-1.5">{lines.map((l) => <p key={l} className="tabular">{l}</p>)}</div>;
+}
+
+/**
+ * Brightness over time. The target (the default selection) gets real photometry: the
+ * preset's light curve file in its own array, or GET /lightcurve for any other view.
+ * A clicked star gets the relative brightness read from the display images.
+ */
+function LightcurvePanel({ field, preset, science, picked, onResetPick, raDeg, decDeg, arr, relative, selName }) {
+  const presetLc = !picked && science.lightcurve?.band?.id === `D${arr.n}` ? science.lightcurve : null;
+  const wantLive = !picked && science.ready && !presetLc && field.live && !field.preset;
+  const live = useLiveLightcurve({ raDeg, decDeg, arrayIdx: arr.n, enabled: wantLive });
+  const lc = presetLc ?? live.data;
+
+  const points = useMemo(() => (lc?.points ?? []).filter((p) => p.flux != null).map((p) => ({
+    mjd: p.mjd, flux: +(p.flux / 1000).toPrecision(4), err: +(p.flux_err / 1000).toPrecision(2), lam: p.wavelength_um,
+  })), [lc]);
+
+  const relativeChart = (
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={relative} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+        <CartesianGrid stroke="#1b2233" vertical={false} />
+        <XAxis dataKey="date" tick={axis} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+        <YAxis tick={axis} tickLine={false} axisLine={false} width={44} />
+        <RTooltip contentStyle={tooltipStyle} labelStyle={{ color: '#8c93a8' }} />
+        <Line type="monotone" dataKey="flux" name="Relative brightness" stroke="#7c6cf5" strokeWidth={2} dot={{ r: 3, fill: '#b8afff' }} isAnimationActive={false} />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+
+  let chart = null, caption;
+  if (picked) {
+    chart = relativeChart;
+    caption = <>Relative brightness of {selName} read from the display images, not calibrated. <button type="button" onClick={onResetPick} className="text-accent-fg hover:text-fg">Measure the target instead</button></>;
+  } else if (!science.ready || live.loading) {
+    caption = <span className="animate-pulse">Measuring brightness on every SPHEREx exposure… A new position can take 10–30 s.</span>;
+  } else if (live.error) {
+    chart = relativeChart;
+    caption = `Calibrated brightness isn’t available right now (${live.error}) Showing relative brightness from the display images instead.`;
+  } else if (!lc) {
+    chart = relativeChart;
+    caption = `Relative brightness of ${selName} in array ${arr.n}, ticked snapshots only.`;
+  } else if (!lc.points.length) {
+    caption = 'SPHEREx hasn’t observed this position in this array yet.';
+  } else if (!points.length) {
+    caption = presetLc
+      ? `${preset.name} is so bright that it saturates SPHEREx’s detector in every exposure, so its brightness can’t be measured. The images fill the saturated core for display only.`
+      : 'No exposure here could be measured: masked or saturated pixels touch the measuring circle.';
+  } else {
+    chart = (
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart data={points} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+          <CartesianGrid stroke="#1b2233" vertical={false} />
+          <XAxis dataKey="mjd" type="number" domain={['dataMin - 25', 'dataMax + 25']} tickFormatter={mjdLabel} tickCount={4} tick={axis} tickLine={false} axisLine={false} />
+          <YAxis dataKey="flux" type="number" tick={axis} tickLine={false} axisLine={false} width={48} domain={['auto', 'auto']} />
+          <RTooltip cursor={false} content={({ active, payload }) => {
+            const d = active && payload?.[0]?.payload;
+            return d ? <TipBox lines={[mjdLabel(d.mjd), `${d.flux} ± ${d.err} mJy`, `λ ${d.lam.toFixed(3)} µm`]} /> : null;
+          }} />
+          <Scatter dataKey="flux" isAnimationActive={false}>
+            {points.map((p) => <Cell key={`${p.mjd}-${p.lam}`} fill={lamColour(p.lam, arr)} />)}
+            <ErrorBar dataKey="err" direction="y" width={0} stroke="#5b6378" />
+          </Scatter>
+        </ComposedChart>
+      </ResponsiveContainer>
+    );
+    const total = lc.points.length;
+    caption = (
+      <>
+        {presetLc ? 'Real SPHEREx photometry' : 'Live SPHEREx photometry at the position you entered'}: {points.length} of {total} exposures measured, {lc.aperture_arcsec}″ circle, in mJy.
+        Dot colour is wavelength (blue {arr.lo} → orange {arr.hi} µm), so compare dots of one colour across visits.
+        {presetLc && LIGHTCURVE_NOTES[preset?.slug] ? ` ${LIGHTCURVE_NOTES[preset.slug]}` : ''}
+      </>
+    );
+  }
+
+  return (
+    <Panel className="p-5">
+      <CardTitle term="variable">Brightness over time</CardTitle>
+      <div className="mt-3 h-44">{chart ?? <div className="grid h-full place-items-center text-center text-xs text-faint">{lc && !points.length ? 'No measurable points' : ''}</div>}</div>
+      <p className="text-xs text-muted">{caption}</p>
+    </Panel>
+  );
+}
+
+/** Spectrum across all six arrays: the preset's real spectrum file, or why there isn't one. */
+function SpectrumPanel({ field, preset, science, arr, simulated }) {
+  const sp = science.spectrum;
+  const info = SPECTRUM_INFO[preset?.slug];
+  const points = useMemo(() => (sp?.points ?? []).filter((p) => p.flux != null).map((p) => ({
+    lam: +p.wavelength_um.toFixed(3), flux: +(p.flux / 1000).toPrecision(4), err: +(p.flux_err / 1000).toPrecision(2), band: p.band,
+  })), [sp]);
+  const real = Boolean(sp && points.length);
+  const features = real ? info?.features ?? [] : MOLECULES;
+  const showChart = real || !field.live;
+  const data = real ? points : simulated;
+
+  let caption;
+  if (!science.ready) caption = <span className="animate-pulse">Loading the spectrum…</span>;
+  else if (real) caption = `Real SPHEREx spectrum of ${sp.target?.name ?? preset.name}: ${points.length} measured points across all six arrays (0.75–5 µm), ${sp.aperture_arcsec}″ circle, in mJy. ${info?.text ?? ''}`;
+  else if (preset) caption = NO_SPECTRUM[preset.slug] ?? `No real spectrum for ${preset.name} yet. Open Epsilon Indi B or RW Aurigae to see one built from all six arrays.`;
+  else if (field.live) caption = 'Spectra are measured ahead of time for known objects: open Epsilon Indi B or RW Aurigae to see one. A spectrum needs about 100 exposures across all six arrays, too many to download for a live view.';
+  else caption = 'Simulated spectrum (demo data). Dashed lines mark where molecules absorb.';
+
+  return (
+    <Panel className="p-5 md:col-span-2 xl:col-span-1">
+      <CardTitle term="spectrum">Spectrum · 102 bands</CardTitle>
+      <div className="mt-3 h-44">
+        {showChart && science.ready ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={data} margin={{ top: 14, right: 8, left: -12, bottom: 0 }}>
+              <CartesianGrid stroke="#1b2233" vertical={false} />
+              <ReferenceArea x1={arr.lo} x2={arr.hi} fill="#7c6cf5" fillOpacity={0.08} />
+              {features.map((m) => (
+                <ReferenceLine key={m.lam} x={m.lam} stroke="#ffb15c" strokeOpacity={0.5} strokeDasharray="2 3"
+                  label={{ value: m.label, position: 'top', fill: '#ffb15c', fontSize: 9.5, fontFamily: 'Geist Mono, monospace' }} />
+              ))}
+              <XAxis dataKey="lam" type="number" domain={[0.7, 5.05]} ticks={[1, 2, 3, 4, 5]} tick={axis} tickLine={false} axisLine={false} unit=" µm" />
+              <YAxis tick={axis} tickLine={false} axisLine={false} width={48} />
+              {real ? (
+                <RTooltip cursor={false} content={({ active, payload }) => {
+                  const d = active && payload?.[0]?.payload;
+                  return d ? <TipBox lines={[`λ ${d.lam} µm · array ${d.band.slice(1)}`, `${d.flux} ± ${d.err} mJy`]} /> : null;
+                }} />
+              ) : <RTooltip contentStyle={tooltipStyle} labelStyle={{ color: '#8c93a8' }} labelFormatter={(l) => `${l} µm`} />}
+              <Line type={real ? "linear" : "monotone"} dataKey="flux" name="Brightness" stroke="#b8afff" strokeWidth={1.5}
+                dot={real ? { r: 1.6, fill: '#b8afff', strokeWidth: 0 } : false} isAnimationActive={false} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        ) : <div className="grid h-full place-items-center text-center text-xs text-faint">{science.ready ? 'No spectrum for this view' : ''}</div>}
+      </div>
+      <p className="text-xs text-muted">{caption}</p>
+    </Panel>
+  );
+}
+
+/**
+ * One co-add per detector array (presets/index.json `coadds`): the mean of about 20
+ * exposures of one visit, 3′ across, each with its own stretch. Shown side by side,
+ * they show how the target's colour differs from its neighbours'.
+ */
+function CoaddPanel({ preset, science, arr }) {
+  const coadds = science.entry?.coadds;
+  if (!science.ready || (!coadds && !preset)) return null;
+  return (
+    <Panel className="p-5 md:col-span-2 xl:col-span-3">
+      <CardTitle term="band">Co-adds · all six arrays</CardTitle>
+      {coadds ? (
+        <>
+          <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-6">
+            {coadds.map((c) => {
+              const n = Number(c.band.slice(1));
+              return (
+                <figure key={c.band} className="min-w-0">
+                  <div className={cn('relative overflow-hidden rounded-md border bg-ink-950', n === arr.n ? 'border-accent' : 'border-line')}>
+                    <img src={c.url} alt={`${preset?.name ?? 'Target'} in array ${n}, ${c.wavelength_min_um.toFixed(2)}–${c.wavelength_max_um.toFixed(2)} µm`}
+                      width={c.width_px} height={c.height_px} className="block aspect-square w-full" style={{ imageRendering: 'pixelated' }} />
+                    {/* The target sits at the centre; the ring is the 12″ measuring circle (about 4 of the 30 pixels across). */}
+                    <span aria-hidden="true" className="absolute top-1/2 left-1/2 size-[13%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-amber/80" />
+                  </div>
+                  <figcaption className="label-mono mt-1.5 text-[11px] leading-snug text-muted">
+                    <span className={n === arr.n ? 'text-fg' : undefined}>Array {n}</span><br />
+                    {c.wavelength_min_um.toFixed(2)}–{c.wavelength_max_um.toFixed(2)} µm · {c.n_frames} exp.
+                  </figcaption>
+                </figure>
+              );
+            })}
+          </div>
+          <p className="mt-3 text-xs text-muted">
+            Each image averages about 20 exposures from one visit in that array, {coadds[0].fov_arcmin}′ across, north up; the ring is the 12″ circle the spectrum is measured in. {COADD_NOTES[preset?.slug] ?? ''} Every image has its own brightness scale, so compare what is bright, not the grey levels; the spectrum has the numbers.
+          </p>
+        </>
+      ) : (
+        <p className="mt-4 text-sm text-muted">Co-adds are made ahead of time for Epsilon Indi B, RW Aurigae and WISE 0855. Open one of them to compare its colour across all six arrays.</p>
+      )}
+    </Panel>
+  );
+}
+
+/** Direction arrow for a position angle east of north, on a north-up, east-left image. */
+function PaArrow({ deg }) {
+  return <span aria-hidden="true" className="inline-block text-accent-fg" style={{ transform: `rotate(${-deg}deg)` }}>↑</span>;
+}
+
+/** Measured motion of a real preset, from the backend's visit-stack positions (presets/index.json `motion`). */
+function RealMotion({ motion, band }) {
+  const { measured: m, expected: x } = motion;
+  const visible = motion.verdict === 'visible';
+  // When the target is too faint in the stacks, the catalogue value is the one to show.
+  const big = visible ? m : x;
+  return (
+    <>
+      <dl className="mt-4 grid grid-cols-2 gap-4">
+        <div><dt className="label-mono text-faint">{visible ? 'Measured' : 'Expected (catalogue)'}</dt><dd className="mt-1 text-2xl font-medium tabular">{big.shift_arcsec.toFixed(1)}″<span className="text-base text-muted"> in {motion.dt_yr.toFixed(2)} yr</span></dd></div>
+        <div><dt className="label-mono text-faint">Direction</dt><dd className="mt-1 flex items-center gap-2 text-2xl font-medium tabular"><PaArrow deg={big.pa_deg} />{big.pa_deg.toFixed(0)}°</dd></div>
+      </dl>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {visible
+          ? <Chip tone="good">Matches catalogue: {x.shift_arcsec.toFixed(1)}″ towards {x.pa_deg.toFixed(0)}°</Chip>
+          : <Chip tone="warn">Too faint to measure in the visit stacks</Chip>}
+      </div>
+      <p className="mt-3 text-xs text-muted">
+        {motion.note} Positions are from the visit stacks in array {band?.slice(1) ?? 2} (visits {motion.first_visit} to {motion.last_visit}){motion.visits.some((p) => p.saturated) ? ', using the centre of the saturated core' : ', using the light centre'}. Direction is east of north. Turn on Predicted track to see the catalogue path on the image.
+      </p>
+    </>
+  );
+}
+
+function MotionCard({ field, incIdx, preset, science }) {
   const o = field.object;
   const content = (() => {
+    if (science.entry?.motion) return <RealMotion motion={science.entry.motion} band={science.entry.band} />;
     if (!o || o.kind !== 'motion' || incIdx.length < 2) {
-      return <p className="mt-4 text-sm text-muted">{o?.kind === 'variable' ? 'This star changes brightness rather than position. See the brightness chart.' : 'No tracked mover in this field. Use Difference mode to hunt for one.'}</p>;
+      return <p className="mt-4 text-sm text-muted">{(o?.kind ?? preset?.kind) === 'variable' ? 'This star changes brightness rather than position. See the brightness chart.' : 'No tracked mover in this field. Use Difference mode to hunt for one.'}</p>;
     }
     const a = incIdx[0], b = incIdx[incIdx.length - 1];
     const pa = centroid(field.stacks[a], field.nx, field.ny, ...field.posAt(a));
@@ -657,7 +857,7 @@ function MotionCard({ field, incIdx }) {
         <dl className="mt-4 grid grid-cols-2 gap-4">
           <div><dt className="label-mono text-faint">Measured</dt><dd className="mt-1 text-2xl font-medium tabular">{rate.toFixed(1)}″<span className="text-base text-muted">/yr</span></dd></div>
           <div><dt className="label-mono text-faint">Direction</dt><dd className="mt-1 flex items-center gap-2 text-2xl font-medium tabular">
-            <span aria-hidden="true" className="inline-block text-accent-fg" style={{ transform: `rotate(${-angle}deg)` }}>↑</span>{angle.toFixed(0)}°</dd></div>
+            <PaArrow deg={angle} />{angle.toFixed(0)}°</dd></div>
         </dl>
         <p className="mt-3 text-xs text-muted">{shift.toFixed(1)}″ over {years.toFixed(2)} years, from centroids in the first and last ticked snapshots. Direction is measured east of north.</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -675,7 +875,8 @@ function MotionCard({ field, incIdx }) {
   );
 }
 
-function MetadataCard({ field, incIdx, cur }) {
+/** Per-snapshot dates, releases, exposures and contamination flags (Expert, also used by Discover). */
+export function MetadataCard({ field, incIdx, cur }) {
   const rows = field.epochs.map((e, i) => {
     if (field.live) {
       const pct = `${((e.flaggedFraction ?? 0) * 100).toFixed(1)}%`;

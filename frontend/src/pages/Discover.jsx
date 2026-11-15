@@ -7,7 +7,8 @@ import { WindowTimeline } from '../components/WindowTimeline';
 import { useViewer, useAuth, useUi, useProgress, useSubmissions } from '../store';
 import { useField, vet } from '../lib/api';
 import { LESSONS, LEVELS } from '../lib/data';
-import { paintImage, paintDiff, lutForArray, crop, centroid, drawCompass, PX } from '../lib/sim';
+import { paintImage, paintDiff, lutForArray, LUTS, meanOf, crop, centroid, drawCompass, PX } from '../lib/sim';
+import { MetadataCard } from './Explore';
 import { reputationFor, cooldownFor, formatWait } from '../lib/reputation';
 import { ReputationCard } from '../components/Reputation';
 import { useMySubmissions, useNow } from '../lib/reputationHooks';
@@ -132,6 +133,9 @@ function SubmitForm() {
   const addPoints = useAuth((s) => s.addPoints);
   const add = useSubmissions((s) => s.add);
   const toast = useUi((s) => s.toast);
+  // Beginner: false colour, smoothed pixels and plain-language help. Expert: measured
+  // brightness in grey, exact pixels, a Stack mode, pixel readouts and snapshot metadata.
+  const expert = useUi((s) => s.expert);
   // Discover is for new finds: the known-object presets are never used here. A preset
   // still loaded from Explore counts as "no field yet" until the user types a position
   // or picks a random one.
@@ -193,7 +197,7 @@ function SubmitForm() {
         <div>
           <h1 className="text-4xl font-medium tracking-tight">Flag a candidate</h1>
           <p className="mt-2 max-w-2xl text-muted">Help sift the SPHEREx data. Pick a patch of sky, choose which snapshots to compare, then drag a box around anything that moves or changes. Automatic checks run straight away; promising <Term id="candidate">candidates</Term> go to scientists.</p>
-          <p className="mt-3 max-w-2xl text-sm text-muted">Relevant finds raise your reputation. Submissions that fail the checks or that scientists reject lower it, which pushes your candidates down the review queue and makes you wait longer between submissions.</p>
+          {!expert && <p className="mt-3 max-w-2xl text-sm text-muted">Relevant finds raise your reputation. Submissions that fail the checks or that scientists reject lower it, which pushes your candidates down the review queue and makes you wait longer between submissions.</p>}
         </div>
         <ReputationCard mine={mine} showHistory={false} className="p-5" />
       </div>
@@ -211,12 +215,13 @@ function SubmitForm() {
             </div>
             <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
               {raDeg != null && <p className="label-mono text-muted tabular">RA <span className="text-fg/80">{formatRA(raDeg)}</span> · Dec <span className="text-fg/80">{formatDec(decDeg)}</span></p>}
+              {expert && field && raDeg != null && <p className="label-mono text-muted tabular">{raDeg.toFixed(4)}°, {decDeg.toFixed(4)}° · {field.nx}×{field.ny} px · {(field.pxScale ?? PX).toFixed(2)}″/px</p>}
               {field && <Chip tone={field.live && !field.synthetic ? 'good' : 'warn'}>{field.live && !field.synthetic ? 'Live SPHEREx data' : 'Simulated frames'}</Chip>}
             </div>
           </div>
           {field && n >= 2 ? (
             <FlagWorkspace key={fieldKey} field={field} win={sel.win} onWin={(win) => setSel({ win })}
-              area={sel.area} onArea={(area) => setSel({ area })} marks={marks} />
+              area={sel.area} onArea={(area) => setSel({ area })} marks={marks} expert={expert} />
           ) : (
             <div className="grid aspect-[5/3] place-items-center p-6 text-center text-sm text-muted">
               {loading ? <p>Loading SPHEREx images{attempt > 1 ? ` (attempt ${attempt})` : ''}… The first look at a new patch of sky can take a minute or two.</p>
@@ -226,6 +231,12 @@ function SubmitForm() {
           )}
         </div>
       </div>
+
+      {expert && field && n >= 2 && (
+        <div className="mt-6">
+          <MetadataCard field={field} incIdx={Array.from({ length: b - a + 1 }, (_, i) => a + i)} cur={b} />
+        </div>
+      )}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <div>
@@ -257,12 +268,14 @@ function SubmitForm() {
 }
 
 /** Viewer for one field: the image, the flag-an-area tool, view controls and the window timeline. */
-function FlagWorkspace({ field, win, onWin, area, onArea, marks }) {
+function FlagWorkspace({ field, win, onWin, area, onArea, marks, expert }) {
   const [a, b] = win;
   const [curRaw, setCur] = useState(b);
   const cur = Math.min(b, Math.max(a, curRaw));
-  const [mode, setMode] = useState('blink');
-  const [playing, setPlaying] = useState(false);
+  const [modeRaw, setMode] = useState('blink');
+  const mode = !expert && modeRaw === 'stack' ? 'blink' : modeRaw; // Stack is an Expert tool
+  const [playingRaw, setPlaying] = useState(false);
+  const playing = playingRaw && mode !== 'stack';
   const [box, setBox] = useState(null); // area being dragged
   const overlay = useRef(null);
   const start = useRef(null);
@@ -308,8 +321,12 @@ function FlagWorkspace({ field, win, onWin, area, onArea, marks }) {
   const draw = useCallback((ctx, W, H) => {
     const { nx, ny, stacks } = field;
     const sx = W / nx, sy = H / ny;
-    if (mode === 'diff') paintDiff(ctx, W, H, stacks[a], stacks[cur], nx, ny, { smooth: false });
-    else paintImage(ctx, W, H, stacks[cur], nx, ny, { vmin: field.vmin, vmax: field.vmax, lut: lutForArray(field.arrayIdx), smooth: false });
+    // Expert shows the measured brightness in grey with exact pixels; Beginner adds false colour and smoothing.
+    const smooth = !expert;
+    const range = { vmin: field.vmin, vmax: field.vmax, lut: expert ? LUTS.grey : lutForArray(field.arrayIdx), smooth };
+    if (mode === 'diff') paintDiff(ctx, W, H, stacks[a], stacks[cur], nx, ny, { smooth });
+    else if (mode === 'stack') paintImage(ctx, W, H, meanOf(stacks, Array.from({ length: b - a + 1 }, (_, i) => a + i)), nx, ny, range);
+    else paintImage(ctx, W, H, stacks[cur], nx, ny, range);
     const rect = (q, dash, color) => {
       ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash(dash);
       ctx.strokeRect(q.x0 * sx, q.y0 * sy, (q.x1 - q.x0) * sx, (q.y1 - q.y0) * sy); ctx.restore();
@@ -327,11 +344,12 @@ function FlagWorkspace({ field, win, onWin, area, onArea, marks }) {
       ctx.restore();
     }
     drawCompass(ctx, W, H, field.fov, nx, field.pxScale);
-  }, [field, mode, a, cur, area, box, marks]);
+  }, [field, mode, a, b, cur, area, box, marks, expert]);
 
   const ep = field.epochs[cur];
   const px = field.pxScale ?? PX;
   const shift = marks ? Math.hypot(marks[1].x - marks[0].x, marks[1].y - marks[0].y) * px : null;
+  const years = field.epochs[b].t - field.epochs[a].t;
   const step = (d) => { setPlaying(false); setCur(Math.min(b, Math.max(a, cur + d))); };
 
   return (
@@ -341,7 +359,7 @@ function FlagWorkspace({ field, win, onWin, area, onArea, marks }) {
           <div ref={overlay} className="absolute inset-0 cursor-crosshair touch-none" onPointerDown={down} onPointerMove={moveP} onPointerUp={up}
             onPointerCancel={() => { start.current = null; setBox(null); }} />
           <p className="label-mono pointer-events-none absolute top-3 left-4 text-fg/90">
-            {mode === 'diff' ? `${ep.label} − ${field.epochs[a].label}` : `${ep.label} · ${formatDate(ep.date)}`}
+            {mode === 'diff' ? `${ep.label} − ${field.epochs[a].label}` : mode === 'stack' ? `Stack of ${b - a + 1} snapshots · ${field.epochs[a].label} to ${field.epochs[b].label}` : `${ep.label} · ${formatDate(ep.date)}`}
           </p>
           {!area && <p className="pointer-events-none absolute inset-x-0 bottom-4 mx-auto w-fit rounded-md bg-ink-900/90 px-3 py-2 text-[13px] text-muted">Drag a box around something that moves or changes (or click it).</p>}
         </SkyCanvas>
@@ -350,6 +368,7 @@ function FlagWorkspace({ field, win, onWin, area, onArea, marks }) {
           {marks ? (
             <span className="normal-case tracking-normal text-fg">
               <span className="text-teal">●</span> {field.epochs[a].label} → <span className="text-amber">●</span> {field.epochs[b].label}: brightest source in your box moved {shift.toFixed(1)}″ ({(shift / px).toFixed(1)} px)
+              {expert && years > 0 && <> · ({marks[0].x.toFixed(1)}, {marks[0].y.toFixed(1)}) → ({marks[1].x.toFixed(1)}, {marks[1].y.toFixed(1)}) px · {(shift / years).toFixed(1)}″/yr over {years.toFixed(2)} yr</>}
             </span>
           ) : <span>{area ? 'No data in the flagged area' : 'Nothing flagged yet'}</span>}
           {area && <button type="button" onClick={() => onArea(null)} className="normal-case tracking-normal text-accent-fg hover:text-fg">Clear flag</button>}
@@ -359,7 +378,7 @@ function FlagWorkspace({ field, win, onWin, area, onArea, marks }) {
       <div className="grid gap-4 border-t border-line px-6 pt-5 pb-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" className="rounded-full" aria-label="Previous snapshot" onClick={() => step(-1)}><SkipBack className="size-4" /></Button>
-          <Button variant="outline" size="lg" className="size-12 rounded-full border-accent/60 bg-accent-soft px-0" aria-label={playing ? 'Pause' : 'Play'} onClick={() => setPlaying(!playing)}>
+          <Button variant="outline" size="lg" className="size-12 rounded-full border-accent/60 bg-accent-soft px-0" aria-label={playing ? 'Pause' : 'Play'} disabled={mode === 'stack'} onClick={() => setPlaying(!playing)}>
             {playing ? <Pause className="size-5" /> : <PlayIcon className="size-5" />}
           </Button>
           <Button variant="outline" size="icon" className="rounded-full" aria-label="Next snapshot" onClick={() => step(1)}><SkipForward className="size-4" /></Button>
@@ -371,11 +390,18 @@ function FlagWorkspace({ field, win, onWin, area, onArea, marks }) {
         <Segmented value={mode} onChange={setMode} label="View mode" options={[
           { value: 'blink', label: 'Blink', title: 'Flip through the snapshots in the window' },
           { value: 'diff', label: 'Difference', title: 'Subtract the window’s first snapshot' },
+          ...(expert ? [{ value: 'stack', label: 'Stack', title: 'Average the window’s snapshots: faint still sources show up, movers smear' }] : []),
         ]} />
-        <p className="max-w-xl text-[13px] text-muted">
-          {mode === 'diff' ? <><span className="text-teal">Teal</span> = was here, <span className="text-amber">amber</span> = now here, relative to the window’s first snapshot. Fixed stars cancel out.</>
-            : 'The checks compare the brightest source in your box at the start and end of the window.'}
-        </p>
+        {expert ? (
+          <p className="label-mono text-muted tabular">
+            Window {field.epochs[a].label} → {field.epochs[b].label} · {years.toFixed(2)} yr · {b - a + 1} snapshots · {field.epochs.slice(a, b + 1).reduce((k, e) => k + (e.exposures ?? 1), 0)} exposures
+          </p>
+        ) : (
+          <p className="max-w-xl text-[13px] text-muted">
+            {mode === 'diff' ? <><span className="text-teal">Teal</span> = was here, <span className="text-amber">amber</span> = now here, relative to the window’s first snapshot. Fixed stars cancel out.</>
+              : 'The checks compare the brightest source in your box at the start and end of the window.'}
+          </p>
+        )}
       </div>
     </>
   );
