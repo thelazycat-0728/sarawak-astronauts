@@ -1,234 +1,283 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router';
-import { Play as PlayIcon, Pause, Lightbulb, Eye, ArrowRight, RotateCcw } from 'lucide-react';
-import { Button, Segmented, Kicker, Panel, Chip, SkyCanvas } from '../components/ui';
-import { useProgress, useAuth, useUi } from '../store';
-import { LEVELS, PRESET_BY_ID, SURVEYS, ARRAYS } from '../lib/data';
-import { simulate, paintImage, paintDiff, lutForArray, drawCompass, PX } from '../lib/sim';
-import { cn, formatDate } from '../lib/util';
+import { useCallback, useMemo, useState } from 'react';
+import { Navigate, useNavigate, useSearchParams } from 'react-router';
+import { Flag, LogIn, Lock, Timer, CircleCheck, CircleX, CircleHelp, Send, RotateCcw, ArrowRight } from 'lucide-react';
+import { Button, Kicker, Panel, Chip, SkyCanvas, Term } from '../components/ui';
+import { useViewer, useAuth, useUi, useProgress, useSubmissions } from '../store';
+import { useField, vet } from '../lib/api';
+import { PRESET_BY_ID, LESSONS, LEVELS } from '../lib/data';
+import { paintImage, lutForArray, crop } from '../lib/sim';
+import { reputationFor, cooldownFor, formatWait } from '../lib/reputation';
+import { ReputationCard } from '../components/Reputation';
+import { useMySubmissions, useNow } from '../lib/reputationHooks';
+import { parseRA, parseDec, formatRA, formatDec, formatDate, cn, uid } from '../lib/util';
 
-const reduced = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
+const CHECKS = [
+  'It appears in at least two snapshots.',
+  'It isn’t a single bright pixel in one snapshot (a cosmic ray).',
+  'I compared it with the catalogue overlays where I could.',
+];
 
-function levelObject(level) {
-  return level.preset ? PRESET_BY_ID[level.preset] : level.object;
-}
-function levelEpochs(level) {
-  return level.preset ? PRESET_BY_ID[level.preset].epochs : SURVEYS;
-}
-
+/**
+ * Play: the public submits discoveries found in Explore. Needs an account (to stop spam
+ * and credit contributions) and finished training; how often a user can submit and how
+ * high their candidates rank for review depend on their reputation (lib/reputation.js).
+ */
 export default function Play() {
-  const [params, setParams] = useSearchParams();
-  const startId = LEVELS.some((l) => l.id === params.get('level')) ? params.get('level') : LEVELS[0].id;
-  const [levelId, setLevelId] = useState(startId);
-  const level = LEVELS.find((l) => l.id === levelId);
-  const [arrayIdx, setArrayIdx] = useState(level.defaultArray ?? level.arrays[0]);
-  const [view, setView] = useState('flip');
-  const [frame, setFrame] = useState(0);
-  const [playing, setPlaying] = useState(!reduced());
-  const [blinkB, setBlinkB] = useState(false);
-  const [guesses, setGuesses] = useState([]);
-  const [hint, setHint] = useState(false);
-  const [result, setResult] = useState(null); // { won, points, stars, dist }
-  const [feedback, setFeedback] = useState(null);
-
+  const [params] = useSearchParams();
+  const user = useAuth((s) => s.user);
+  const setSignIn = useUi((s) => s.setSignIn);
+  const lessons = useProgress((s) => s.lessons);
   const games = useProgress((s) => s.games);
-  const recordGame = useProgress((s) => s.recordGame);
+  const navigate = useNavigate();
+  const trained = LESSONS.filter((l) => lessons[l.id]).length >= 3 && LEVELS.filter((l) => games[l.id]?.stars > 0).length >= 2;
+
+  // Old links to the training games (/play?level=…) now live under Learn.
+  if (params.get('level')) return <Navigate to={`/learn/game?level=${encodeURIComponent(params.get('level'))}`} replace />;
+
+  if (!user) {
+    return (
+      <Gate icon={LogIn} title="Sign in to submit discoveries" text="Exploring and the Learn section are open to everyone. Submitting a discovery needs an account: it stops spam, credits your finds to you and builds your reputation, so scientists can follow up.">
+        <Button variant="primary" onClick={() => setSignIn(true)}><LogIn className="size-4" />Sign in</Button>
+      </Gate>
+    );
+  }
+  if (!trained) {
+    return (
+      <Gate icon={Lock} title="Finish your training first" text="Complete three lessons and two training-game levels. It takes about 15 minutes and teaches you to tell real movers from glitches, which keeps the review queue useful for scientists.">
+        <Button variant="primary" onClick={() => navigate('/learn')}>Go to Learn<ArrowRight className="size-4" /></Button>
+        <Button variant="ghost" onClick={() => {
+          const p = useProgress.getState();
+          LESSONS.slice(0, 3).forEach((l) => p.completeLesson(l.id));
+          ['barnard', 'rwaur'].forEach((id) => p.recordGame(id, { points: 80, stars: 2 }));
+        }}>Skip for this demo</Button>
+      </Gate>
+    );
+  }
+  return <SubmitForm />;
+}
+
+/** 19×19 cut-outs around the marks, as plain JSON (NaN, meaning no data, becomes null). */
+function reviewStamps(field, ea, eb, marks) {
+  const cx = (marks[ea].x + marks[eb].x) / 2, cy = (marks[ea].y + marks[eb].y) / 2;
+  const cut = (e) => {
+    const { data, n } = crop(field.stacks[e], field.nx, field.ny, cx, cy, 9);
+    return { n, data: Array.from(data, (v) => (Number.isNaN(v) ? null : +v.toFixed(2))) };
+  };
+  return { a: cut(ea), b: cut(eb), vmin: field.vmin, vmax: field.vmax, labels: [field.epochs[ea].label, field.epochs[eb].label] };
+}
+
+function Gate({ icon: Icon, title, text, children, below }) {
+  return (
+    <div className="mx-auto max-w-xl px-[max(16px,env(safe-area-inset-left,0px))] py-20 text-center">
+      <span className="mx-auto grid size-12 place-items-center rounded-full border border-line-strong bg-ink-800"><Icon className="size-5 text-accent-fg" /></span>
+      <h1 className="mt-5 text-3xl font-medium tracking-tight">{title}</h1>
+      <p className="mt-3 text-muted">{text}</p>
+      <div className="mt-6 flex flex-wrap justify-center gap-2">{children}</div>
+      {below && <div className="mt-10 text-left">{below}</div>}
+    </div>
+  );
+}
+
+/** Shown while the user's reputation-based wait between submissions runs. */
+function CooldownGate({ mine, remainingMs, onSkip }) {
+  const navigate = useNavigate();
+  const { tier } = reputationFor(mine);
+  return (
+    <Gate icon={Timer} title={`Next submission in ${formatWait(remainingMs)}`}
+      text={`At your reputation (${tier.name}) you wait ${formatWait(tier.cooldownMin * 60e3)} between submissions. Relevant finds shorten the wait; submissions that fail the checks make it longer.`}
+      below={<ReputationCard mine={mine} />}>
+      <Button variant="primary" onClick={() => navigate('/')}>Keep exploring<ArrowRight className="size-4" /></Button>
+      <Button variant="ghost" onClick={onSkip}>Skip the wait for this demo</Button>
+    </Gate>
+  );
+}
+
+function SubmitForm() {
+  const v = useViewer();
   const user = useAuth((s) => s.user);
   const addPoints = useAuth((s) => s.addPoints);
+  const add = useSubmissions((s) => s.add);
   const toast = useUi((s) => s.toast);
+  const navigate = useNavigate();
+  const preset = v.targetId ? PRESET_BY_ID[v.targetId] : null;
+  const raDeg = parseRA(v.ra), decDeg = parseDec(v.dec);
+  const { data: field, loading, error } = useField({ targetId: v.targetId, raDeg, decDeg, fov: v.fov, arrayIdx: v.arrayIdx, channel: v.channel });
 
-  const object = levelObject(level);
-  const epochs = levelEpochs(level);
-  const field = useMemo(() => simulate({
-    key: `game-${level.id}-${arrayIdx}`, seed: level.seed, fov: 5, arrayIdx, object, epochs, exps: 3, cosmic: level.cosmic, place: 'random',
-  }), [level, arrayIdx, object, epochs]);
+  const included = useMemo(() => {
+    if (!field) return [];
+    const inc = v.included && v.included.length === field.epochs.length ? v.included : field.epochs.map(() => true);
+    return inc.map((on, i) => (on ? i : -1)).filter((i) => i >= 0);
+  }, [field, v.included]);
+  const ea = included[0], eb = included[included.length - 1];
 
-  const loadLevel = (id) => {
-    const l = LEVELS.find((x) => x.id === id);
-    setLevelId(id);
-    setParams({ level: id }, { replace: true });
-    setArrayIdx(l.defaultArray ?? l.arrays[0]);
-    setView('flip'); setFrame(0); setPlaying(!reduced()); setBlinkB(false);
-    setGuesses([]); setHint(false); setResult(null); setFeedback(null);
+  const [marks, setMarks] = useState({});
+  const [checked, setChecked] = useState([false, false, false]);
+  const [note, setNote] = useState('');
+  const [result, setResult] = useState(null);
+
+  const mine = useMySubmissions();
+  const [skipUntil, setSkipUntil] = useState(0); // demo: ignore the wait after the latest submission
+  const [waiting, setWaiting] = useState(() => cooldownFor(mine).remainingMs > 0);
+  const now = useNow(waiting);
+  const cool = cooldownFor(mine, now);
+  const blocked = cool.remainingMs > 0 && cool.until !== skipUntil;
+  if (waiting !== blocked) setWaiting(blocked); // adjust during render
+
+  if (result) return <SubmitResult item={result} mine={mine} onAgain={() => { setResult(null); setMarks({}); setChecked([false, false, false]); setNote(''); }} />;
+  if (blocked) return <CooldownGate mine={mine} remainingMs={cool.remainingMs} onSkip={() => setSkipUntil(cool.until)} />;
+
+  if (loading) {
+    return <Gate icon={Flag} title="Loading SPHEREx images…" text="The first look at a new patch of sky can take a minute or two. This page fills in as soon as the images arrive." />;
+  }
+  if (error) {
+    return <Gate icon={Flag} title="This field couldn’t load" text={error}><Button variant="primary" onClick={() => navigate('/')}>Open Explore</Button></Gate>;
+  }
+  if (!field || included.length < 2) {
+    return <Gate icon={Flag} title="Pick a field first" text="Open a field in Explore with at least two snapshots ticked, then come back to flag what you found."><Button variant="primary" onClick={() => navigate('/')}>Open Explore</Button></Gate>;
+  }
+
+  const ready = marks[ea] && marks[eb] && checked.every(Boolean);
+  const submit = () => {
+    const r = vet({ marks: [{ epoch: ea, ...marks[ea] }, { epoch: eb, ...marks[eb] }], field, preset, note });
+    const item = {
+      id: uid(), code: `SX-${String(Math.floor(Math.random() * 9000) + 1000)}`, at: new Date().toISOString(),
+      userId: user.id, by: user.name, fieldName: preset?.name ?? 'Custom field', targetId: v.targetId, ra: v.ra, dec: v.dec, fov: v.fov,
+      arrayIdx: v.arrayIdx, epochs: [ea, eb], marks: [{ epoch: ea, ...marks[ea] }, { epoch: eb, ...marks[eb] }],
+      note, ...r, status: r.outcome === 'candidate' ? 'in-review' : 'auto-resolved',
+      // Real data can’t be rebuilt later like demo fields, so keep the reviewer’s cut-outs.
+      ...(field.live ? { live: true, stamps: reviewStamps(field, ea, eb, marks) } : {}),
+    };
+    add(item);
+    setResult(item);
+    // Points only for relevant finds, so submitting noise earns nothing.
+    if (item.outcome === 'artefact') toast('This one didn’t pass the checks, so your reputation dropped.', 'info');
+    else { addPoints(2, `Submission ${item.code}`); toast('+2 points for your submission.', 'good'); }
   };
-
-  useEffect(() => {
-    if (!playing || view === 'diff') return undefined;
-    const id = setInterval(() => {
-      if (view === 'flip') setFrame((f) => (f + 1) % field.frames.length);
-      else setBlinkB((b) => !b);
-    }, view === 'flip' ? 230 : 700);
-    return () => clearInterval(id);
-  }, [playing, view, field.frames.length]);
-
-  const track = useMemo(() => {
-    if (object.kind === 'asteroid') return [0, 1, 2].map((x) => field.posAt(object.astEpoch, x));
-    return epochs.map((_, e) => field.posAt(e));
-  }, [field, object, epochs]);
-
-  const misses = guesses.filter((g) => !g.ok).length;
-  const lastE = epochs.length - 1;
-
-  const finish = (won, dist, missCount) => {
-    let points = 0, stars = 0;
-    if (won) {
-      points = Math.max(10, Math.round(100 - 40 * (dist / level.tol)) - (hint ? 25 : 0) - 15 * missCount);
-      stars = points >= 85 ? 3 : points >= 60 ? 2 : 1;
-    }
-    setResult({ won, points, stars });
-    setPlaying(false);
-    const prev = useProgress.getState().games[level.id];
-    recordGame(level.id, { points, stars });
-    if (won && user && (!prev || prev.stars < stars)) {
-      const gain = (stars - (prev?.stars ?? 0)) * 2;
-      addPoints(gain, `Training: ${level.preset ? PRESET_BY_ID[level.preset].name : 'bonus'} level`);
-      toast(`+${gain} points for training.`, 'good');
-    }
-  };
-
-  const onPick = (x, y) => {
-    if (result) return;
-    const d = Math.min(...track.map(([px, py]) => Math.hypot(px - x, py - y)));
-    const invisible = object.flux[arrayIdx - 1] < 2;
-    if (d <= level.tol && !invisible) {
-      setGuesses((g) => [...g, { x, y, ok: true }]);
-      setFeedback({ tone: 'good', text: 'Found it. The rings show where it was in each snapshot.' });
-      finish(true, d, misses);
-      return;
-    }
-    const ray = field.cosmicHits.find((c) => Math.hypot(c.x + 0.5 - x, c.y + 0.5 - y) < 2.2);
-    const next = [...guesses, { x, y, ok: false }];
-    setGuesses(next);
-    if (d <= level.tol && invisible) setFeedback({ tone: 'warn', text: 'There’s nothing visible there in this array. Something might glow at a longer wavelength…' });
-    else if (ray) setFeedback({ tone: 'info', text: 'That flash appears in one exposure only: a cosmic-ray hit on the detector, not a real object.' });
-    else if (level.change) setFeedback({ tone: 'warn', text: 'That star holds steady. Look for one that brightens or fades.' });
-    else setFeedback({ tone: 'warn', text: 'Nothing is moving there. Try Blink or Difference.' });
-    if (next.filter((g) => !g.ok).length >= 3) finish(false, null, 3);
-  };
-
-  const draw = useCallback((ctx, W, H) => {
-    const { nx, ny } = field;
-    const sx = W / nx, sy = H / ny;
-    const opts = { vmin: field.vmin, vmax: field.vmax, lut: lutForArray(arrayIdx), smooth: false };
-    if (view === 'flip') paintImage(ctx, W, H, field.frames[frame].data, nx, ny, opts);
-    else if (view === 'blink') paintImage(ctx, W, H, field.stacks[blinkB ? lastE : 0], nx, ny, opts);
-    else paintDiff(ctx, W, H, field.stacks[0], field.stacks[lastE], nx, ny, { smooth: false });
-
-    if (hint && !result) {
-      const mx = track.reduce((s, p) => s + p[0], 0) / track.length, my = track.reduce((s, p) => s + p[1], 0) / track.length;
-      ctx.save(); ctx.setLineDash([6, 5]); ctx.strokeStyle = 'rgba(69,211,184,.85)'; ctx.lineWidth = 1.5;
-      ctx.strokeRect((mx - 8 + (level.seed % 3)) * sx, (my - 6) * sy, 16 * sx, 12 * sy); ctx.restore();
-    }
-    for (const g of guesses) {
-      ctx.save(); ctx.lineWidth = 2.5;
-      if (g.ok) { ctx.strokeStyle = '#4ade80'; ctx.beginPath(); ctx.arc(g.x * sx, g.y * sy, 18, 0, Math.PI * 2); ctx.stroke(); }
-      else {
-        ctx.strokeStyle = '#f87171'; const r = 8;
-        ctx.beginPath(); ctx.moveTo(g.x * sx - r, g.y * sy - r); ctx.lineTo(g.x * sx + r, g.y * sy + r);
-        ctx.moveTo(g.x * sx + r, g.y * sy - r); ctx.lineTo(g.x * sx - r, g.y * sy + r); ctx.stroke();
-      }
-      ctx.restore();
-    }
-    if (result) {
-      ctx.save(); ctx.lineWidth = 2;
-      track.forEach(([x, y], i) => {
-        const f = track.length > 1 ? i / (track.length - 1) : 1;
-        ctx.strokeStyle = `rgb(${Math.round(69 + 186 * f)},${Math.round(211 - 34 * f)},${Math.round(184 - 92 * f)})`;
-        ctx.beginPath(); ctx.arc(x * sx, y * sy, 12, 0, Math.PI * 2); ctx.stroke();
-      });
-      ctx.restore();
-    }
-    drawCompass(ctx, W, H, 5, nx);
-  }, [field, view, frame, blinkB, lastE, arrayIdx, hint, result, guesses, track, level.seed]);
-
-  const f = field.frames[frame];
-  const hud = view === 'flip'
-    ? `${epochs[f.epoch].label} · ${formatDate(epochs[f.epoch].date)} · exposure ${f.exp + 1}/3`
-    : view === 'blink' ? `${epochs[blinkB ? lastE : 0].label} · ${formatDate(epochs[blinkB ? lastE : 0].date)}`
-      : `${epochs[lastE].label} − ${epochs[0].label}`;
-  const preset = level.preset ? PRESET_BY_ID[level.preset] : null;
-  const facts = preset ? preset.facts : level.facts;
-  const shift = object.kind === 'motion' ? Math.hypot(track[track.length - 1][0] - track[0][0], track[track.length - 1][1] - track[0][1]) * PX : null;
 
   return (
-    <div className="mx-auto max-w-[1440px] px-[max(16px,env(safe-area-inset-left,0px))] py-10 lg:px-10">
-      <Kicker>Training game</Kicker>
-      <h1 className="mt-4 text-4xl font-medium tracking-tight">{level.change ? 'Did it change?' : 'Spot the mover'}</h1>
-      <p className="mt-2 max-w-2xl text-muted">Simulated SPHEREx fields built around each real object’s motion and timing. Three tries per level.</p>
-
-      <div className="mt-6 flex gap-2 overflow-x-auto pb-1">
-        {LEVELS.map((l, i) => (
-          <button key={l.id} type="button" onClick={() => loadLevel(l.id)} aria-current={l.id === levelId}
-            className={cn('min-w-40 rounded-lg border px-4 py-3 text-left transition-colors', l.id === levelId ? 'border-accent bg-ink-800' : 'border-line bg-ink-900 hover:border-line-strong')}>
-            <span className="label-mono block text-faint">{String(i + 1).padStart(2, '0')} · {l.change ? 'variable' : l.preset ? 'mover' : 'bonus'}</span>
-            <span className="mt-1 block font-medium">{l.preset ? PRESET_BY_ID[l.preset].name : 'Unknown asteroid'}</span>
-            <span className="text-sm text-amber">{'★'.repeat(games[l.id]?.stars ?? 0)}<span className="text-line-strong">{'★'.repeat(3 - (games[l.id]?.stars ?? 0))}</span></span>
-          </button>
-        ))}
+    <div className="mx-auto max-w-[1280px] px-[max(16px,env(safe-area-inset-left,0px))] py-10 lg:px-10">
+      <Kicker>Play · submit a discovery</Kicker>
+      <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-start">
+        <div>
+          <h1 className="text-4xl font-medium tracking-tight">Flag a candidate</h1>
+          <p className="mt-2 max-w-2xl text-muted">Help sift the SPHEREx data. Find something in Explore, then mark it in the first and last snapshots. Automatic checks run straight away; promising <Term id="candidate">candidates</Term> go to scientists.</p>
+          <p className="mt-3 max-w-2xl text-sm text-muted">Relevant finds raise your reputation. Submissions that fail the checks or that scientists reject lower it, which pushes your candidates down the review queue and makes you wait longer between submissions.</p>
+        </div>
+        <ReputationCard mine={mine} showHistory={false} className="p-5" />
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="min-w-0">
-          <div className="overflow-hidden rounded-xl border border-line bg-ink-950">
-            <SkyCanvas nx={field.nx} ny={field.ny} draw={draw} onPick={onPick} label="Simulated SPHEREx field. Click the object you think is moving or changing.">
-              <p className="label-mono absolute top-3 left-4 text-fg/90">{hud}</p>
-              {feedback && (
-                <p className={cn('absolute inset-x-4 bottom-4 rounded-md border bg-ink-900/95 px-4 py-2.5 text-sm',
-                  feedback.tone === 'good' ? 'border-good/50' : feedback.tone === 'warn' ? 'border-amber/50' : 'border-teal/50')}>{feedback.text}</p>
-              )}
-            </SkyCanvas>
-          </div>
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <Button variant="outline" size="icon" aria-label={playing ? 'Pause' : 'Play'} disabled={view === 'diff'} onClick={() => setPlaying(!playing)}>
-              {playing ? <Pause className="size-4" /> : <PlayIcon className="size-4" />}
-            </Button>
-            {view === 'flip' && (
-              <input type="range" min={0} max={field.frames.length - 1} value={frame} aria-label="Exposure"
-                onChange={(e) => { setPlaying(false); setFrame(Number(e.target.value)); }} className="min-w-32 flex-1" />
-            )}
-            <Segmented value={view} onChange={(x) => { setView(x); if (x === 'diff') setPlaying(false); }} label="View" options={[
-              { value: 'flip', label: 'Flipbook' }, { value: 'blink', label: 'Blink' }, { value: 'diff', label: 'Difference' },
-            ]} />
-            {level.arrays.length > 1 && (
-              <Segmented value={arrayIdx} onChange={setArrayIdx} label="Detector array" options={level.arrays.map((a) => ({
-                value: a, label: `Array ${a} · ${ARRAYS[a - 1].lo}–${ARRAYS[a - 1].hi} µm`,
-              }))} />
-            )}
-          </div>
-          {view === 'diff' && <p className="mt-3 text-sm text-muted"><span className="text-teal">Teal</span> = was here, <span className="text-amber">amber</span> = now here. Fixed stars cancel out.</p>}
-        </div>
+      <Panel className="mt-6 flex flex-wrap gap-x-8 gap-y-2 p-5 text-sm">
+        <span><span className="label-mono text-faint">Field </span>{preset?.name ?? 'Custom field'}</span>
+        <span className="tabular"><span className="label-mono text-faint">Position </span>{formatRA(raDeg)} {formatDec(decDeg)}</span>
+        <span><span className="label-mono text-faint">Array </span>{v.arrayIdx}</span>
+        <span><span className="label-mono text-faint">Snapshots </span>{included.length} ticked</span>
+        <button type="button" onClick={() => navigate('/')} className="ml-auto text-accent-fg hover:text-fg">Change field</button>
+      </Panel>
 
-        <Panel className="flex flex-col gap-4 self-start p-6" aria-live="polite">
-          <div className="flex flex-wrap gap-2">
-            <Chip tone={level.change ? 'teal' : 'accent'}>{level.change ? 'Changing brightness' : level.preset ? 'Moving object' : 'Bonus · fast mover'}</Chip>
-            <Chip>{'●'.repeat(level.difficulty)}{'○'.repeat(3 - level.difficulty)}</Chip>
-          </div>
-          <h2 className="text-2xl font-medium">{preset ? preset.name : 'Unknown asteroid'}</h2>
-          <p className="text-sm">{level.mission}</p>
-          <div className="flex items-center gap-2 text-sm text-muted">
-            Tries left
-            <span className="flex gap-1.5">{[0, 1, 2].map((i) => <span key={i} className={cn('size-3 rounded-full border-2', i < misses ? 'border-line-strong bg-line-strong' : 'border-accent')} />)}</span>
-          </div>
-          {hint && !result && <p className="border-l-2 border-teal pl-3 text-sm">{level.hint}</p>}
-          {!result && (
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" disabled={hint} onClick={() => setHint(true)}><Lightbulb className="size-4" />Hint (−25)</Button>
-              <Button size="sm" variant="ghost" onClick={() => { setFeedback(null); finish(false, null, misses); }}><Eye className="size-4" />Show me</Button>
+      <h2 className="label-mono mt-8 mb-3 text-muted">1 · Click the object in each snapshot</h2>
+      <div className="grid gap-4 md:grid-cols-2">
+        {[ea, eb].map((e, k) => (
+          <MarkCanvas key={e} field={field} epoch={e} mark={marks[e]} other={marks[k ? ea : eb]}
+            onMark={(m) => setMarks((s) => ({ ...s, [e]: m }))} title={`${field.epochs[e].label} · ${formatDate(field.epochs[e].date)}`} />
+        ))}
+      </div>
+      {(marks[ea] || marks[eb]) && <button type="button" onClick={() => setMarks({})} className="mt-2 text-sm text-muted hover:text-fg">Clear marks</button>}
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <div>
+          <h2 className="label-mono mb-3 text-muted">2 · Quick self-check</h2>
+          <Panel className="divide-y divide-line">
+            {CHECKS.map((c, i) => (
+              <label key={c} htmlFor={`chk-${i}`} className="flex cursor-pointer items-start gap-3 px-5 py-4 text-sm">
+                <input id={`chk-${i}`} type="checkbox" checked={checked[i]} onChange={() => setChecked((s) => s.map((x, k) => (k === i ? !x : x)))} className="mt-0.5 size-4 accent-[var(--color-accent)]" />
+                {c}
+              </label>
+            ))}
+          </Panel>
+        </div>
+        <div>
+          <h2 className="label-mono mb-3 text-muted">3 · Note for scientists (optional)</h2>
+          <textarea id="sub-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={280} rows={5}
+            placeholder="What did you notice? e.g. faint, moves south-west, brighter in array 6"
+            className="w-full rounded-lg border border-line-strong bg-ink-900 p-4 text-sm outline-none focus:border-accent" />
+          <p className="mt-1 flex justify-between text-xs text-faint"><span>Notes are checked automatically. Don’t include contact details.</span><span className="tabular">{note.length}/280</span></p>
+        </div>
+      </div>
+
+      <div className="mt-8 flex flex-wrap items-center gap-4">
+        <Button variant="primary" size="lg" disabled={!ready} onClick={submit}><Send className="size-4" />Submit for checks</Button>
+        {!ready && <p className="text-sm text-muted">Mark both snapshots and tick all three checks to submit.</p>}
+      </div>
+    </div>
+  );
+}
+
+function MarkCanvas({ field, epoch, mark, other, onMark, title }) {
+  const draw = useCallback((ctx, W, H) => {
+    const { nx, ny } = field;
+    paintImage(ctx, W, H, field.stacks[epoch], nx, ny, { vmin: field.vmin, vmax: field.vmax, lut: lutForArray(field.arrayIdx), smooth: false });
+    const sx = W / nx, sy = H / ny;
+    if (other) {
+      ctx.save(); ctx.strokeStyle = 'rgba(140,147,168,.6)'; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.arc(other.x * sx, other.y * sy, 12, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    }
+    if (mark) {
+      ctx.save(); ctx.strokeStyle = '#ffb15c'; ctx.lineWidth = 2;
+      const r = 14, g = 5, x = mark.x * sx, y = mark.y * sy;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.moveTo(x - r - 6, y); ctx.lineTo(x - g, y); ctx.moveTo(x + g, y); ctx.lineTo(x + r + 6, y);
+      ctx.stroke(); ctx.restore();
+    }
+  }, [field, epoch, mark, other]);
+  return (
+    <div className="overflow-hidden rounded-xl border border-line bg-ink-950">
+      <p className="label-mono flex justify-between border-b border-line px-4 py-2.5 text-muted"><span>{title}</span><span className={mark ? 'text-amber' : ''}>{mark ? 'Marked' : 'Click to mark'}</span></p>
+      <SkyCanvas nx={field.nx} ny={field.ny} draw={draw} onPick={(x, y) => onMark({ x, y })} label={`${title}: click the object to mark it`} />
+    </div>
+  );
+}
+
+const OUTCOME = {
+  candidate: { tone: 'good', title: 'Sent to the review queue', text: 'It passed the automatic checks. A scientist will review it; you’ll see their verdict on your profile.' },
+  known: { tone: 'accent', title: 'Already known', text: 'Nice spotting: this matches a catalogued object, so it doesn’t need review. That’s exactly what a real mover looks like.' },
+  artefact: { tone: 'warn', title: 'Probably not a moving object', text: 'The checks didn’t find a consistent moving source at your marks. Look at the details below and try again.' },
+};
+
+function SubmitResult({ item, mine, onAgain }) {
+  const navigate = useNavigate();
+  const o = OUTCOME[item.outcome];
+  const { score, tier } = reputationFor(mine);
+  const before = reputationFor(mine.filter((m) => m.id !== item.id)).score;
+  return (
+    <div className="mx-auto max-w-3xl px-[max(16px,env(safe-area-inset-left,0px))] py-12">
+      <Kicker>{item.code}</Kicker>
+      <h1 className="mt-4 text-4xl font-medium tracking-tight">{o.title}</h1>
+      <p className="mt-2 text-muted">{o.text}</p>
+      <Panel className="mt-8 divide-y divide-line">
+        {item.checks.map((c) => {
+          const Icon = c.status === 'new' || c.status === 'known' || c.status === 'fixed' ? CircleHelp : c.ok ? CircleCheck : CircleX;
+          return (
+            <div key={c.id} className="flex gap-4 px-5 py-4">
+              <Icon className={cn('mt-0.5 size-5 shrink-0', c.status ? 'text-accent-fg' : c.ok ? 'text-good' : 'text-bad')} />
+              <div><p className="font-medium">{c.label}</p><p className="text-sm text-muted">{c.detail}</p></div>
             </div>
-          )}
-          {result && (
-            <div className="grid gap-3 border-t border-line pt-4">
-              <p className={cn('text-2xl font-medium', result.won ? 'text-good' : 'text-bad')}>{result.won ? `Found it · +${result.points}` : 'Here’s where it was'}</p>
-              <p className="text-xl tracking-widest text-amber">{'★'.repeat(result.stars)}<span className="text-line-strong">{'★'.repeat(3 - result.stars)}</span></p>
-              {shift != null && <p className="label-mono text-muted normal-case tracking-normal">Moved {shift.toFixed(1)}″ ({(shift / PX).toFixed(1)} px) from {epochs[0].label} to {epochs[lastE].label}</p>}
-              <ul className="grid gap-1.5 text-sm">{facts.map((x) => <li key={x} className="flex gap-2"><span className="mt-2 size-1.5 shrink-0 rounded-sm bg-accent" />{x}</li>)}</ul>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="primary" onClick={() => loadLevel(LEVELS[(LEVELS.indexOf(level) + 1) % LEVELS.length].id)}>Next level<ArrowRight className="size-4" /></Button>
-                <Button variant="outline" onClick={() => loadLevel(level.id)}><RotateCcw className="size-4" />Play again</Button>
-              </div>
-            </div>
-          )}
-        </Panel>
+          );
+        })}
+        <div className="px-5 py-4">
+          <div className="flex items-center justify-between text-sm"><span>AI priority score</span><span className="tabular font-medium">{item.score}/100</span></div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink-700"><div className="h-full rounded-full bg-accent" style={{ width: `${item.score}%` }} /></div>
+          <p className="mt-2 text-xs text-muted">Ranks the review queue. Scientists can always view the queue unranked too.</p>
+        </div>
+      </Panel>
+      <div className="mt-6 flex flex-wrap gap-2">
+        <Chip tone={o.tone}>{item.status === 'in-review' ? 'In review' : 'Resolved automatically'}</Chip>
+        {item.outcome !== 'artefact' && <Chip tone="accent">+2 points</Chip>}
+        <Chip tone={score >= before ? 'good' : 'bad'}>Reputation {score >= before ? '+' : ''}{score - before} · {tier.name}</Chip>
+        <Chip>Next submission in {formatWait(tier.cooldownMin * 60e3)}</Chip>
+      </div>
+      <div className="mt-8 flex flex-wrap gap-2">
+        <Button variant="primary" onClick={() => navigate('/profile')}>View my submissions<ArrowRight className="size-4" /></Button>
+        <Button variant="outline" onClick={() => { onAgain(); navigate('/'); }}><RotateCcw className="size-4" />Find another</Button>
       </div>
     </div>
   );

@@ -480,7 +480,7 @@ function ModeBar({ expert, hasField }) {
       {hasField && (
         <div className="ml-auto flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => setAssistant(true)}><Sparkles className="size-4 text-accent-fg" />Ask about this view</Button>
-          <Button variant="subtle" size="sm" onClick={() => navigate('/submit')}><Flag className="size-4 text-amber" />Flag a candidate</Button>
+          <Button variant="subtle" size="sm" onClick={() => navigate('/play')}><Flag className="size-4 text-amber" />Flag a candidate</Button>
         </div>
       )}
     </div>

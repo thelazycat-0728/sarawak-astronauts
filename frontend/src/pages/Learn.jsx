@@ -33,7 +33,7 @@ export default function Learn() {
       <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
         <div className="max-w-2xl">
           <h1 className="text-4xl font-medium tracking-tight text-balance">Learn to spot what moves</h1>
-          <p className="mt-3 text-muted">Short lessons on the real test targets, then two training games. Finish three lessons and two game levels to unlock submitting findings to scientists.</p>
+          <p className="mt-3 text-muted">Short lessons on the real test targets, then two training games. Finish three lessons and two game levels to unlock submitting discoveries in Play.</p>
         </div>
         <Panel className="w-full max-w-sm p-5">
           <div className="flex items-center justify-between text-sm"><span>Your training</span><span className="tabular text-muted">{done}/{LESSONS.length} lessons · {gamesDone}/{LEVELS.length} levels</span></div>
@@ -92,7 +92,7 @@ export default function Learn() {
                 return <Chip key={l.id} tone={best?.stars ? 'accent' : 'default'}>{l.preset ? PRESET_BY_ID[l.preset].name : 'Bonus'} {best?.stars ? '★'.repeat(best.stars) : ''}</Chip>;
               })}
             </div>
-            <Button variant="primary" className="mt-auto self-start" onClick={() => navigate(`/play?level=${g.levels[0].id}`)}>Play<ArrowRight className="size-4" /></Button>
+            <Button variant="primary" className="mt-auto self-start" onClick={() => navigate(`/learn/game?level=${g.levels[0].id}`)}>Start game<ArrowRight className="size-4" /></Button>
           </Panel>
         ))}
       </div>

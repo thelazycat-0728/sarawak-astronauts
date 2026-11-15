@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, MemoryRouter, Routes, Route } from 'react-router';
+import { BrowserRouter, MemoryRouter, Routes, Route, Navigate } from 'react-router';
 import { Header, Footer } from './components/Header';
 import { SignInDialog, Assistant } from './components/Overlays';
 import { useSupabaseSession } from './lib/supabase';
@@ -8,8 +8,8 @@ import Explore from './pages/Explore';
 
 const Learn = lazy(() => import('./pages/Learn'));
 const Play = lazy(() => import('./pages/Play'));
+const TrainingGame = lazy(() => import('./pages/TrainingGame'));
 const TimeMachine = lazy(() => import('./pages/TimeMachine'));
-const Submit = lazy(() => import('./pages/Submit'));
 const Review = lazy(() => import('./pages/Review'));
 const Profile = lazy(() => import('./pages/Profile'));
 
@@ -28,9 +28,10 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Explore />} />
                 <Route path="/learn" element={<Learn />} />
+                <Route path="/learn/game" element={<TrainingGame />} />
                 <Route path="/play" element={<Play />} />
                 <Route path="/time-machine" element={<TimeMachine />} />
-                <Route path="/submit" element={<Submit />} />
+                <Route path="/submit" element={<Navigate to="/play" replace />} />
                 <Route path="/review" element={<Review />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="*" element={<Explore />} />

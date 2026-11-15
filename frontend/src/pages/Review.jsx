@@ -6,6 +6,7 @@ import { useAuth, useUi, useSubmissions } from '../store';
 import { DEMO_QUEUE, SURVEYS, customObject } from '../lib/data';
 import { simulate, crop, paintImage, paintDiff, LUTS } from '../lib/sim';
 import { demoField } from '../lib/api';
+import { reputationFor, reviewPriority, authorKey, tierFor } from '../lib/reputation';
 import { parseRA, parseDec, cn } from '../lib/util';
 
 const VERDICTS = [
@@ -53,8 +54,10 @@ export default function Review() {
   const [now] = useState(() => Date.now()); // fixed for this visit, so ages don't shift between renders
 
   const queue = useMemo(() => {
+    // Each submitter's reputation, from all of their submissions.
+    const repOf = (it) => reputationFor(items.filter((x) => authorKey(x) === authorKey(it))).score;
     const mine = items.filter((it) => it.outcome === 'candidate').map((it) => ({
-      id: it.id, code: it.code, by: it.by, agreed: 1, ai: it.score, ageH: Math.max(0, Math.round((now - Date.parse(it.at)) / 36e5)),
+      id: it.id, code: it.code, by: it.by, agreed: 1, ai: it.score, rep: repOf(it), ageH: Math.max(0, Math.round((now - Date.parse(it.at)) / 36e5)),
       note: it.note, hiddenNote: it.noteHidden, user: true, verdict: it.verdict,
       signals: {
         motion: it.checks.find((c) => c.id === 'motion')?.detail, snr: +(it.snr ?? 0).toFixed(1), flags: 'Clear',
@@ -63,8 +66,10 @@ export default function Review() {
       build: () => userCandidate(it), stamps: it.stamps, fieldName: it.fieldName,
     }));
     const demo = DEMO_QUEUE.map((d) => ({ ...d, verdict: demoVerdicts[d.id], build: () => demoCandidate(d) }));
-    const all = [...mine, ...demo].filter((q) => (tab === 'pending' ? !q.verdict : q.verdict));
-    return all.sort((x, y) => (sort === 'ai' ? y.ai - x.ai : x.ageH - y.ageH));
+    // Low-reputation submitters' candidates sink in the ranked queue.
+    const all = [...mine, ...demo].map((q) => ({ ...q, priority: reviewPriority(q.ai, q.rep) }))
+      .filter((q) => (tab === 'pending' ? !q.verdict : q.verdict));
+    return all.sort((x, y) => (sort === 'ai' ? y.priority - x.priority : x.ageH - y.ageH));
   }, [items, demoVerdicts, sort, tab, now]);
 
   if (!user || user.role !== 'scientist') {
@@ -89,11 +94,11 @@ export default function Review() {
       <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-4xl font-medium tracking-tight">Review queue</h1>
-          <p className="mt-2 text-muted">{pending} candidates waiting. Each has passed automatic quality, motion and catalogue checks.</p>
+          <p className="mt-2 text-muted">{pending} candidates waiting. Each has passed automatic quality, motion and catalogue checks. Ranked by AI score weighted by the submitter’s reputation.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Segmented value={tab} onChange={setTab} label="Queue" options={[{ value: 'pending', label: 'Pending' }, { value: 'done', label: 'Reviewed' }]} />
-          <Segmented value={sort} onChange={setSort} label="Order" options={[{ value: 'ai', label: 'AI priority' }, { value: 'new', label: 'Newest (unranked)' }]} />
+          <Segmented value={sort} onChange={setSort} label="Order" options={[{ value: 'ai', label: 'Priority' }, { value: 'new', label: 'Newest (unranked)' }]} />
         </div>
       </div>
       <div className="mt-6 grid gap-4">
@@ -145,7 +150,8 @@ function Candidate({ q }) {
   };
   const undo = () => (q.user ? review(q.id, undefined) : reviewDemo(q.id, undefined));
   const verdict = VERDICTS.find((x) => x.id === q.verdict);
-  const scoreTone = q.ai >= 70 ? 'bg-good' : q.ai >= 45 ? 'bg-amber' : 'bg-faint';
+  const scoreTone = q.priority >= 70 ? 'bg-good' : q.priority >= 45 ? 'bg-amber' : 'bg-faint';
+  const tier = tierFor(q.rep);
 
   return (
     <Panel className="grid gap-6 p-5 lg:grid-cols-[360px_minmax(0,1fr)_220px]">
@@ -167,6 +173,7 @@ function Candidate({ q }) {
           <Chip tone="teal">{q.signals.catalogue}</Chip>
           <Chip>{q.signals.asteroid}</Chip>
           <Chip><Users className="size-3" />{q.agreed} independent flag{q.agreed > 1 ? 's' : ''}</Chip>
+          <Chip tone={tier.tone}>Submitter reputation {q.rep} · {tier.name}</Chip>
         </div>
         <div className="mt-4 text-sm">
           {q.hiddenNote && !showNote ? (
@@ -178,8 +185,9 @@ function Candidate({ q }) {
       </div>
       <div className="flex flex-col gap-3">
         <div>
-          <div className="flex items-baseline justify-between text-sm"><span className="text-muted">AI priority</span><span className="text-xl font-medium tabular">{q.ai}</span></div>
-          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-ink-700"><div className={cn('h-full rounded-full', scoreTone)} style={{ width: `${q.ai}%` }} /></div>
+          <div className="flex items-baseline justify-between text-sm"><span className="text-muted">Priority</span><span className="text-xl font-medium tabular">{q.priority}</span></div>
+          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-ink-700"><div className={cn('h-full rounded-full', scoreTone)} style={{ width: `${q.priority}%` }} /></div>
+          <p className="mt-1 text-xs text-faint">AI score {q.ai} × {tier.weight} for {tier.name.toLowerCase()} reputation</p>
         </div>
         {verdict ? (
           <div className="flex flex-wrap items-center gap-2">

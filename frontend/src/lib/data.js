@@ -183,20 +183,21 @@ export function rankFor(points = 0) {
 }
 
 // ---------------------------------------------------------------- demo review queue
+// rep = the submitter's reputation (0–100, lib/reputation.js), which scales queue priority.
 export const DEMO_QUEUE = [
-  { id: 'd1', code: 'SX-0142', by: 'nurul.a', agreed: 5, ai: 91, ageH: 3, seed: 9001, kind: 'mover',
+  { id: 'd1', code: 'SX-0142', by: 'nurul.a', rep: 84, agreed: 5, ai: 91, ageH: 3, seed: 9001, kind: 'mover',
     note: 'Faint dot moving south-west in every survey. Not in the Gaia overlay.',
     signals: { motion: 'Consistent across 4 snapshots', snr: 14.2, flags: 'Clear', catalogue: 'No match (Gaia, CatWISE)', asteroid: 'No known asteroid' } },
-  { id: 'd2', code: 'SX-0139', by: 'kelvin_t', agreed: 3, ai: 74, ageH: 9, seed: 9002, kind: 'mover',
+  { id: 'd2', code: 'SX-0139', by: 'kelvin_t', rep: 61, agreed: 3, ai: 74, ageH: 9, seed: 9002, kind: 'mover',
     note: 'Moves a little each survey, very red. Brighter in array 6.',
     signals: { motion: 'Consistent across 3 snapshots', snr: 7.9, flags: 'Clear', catalogue: 'No match (Gaia, CatWISE)', asteroid: 'No known asteroid' } },
-  { id: 'd3', code: 'SX-0131', by: 'aisyah.r', agreed: 2, ai: 38, ageH: 20, seed: 9003, kind: 'flash',
+  { id: 'd3', code: 'SX-0131', by: 'aisyah.r', rep: 38, agreed: 2, ai: 38, ageH: 20, seed: 9003, kind: 'flash',
     note: 'Bright spot that appears in only one snapshot.',
     signals: { motion: 'Seen in 1 snapshot only', snr: 11.0, flags: 'TRANSIENT near position', catalogue: 'No match', asteroid: 'No known asteroid' } },
-  { id: 'd4', code: 'SX-0127', by: 'danial99', agreed: 1, ai: 22, ageH: 30, seed: 9004, kind: 'mover', hiddenNote: true,
+  { id: 'd4', code: 'SX-0127', by: 'danial99', rep: 9, agreed: 1, ai: 22, ageH: 30, seed: 9004, kind: 'mover', hiddenNote: true,
     note: 'contact me at 012-345 6789 for details',
     signals: { motion: 'Inconsistent direction', snr: 4.1, flags: 'HALO nearby', catalogue: 'No match', asteroid: 'No known asteroid' } },
-  { id: 'd5', code: 'SX-0120', by: 'mei.ling', agreed: 4, ai: 57, ageH: 44, seed: 9005, kind: 'mover',
+  { id: 'd5', code: 'SX-0120', by: 'mei.ling', rep: 52, agreed: 4, ai: 57, ageH: 44, seed: 9005, kind: 'mover',
     note: 'Possible slow mover near a bright star.',
     signals: { motion: 'Consistent across 4 snapshots', snr: 6.3, flags: 'Clear', catalogue: 'No match (Gaia, CatWISE)', asteroid: 'No known asteroid' } },
 ];
