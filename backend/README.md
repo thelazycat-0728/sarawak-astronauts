@@ -37,7 +37,9 @@ Then open <http://localhost:8000/docs> or
 <http://localhost:8000/epochs?ra=269.4464&dec=4.7668>.
 
 Optional environment variables: `DATA_MODE` (`mock`, the default, or `irsa`),
-`CORS_ORIGINS` (comma-separated, default `http://localhost:5173`),
+`CORS_ORIGINS` (comma-separated, default `http://localhost:5173`; the Vite dev
+server, `http://localhost:5173` and `http://127.0.0.1:5173`, is always allowed as
+well, so a laptop demo can use the deployed API),
 `CORS_ORIGIN_REGEX` (optional; origins it fully matches are also allowed, used for
 Netlify deploy previews such as `^https://deploy-preview-\d+--<site>\.netlify\.app$`) and
 `CUTOUT_CACHE_DIR` (where cutouts are cached, default `backend/.cache/cutouts/`),
@@ -122,6 +124,10 @@ Limits (all in `app/config.py` unless noted):
   the same 60 s deadline.
 - **Unknown frame ids:** a well-formed id that is not found (404) at a position is
   remembered for 60 s (`frame_not_found_ttl_s`), so repeating it costs no IRSA query.
+- **IRSA retries:** an SIA query that gets HTTP 502, 503 or 504, or loses its
+  connection, is tried up to 3 times in all, waiting 0.5 s and then 1.5 s
+  (`irsa_sia_attempts`, `irsa_sia_retry_delay_s`). IRSA had bursts of 502s on
+  2026-11-15. Timeouts and other errors are not retried.
 - **IRSA responses:** an SIA answer larger than 16 MB is refused as a 502
   (`irsa_sia_max_bytes`). One cutout download attempt is cut off after 60 s
   (`cutout_timeout_s`), even if the server keeps sending bytes slowly.

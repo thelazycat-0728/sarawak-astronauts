@@ -25,6 +25,14 @@ def _no_mode_from_the_environment(monkeypatch):
     monkeypatch.delenv("CORS_ORIGINS", raising=False)
 
 
+@pytest.fixture(autouse=True)
+def _no_sia_retry_sleep(monkeypatch):
+    """SIA retries (app.irsa.sia.fetch_sia) wait between attempts; tests don't."""
+    from app.irsa import sia
+
+    monkeypatch.setattr(sia, "_sleep", lambda _s: None)
+
+
 @pytest.fixture(scope="session")
 def provider() -> MockProvider:
     return MockProvider()
