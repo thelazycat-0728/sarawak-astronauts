@@ -9,7 +9,7 @@ import { cn } from '../lib/util';
 const NAV = [
   { to: '/', label: 'Explore', end: true },
   { to: '/learn', label: 'Learn' },
-  { to: '/play', label: 'Play' },
+  { to: '/discover', label: 'Discover' },
 ];
 
 export function Header() {

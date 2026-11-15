@@ -27,7 +27,7 @@ Browser localStorage           Python API (FastAPI on Render)
 | Need | Technology | Used for |
 | --- | --- | --- |
 | Framework and build | **React + Vite** | Whole app; built to static files in `frontend/dist` |
-| Screens | **React Router** (`react-router` v7) | `/` (Explore), `/learn` (lessons; training games at `/learn/game`), `/play` (submit discoveries; `/submit` redirects here; no submit button for scientists), `/review` (the scientist's **Submissions** tab, shown in the nav slot the dropped time machine had), `/profile` |
+| Screens | **React Router** (`react-router` v7) | `/` (Explore), `/learn` (lessons; training games at `/learn/game`), `/discover` (submit discoveries, formerly Play; `/play` and `/submit` redirect here; only typed or random positions, never the known-object presets: a preset still loaded from Explore leaves Discover empty, and Explore hides **Flag a candidate** on presets; and both Explore and Discover have a **Random sky position** button; no submit button for scientists), `/review` (the scientist's **Submissions** tab, shown in the nav slot the dropped time machine had), `/profile` |
 | Styling and UI components | **Tailwind CSS v4** + **Radix UI** primitives, shadcn-style components in `components/ui.jsx` (`clsx`, `tailwind-merge`), **lucide-react** icons | Consistent controls, dialogs and the "?" tooltips for plain-language labels |
 | Shared state | **Zustand** | Current target, band, selected epochs, Beginner/Expert mode |
 | Shareable views | URL search params | `?target=barnard` or `?ra=…&dec=…`, plus `fov` (3, 6 or 12 arcmin), `array` (1–6) and `mode` (`blink`, `diff`, `stack`), reproduces a view (Level 3 public sharing) |
@@ -87,16 +87,16 @@ Accounts are **hard-coded in the frontend**: there is no database or auth server
 
 | Need | Technology | Notes |
 | --- | --- | --- |
-| Demo accounts | Fixed in `frontend/src/lib/accounts.js` | `volunteer` / `starxplorer` (training already done, can submit in Play) and `scientist` / `starxplorer` (opens the review queue). Shown with one-click buttons in the sign-in window. Public on purpose |
+| Demo accounts | Fixed in `frontend/src/lib/accounts.js` | `volunteer` / `starxplorer` (training already done, can submit in Discover) and `scientist` / `starxplorer` (opens the review queue). Shown with one-click buttons in the sign-in window. Public on purpose |
 | Other accounts | Created in the sign-in window, stored in the browser (`useAuth` in `src/store.js`) | Username + password; only a salted SHA-256 hash of the password is kept |
-| Roles | Fixed per account | `volunteer` submits in Play. `scientist` doesn't get a submit button; instead it gets a **Submissions** tab (`/review`) in the nav slot the time machine used to have. Only scientists can open `/review` |
+| Roles | Fixed per account | `volunteer` submits in Discover. `scientist` doesn't get a submit button; instead it gets a **Submissions** tab (`/review`) in the nav slot the time machine used to have. Only scientists can open `/review` |
 | Submissions, points, reputation | Browser `localStorage` (Zustand `persist`, key `starxplorer-submissions`) | Each account keeps its own points; reputation and the wait between submissions come from the account's own submissions (`lib/reputation.js`) |
 
 ### Same-device workaround for the scientist dashboard
 
 With no shared database, the volunteer and the scientist hand submissions over through the **browser's storage on one device**:
 
-1. A volunteer submits in Play. The submission is saved to `localStorage` in that browser (like a cookie, but with room for the epochs, notes and signals).
+1. A volunteer submits in Discover. The submission is saved to `localStorage` in that browser (like a cookie, but with room for the epochs, notes and signals).
 2. The volunteer signs out and the scientist signs in **on the same device and browser**.
 3. The Submissions tab reads every submission from that storage, whichever account made it, and the scientist's verdict is written back to the same place, so the volunteer's points update when they sign in again.
 

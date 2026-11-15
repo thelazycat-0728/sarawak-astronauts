@@ -6,7 +6,7 @@ import { TargetPanel } from '../components/TargetPanel';
 import { WindowTimeline } from '../components/WindowTimeline';
 import { useViewer, useAuth, useUi, useProgress, useSubmissions } from '../store';
 import { useField, vet } from '../lib/api';
-import { PRESET_BY_ID, LESSONS, LEVELS } from '../lib/data';
+import { LESSONS, LEVELS } from '../lib/data';
 import { paintImage, paintDiff, lutForArray, crop, centroid, drawCompass, PX } from '../lib/sim';
 import { reputationFor, cooldownFor, formatWait } from '../lib/reputation';
 import { ReputationCard } from '../components/Reputation';
@@ -20,11 +20,11 @@ const CHECKS = [
 ];
 
 /**
- * Play: the public submits discoveries found in Explore. Needs an account (to stop spam
+ * Discover (formerly Play): the public submits discoveries found in Explore. Needs an account (to stop spam
  * and credit contributions) and finished training; how often a user can submit and how
  * high their candidates rank for review depend on their reputation (lib/reputation.js).
  */
-export default function Play() {
+export default function Discover() {
   const [params] = useSearchParams();
   const user = useAuth((s) => s.user);
   const setSignIn = useUi((s) => s.setSignIn);
@@ -35,7 +35,7 @@ export default function Play() {
   const trained = Boolean(user?.trained)
     || (LESSONS.filter((l) => lessons[l.id]).length >= 3 && LEVELS.filter((l) => games[l.id]?.stars > 0).length >= 2);
 
-  // Old links to the training games (/play?level=…) now live under Learn.
+  // Old links to the training games (/play?level=…, now /discover?level=…) live under Learn.
   if (params.get('level')) return <Navigate to={`/learn/game?level=${encodeURIComponent(params.get('level'))}`} replace />;
 
   if (!user) {
@@ -132,13 +132,16 @@ function SubmitForm() {
   const addPoints = useAuth((s) => s.addPoints);
   const add = useSubmissions((s) => s.add);
   const toast = useUi((s) => s.toast);
-  const preset = v.targetId ? PRESET_BY_ID[v.targetId] : null;
-  const raDeg = parseRA(v.ra), decDeg = parseDec(v.dec);
-  const { data: field, loading, error, attempt, tryAgain, source } = useField({ targetId: v.targetId, raDeg, decDeg, fov: v.fov, arrayIdx: v.arrayIdx, channel: v.channel });
+  // Discover is for new finds: the known-object presets are never used here. A preset
+  // still loaded from Explore counts as "no field yet" until the user types a position
+  // or picks a random one.
+  const fromPreset = Boolean(v.targetId);
+  const raDeg = fromPreset ? null : parseRA(v.ra), decDeg = fromPreset ? null : parseDec(v.dec);
+  const { data: field, loading, error, attempt, tryAgain } = useField({ targetId: null, raDeg, decDeg, fov: v.fov, arrayIdx: v.arrayIdx, channel: v.channel });
 
   // The comparison window and flagged area belong to one field; a new field starts fresh.
   const n = field?.epochs.length ?? 0;
-  const fieldKey = `${v.targetId}|${v.ra}|${v.dec}|${v.fov}|${v.arrayIdx}|${n}`;
+  const fieldKey = `${fromPreset}|${v.ra}|${v.dec}|${v.fov}|${v.arrayIdx}|${n}`;
   const [selState, setSelState] = useState({ key: null });
   const sel = selState.key === fieldKey ? selState : { key: fieldKey, win: [0, Math.max(1, n - 1)], area: null };
   const setSel = (patch) => setSelState({ ...sel, ...patch, key: fieldKey });
@@ -167,10 +170,10 @@ function SubmitForm() {
 
   const ready = Boolean(marks) && checked.every(Boolean);
   const submit = () => {
-    const r = vet({ marks, field, preset, note });
+    const r = vet({ marks, field, preset: null, note });
     const item = {
       id: uid(), code: `SX-${String(Math.floor(Math.random() * 9000) + 1000)}`, at: new Date().toISOString(),
-      userId: user.id, by: user.name, fieldName: preset?.name ?? 'Custom field', targetId: v.targetId, ra: v.ra, dec: v.dec, fov: v.fov,
+      userId: user.id, by: user.name, fieldName: 'Custom field', targetId: null, ra: v.ra, dec: v.dec, fov: v.fov,
       arrayIdx: v.arrayIdx, epochs: [a, b], area: sel.area, marks,
       note, ...r, status: r.outcome === 'candidate' ? 'in-review' : 'auto-resolved',
       // Real data can’t be rebuilt later like demo fields, so keep the reviewer’s cut-outs.
@@ -185,7 +188,7 @@ function SubmitForm() {
 
   return (
     <div className="mx-auto max-w-[1680px] px-[max(16px,env(safe-area-inset-left,0px))] py-10 lg:px-10">
-      <Kicker>Play · submit a discovery</Kicker>
+      <Kicker>Discover · submit a discovery</Kicker>
       <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-start">
         <div>
           <h1 className="text-4xl font-medium tracking-tight">Flag a candidate</h1>
@@ -196,19 +199,19 @@ function SubmitForm() {
       </div>
 
       <div className="mt-6 grid overflow-hidden rounded-xl border border-line bg-ink-900 lg:grid-cols-[360px_minmax(0,1fr)]">
-        <TargetPanel tip="Slide the window to compare snapshots months apart. A real mover shifts smoothly; a flash in one snapshot only is usually a glitch." />
+        <TargetPanel showPresets={false} tip="Slide the window to compare snapshots months apart. A real mover shifts smoothly; a flash in one snapshot only is usually a glitch." />
         <div className="min-w-0 border-t border-line lg:border-t-0 lg:border-l">
           <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-line px-6 py-4">
             <div className="flex items-start gap-3">
               <StepBadge n={2} />
               <div>
                 <p className="label-mono text-muted">Flag the area</p>
-                <p className="mt-0.5 text-lg font-medium">{preset ? preset.name : 'Custom field'}</p>
+                <p className="mt-0.5 text-lg font-medium">{raDeg != null ? 'Custom field' : 'No field yet'}</p>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
               {raDeg != null && <p className="label-mono text-muted tabular">RA <span className="text-fg/80">{formatRA(raDeg)}</span> · Dec <span className="text-fg/80">{formatDec(decDeg)}</span></p>}
-              {field && <Chip tone={field.live && !field.synthetic ? 'good' : 'warn'}>{field.live && !field.synthetic ? (source === 'preset' ? 'Real SPHEREx frames' : 'Live SPHEREx data') : 'Simulated frames'}</Chip>}
+              {field && <Chip tone={field.live && !field.synthetic ? 'good' : 'warn'}>{field.live && !field.synthetic ? 'Live SPHEREx data' : 'Simulated frames'}</Chip>}
             </div>
           </div>
           {field && n >= 2 ? (
@@ -218,7 +221,7 @@ function SubmitForm() {
             <div className="grid aspect-[5/3] place-items-center p-6 text-center text-sm text-muted">
               {loading ? <p>Loading SPHEREx images{attempt > 1 ? ` (attempt ${attempt})` : ''}… The first look at a new patch of sky can take a minute or two.</p>
                 : error ? <div className="grid justify-items-center gap-3"><p>{error}</p>{tryAgain && <Button variant="outline" onClick={tryAgain}>Try again</Button>}</div>
-                  : field ? 'This field has only one snapshot so far. Pick another patch of sky.' : 'Enter a sky position to begin.'}
+                  : field ? 'This field has only one snapshot so far. Pick another patch of sky.' : 'Type a sky position or press Random sky position, then Explore this field. The known objects from Explore can’t be submitted here: Discover is for new finds.'}
             </div>
           )}
         </div>

@@ -28,16 +28,16 @@ There is no database: accounts are hard-coded in `src/lib/accounts.js` and kept 
 
 | Account | Username | Password | Use it for |
 | --- | --- | --- | --- |
-| Volunteer | `volunteer` | `starxplorer` | Submitting discoveries in Play (training already done) |
+| Volunteer | `volunteer` | `starxplorer` | Submitting discoveries in Discover (training already done) |
 | Scientist | `scientist` | `starxplorer` | The **Submissions** tab (`/review`), which takes the nav slot of the dropped time machine. No submit button |
 
-Anyone can also create an account in the sign-in window; it lives in that browser only. There is no Supabase or other database: submissions are saved in `localStorage` (`starxplorer-submissions`), so the scientist sees the ones made **on the same device and browser**. To demo it, submit as `volunteer`, sign out, and sign in as `scientist`.
+Anyone can also create an account in the sign-in window; it lives in that browser only. There is no Supabase or other database: submissions are saved in `localStorage` (`starxplorer-submissions`), so the scientist sees the ones made **on the same device and browser**. To demo it, sign in as `volunteer`, pick a field in **Discover** (typed or **Random sky position**; the presets aren't used there), flag and submit, then sign out and sign in as `scientist`.
 
 ## Layout
 
 | Path | Contents |
 | --- | --- |
-| `src/pages/` | One file per route: Explore (`/`), Learn, TrainingGame (`/learn/game`), Play (submissions), Review (the scientist's Submissions tab), Profile |
+| `src/pages/` | One file per route: Explore (`/`), Learn, TrainingGame (`/learn/game`), Discover (submissions; `/play` redirects here), Review (the scientist's Submissions tab), Profile |
 | `src/components/` | Header, overlays (sign-in, assistant) and shared UI primitives (`ui.jsx`) |
 | `src/lib/api.js` | Backend access with simulator fallback, and the AI explainer client |
 | `src/lib/data.js` | Detector arrays, presets, glossary, lessons, game levels |

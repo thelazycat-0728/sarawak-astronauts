@@ -27,7 +27,7 @@ export default function Learn() {
       <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
         <div className="max-w-2xl">
           <h1 className="text-4xl font-medium tracking-tight text-balance">Learn to spot what moves</h1>
-          <p className="mt-3 text-muted">Short hands-on lessons on the real test targets, each in a practice window that ticks off every step as you do it, then two training games. Finish three lessons and two game levels to unlock submitting discoveries in Play.</p>
+          <p className="mt-3 text-muted">Short hands-on lessons on the real test targets, each in a practice window that ticks off every step as you do it, then two training games. Finish three lessons and two game levels to unlock submitting discoveries in Discover.</p>
         </div>
         <Panel className="w-full max-w-sm p-5">
           <div className="flex items-center justify-between text-sm"><span>Your training</span><span className="tabular text-muted">{done}/{LESSONS.length} lessons · {gamesDone}/{LEVELS.length} levels</span></div>

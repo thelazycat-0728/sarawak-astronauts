@@ -9,7 +9,7 @@ export const DEMO_ACCOUNTS = [
   {
     id: 'demo-volunteer', username: 'volunteer', password: 'starxplorer', role: 'volunteer',
     name: 'Demo Volunteer', points: 24, trained: true, joined: '2026-11-01T00:00:00.000Z',
-    blurb: 'Training already finished, so you can submit discoveries in Play right away.',
+    blurb: 'Training already finished, so you can submit discoveries in Discover right away.',
   },
   {
     id: 'demo-scientist', username: 'scientist', password: 'starxplorer', role: 'scientist',
