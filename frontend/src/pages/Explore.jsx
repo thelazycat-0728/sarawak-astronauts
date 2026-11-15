@@ -11,7 +11,9 @@ import {
 import { Button, Segmented, Term, Tip, StepBadge, Kicker, Chip, Switch, SkyCanvas, Panel } from '../components/ui';
 import { useViewer, useUi, useProgress } from '../store';
 import { useField } from '../lib/api';
-import { usePresetScience, useLiveLightcurve, drawGaia, GAIA_NOTES, LIGHTCURVE_NOTES, NO_SPECTRUM, SPECTRUM_INFO } from '../lib/science';
+import {
+  usePresetScience, useLiveLightcurve, drawGaia, drawTrack, GAIA_NOTES, LIGHTCURVE_NOTES, NO_SPECTRUM, SPECTRUM_INFO, COADD_NOTES,
+} from '../lib/science';
 import { PRESETS, PRESET_BY_ID, ARRAYS, LESSONS } from '../lib/data';
 import {
   paintImage, paintDiff, LUTS, lutForArray, meanOf, drawReticle, drawCompass, aperture, centroid,
@@ -37,6 +39,10 @@ export default function Explore() {
   });
   // Real spectrum, light curve and Gaia stars shipped with a preset (Expert tools).
   const science = usePresetScience(v.targetId);
+  const motion = science.entry?.motion;
+  const track = useMemo(() => (motion && science.entry
+    ? { ra: science.entry.ra, dec: science.entry.dec, pm: motion.proper_motion_mas_yr, name: science.entry.name }
+    : null), [motion, science.entry]);
 
   // Read a shared link once (?target=… or ?ra=…&dec=…, plus fov, array, mode).
   useEffect(() => {
@@ -110,7 +116,7 @@ export default function Explore() {
           <ViewerHead preset={preset} raDeg={raDeg} decDeg={decDeg} expert={expert} field={field} />
           <Stage
             field={field} loading={loading} attempt={attempt} error={error} tryAgain={tryAgain} preset={preset} cur={cur} base={base} incIdx={incIdx}
-            expert={expert} selection={selection} onPick={expert ? onPick : undefined} gaia={science.gaia}
+            expert={expert} selection={selection} onPick={expert ? onPick : undefined} gaia={science.gaia} track={track}
           />
           {field && <TimelineBar field={field} included={included} cur={cur} />}
           <ModeBar expert={expert} hasField={Boolean(field)} />
@@ -183,7 +189,7 @@ function ViewerHead({ preset, raDeg, decDeg, expert, field }) {
   );
 }
 
-function Stage({ field, loading, attempt, error, tryAgain, preset, cur, base, incIdx, expert, selection, onPick, gaia }) {
+function Stage({ field, loading, attempt, error, tryAgain, preset, cur, base, incIdx, expert, selection, onPick, gaia, track }) {
   const v = useViewer();
   const lessonDone = useProgress((s) => s.lessons);
   const lesson = v.lessonId ? LESSONS.find((l) => l.id === v.lessonId) : null;
@@ -261,6 +267,8 @@ function Stage({ field, loading, attempt, error, tryAgain, preset, cur, base, in
       }
       drawReticle(ctx, x * sx, y * sy, { label: preset.name, sub, r: 13 });
     }
+    // Real frames of a moving preset (Expert): where the catalogue motion puts it on each date.
+    if (expert && v.overlays.track && track && field.centre) drawTrack(ctx, W, H, field, track, incIdx, cur);
 
     // Selected source (Expert).
     if (expert && selection) {
@@ -275,7 +283,7 @@ function Stage({ field, loading, attempt, error, tryAgain, preset, cur, base, in
       }
     }
     drawCompass(ctx, W, H, field.fov, nx, field.pxScale);
-  }, [field, v.mode, v.overlays, cur, base, incIdx, expert, selection, preset, gaia]);
+  }, [field, v.mode, v.overlays, cur, base, incIdx, expert, selection, preset, gaia, track]);
 
   const arr = ARRAYS[v.arrayIdx - 1];
   const lam = v.channel != null ? `λ ${bandLambda(v.arrayIdx, v.channel).toFixed(2)} µm` : `λ ${arr.lo.toFixed(2)}–${arr.hi.toFixed(2)} µm`;
@@ -583,7 +591,9 @@ function Analysis({ field, preset, incIdx, cur, selection, science, picked, onRe
 
         <SpectrumPanel field={field} preset={preset} science={science} arr={arr} simulated={spectrum} />
 
-        <MotionCard field={field} incIdx={incIdx} />
+        <CoaddPanel preset={preset} science={science} arr={arr} />
+
+        <MotionCard field={field} incIdx={incIdx} preset={preset} science={science} />
 
         <Panel className="p-5">
           <CardTitle term="gaia">Catalogue overlays</CardTitle>
@@ -752,11 +762,84 @@ function SpectrumPanel({ field, preset, science, arr, simulated }) {
   );
 }
 
-function MotionCard({ field, incIdx }) {
+/**
+ * One co-add per detector array (presets/index.json `coadds`): the mean of about 20
+ * exposures of one visit, 3′ across, each with its own stretch. Shown side by side,
+ * they show how the target's colour differs from its neighbours'.
+ */
+function CoaddPanel({ preset, science, arr }) {
+  const coadds = science.entry?.coadds;
+  if (!science.ready || (!coadds && !preset)) return null;
+  return (
+    <Panel className="p-5 md:col-span-2 xl:col-span-3">
+      <CardTitle term="band">Co-adds · all six arrays</CardTitle>
+      {coadds ? (
+        <>
+          <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-6">
+            {coadds.map((c) => {
+              const n = Number(c.band.slice(1));
+              return (
+                <figure key={c.band} className="min-w-0">
+                  <div className={cn('relative overflow-hidden rounded-md border bg-ink-950', n === arr.n ? 'border-accent' : 'border-line')}>
+                    <img src={c.url} alt={`${preset?.name ?? 'Target'} in array ${n}, ${c.wavelength_min_um.toFixed(2)}–${c.wavelength_max_um.toFixed(2)} µm`}
+                      width={c.width_px} height={c.height_px} className="block aspect-square w-full" style={{ imageRendering: 'pixelated' }} />
+                    {/* The target sits at the centre; the ring is the 12″ measuring circle (about 4 of the 30 pixels across). */}
+                    <span aria-hidden="true" className="absolute top-1/2 left-1/2 size-[13%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-amber/80" />
+                  </div>
+                  <figcaption className="label-mono mt-1.5 text-[11px] leading-snug text-muted">
+                    <span className={n === arr.n ? 'text-fg' : undefined}>Array {n}</span><br />
+                    {c.wavelength_min_um.toFixed(2)}–{c.wavelength_max_um.toFixed(2)} µm · {c.n_frames} exp.
+                  </figcaption>
+                </figure>
+              );
+            })}
+          </div>
+          <p className="mt-3 text-xs text-muted">
+            Each image averages about 20 exposures from one visit in that array, {coadds[0].fov_arcmin}′ across, north up; the ring is the 12″ circle the spectrum is measured in. {COADD_NOTES[preset?.slug] ?? ''} Every image has its own brightness scale, so compare what is bright, not the grey levels; the spectrum has the numbers.
+          </p>
+        </>
+      ) : (
+        <p className="mt-4 text-sm text-muted">Co-adds are made ahead of time for Epsilon Indi B, RW Aurigae and WISE 0855. Open one of them to compare its colour across all six arrays.</p>
+      )}
+    </Panel>
+  );
+}
+
+/** Direction arrow for a position angle east of north, on a north-up, east-left image. */
+function PaArrow({ deg }) {
+  return <span aria-hidden="true" className="inline-block text-accent-fg" style={{ transform: `rotate(${-deg}deg)` }}>↑</span>;
+}
+
+/** Measured motion of a real preset, from the backend's visit-stack positions (presets/index.json `motion`). */
+function RealMotion({ motion, band }) {
+  const { measured: m, expected: x } = motion;
+  const visible = motion.verdict === 'visible';
+  // When the target is too faint in the stacks, the catalogue value is the one to show.
+  const big = visible ? m : x;
+  return (
+    <>
+      <dl className="mt-4 grid grid-cols-2 gap-4">
+        <div><dt className="label-mono text-faint">{visible ? 'Measured' : 'Expected (catalogue)'}</dt><dd className="mt-1 text-2xl font-medium tabular">{big.shift_arcsec.toFixed(1)}″<span className="text-base text-muted"> in {motion.dt_yr.toFixed(2)} yr</span></dd></div>
+        <div><dt className="label-mono text-faint">Direction</dt><dd className="mt-1 flex items-center gap-2 text-2xl font-medium tabular"><PaArrow deg={big.pa_deg} />{big.pa_deg.toFixed(0)}°</dd></div>
+      </dl>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {visible
+          ? <Chip tone="good">Matches catalogue: {x.shift_arcsec.toFixed(1)}″ towards {x.pa_deg.toFixed(0)}°</Chip>
+          : <Chip tone="warn">Too faint to measure in the visit stacks</Chip>}
+      </div>
+      <p className="mt-3 text-xs text-muted">
+        {motion.note} Positions are from the visit stacks in array {band?.slice(1) ?? 2} (visits {motion.first_visit} to {motion.last_visit}){motion.visits.some((p) => p.saturated) ? ', using the centre of the saturated core' : ', using the light centre'}. Direction is east of north. Turn on Predicted track to see the catalogue path on the image.
+      </p>
+    </>
+  );
+}
+
+function MotionCard({ field, incIdx, preset, science }) {
   const o = field.object;
   const content = (() => {
+    if (science.entry?.motion) return <RealMotion motion={science.entry.motion} band={science.entry.band} />;
     if (!o || o.kind !== 'motion' || incIdx.length < 2) {
-      return <p className="mt-4 text-sm text-muted">{o?.kind === 'variable' ? 'This star changes brightness rather than position. See the brightness chart.' : 'No tracked mover in this field. Use Difference mode to hunt for one.'}</p>;
+      return <p className="mt-4 text-sm text-muted">{(o?.kind ?? preset?.kind) === 'variable' ? 'This star changes brightness rather than position. See the brightness chart.' : 'No tracked mover in this field. Use Difference mode to hunt for one.'}</p>;
     }
     const a = incIdx[0], b = incIdx[incIdx.length - 1];
     const pa = centroid(field.stacks[a], field.nx, field.ny, ...field.posAt(a));
@@ -774,7 +857,7 @@ function MotionCard({ field, incIdx }) {
         <dl className="mt-4 grid grid-cols-2 gap-4">
           <div><dt className="label-mono text-faint">Measured</dt><dd className="mt-1 text-2xl font-medium tabular">{rate.toFixed(1)}″<span className="text-base text-muted">/yr</span></dd></div>
           <div><dt className="label-mono text-faint">Direction</dt><dd className="mt-1 flex items-center gap-2 text-2xl font-medium tabular">
-            <span aria-hidden="true" className="inline-block text-accent-fg" style={{ transform: `rotate(${-angle}deg)` }}>↑</span>{angle.toFixed(0)}°</dd></div>
+            <PaArrow deg={angle} />{angle.toFixed(0)}°</dd></div>
         </dl>
         <p className="mt-3 text-xs text-muted">{shift.toFixed(1)}″ over {years.toFixed(2)} years, from centroids in the first and last ticked snapshots. Direction is measured east of north.</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">

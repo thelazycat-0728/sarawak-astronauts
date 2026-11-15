@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { API_URL, request, withRetry, liveErrorText, loadPresetIndex } from './api';
 import { PRESET_BY_ID } from './data';
+import { drawReticle } from './sim';
 
 const files = new Map();
 function loadJson(url) {
@@ -120,7 +121,51 @@ export function drawGaia(ctx, W, H, field, gaia) {
   ctx.restore();
 }
 
+// ---------------------------------------------------------------- predicted track
+// Preset centres are the targets' positions at CENTRE_EPOCH (backend
+// scripts/preset_photometry.py), so the catalogue proper motion gives the expected
+// position on any snapshot date.
+const CENTRE_EPOCH = 2025.5;
+const J2000_MS = Date.UTC(2000, 0, 1, 12);
+const YEAR_MS = 365.25 * 864e5;
+const MAS_PER_DEG = 3.6e6;
+
+const julianYear = (epoch) => 2000 + (Date.parse(`${epoch.date}T00:00:00Z`) - J2000_MS) / YEAR_MS;
+
+/** Expected sky position on a snapshot's date. track = { ra, dec, pm: [pmra·cos dec, pmdec] mas/yr }. */
+function trackPosition(track, epoch) {
+  const dt = julianYear(epoch) - CENTRE_EPOCH;
+  return [track.ra + (track.pm[0] * dt) / MAS_PER_DEG / Math.cos(track.dec * D2R), track.dec + (track.pm[1] * dt) / MAS_PER_DEG];
+}
+
+/** The catalogue track through the ticked snapshots, and a reticle at the current one. */
+export function drawTrack(ctx, W, H, field, track, incIdx, cur) {
+  const sx = W / field.nx, sy = H / field.ny;
+  const at = (e) => skyToPixel(...trackPosition(track, field.epochs[e]), field);
+  if (incIdx.length > 1) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(184,175,255,.55)';
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    incIdx.forEach((e, k) => { const [x, y] = at(e); if (k) ctx.lineTo(x * sx, y * sy); else ctx.moveTo(x * sx, y * sy); });
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(184,175,255,.8)';
+    incIdx.forEach((e) => { const [x, y] = at(e); ctx.beginPath(); ctx.arc(x * sx, y * sy, 2, 0, Math.PI * 2); ctx.fill(); });
+    ctx.restore();
+  }
+  const [x, y] = at(cur);
+  drawReticle(ctx, x * sx, y * sy, { label: track.name, sub: 'expected from catalogue motion', r: 13 });
+}
+
 // ---------------------------------------------------------------- text per preset
+/** What each preset's co-adds show (docs/API.md section 4). */
+export const COADD_NOTES = {
+  'eps-indi-b': 'Epsilon Indi B (in the ring) is no brighter than its neighbour star in array 1 (about 1 µm), but outshines everything around it in arrays 5–6 (4–5 µm): a cold brown dwarf’s colour.',
+  'rw-aur': 'RW Aurigae (in the ring) stays bright in every array while its neighbours fade at 4–5 µm: the infrared glow of its dusty disk.',
+  'wise-0855': 'In arrays 1–4 only a normal star 10.6″ (1.7 pixels) west of the centre shows, just right of the ring’s centre. WISE 0855 itself appears at the centre only in arrays 5–6 (3.8–5 µm).',
+};
+
 /** What the Gaia overlay shows at each target (checked against each preset's gaia.json). */
 export const GAIA_NOTES = {
   'barnards-star': 'Barnard’s Star is the G = 8.2 source near the centre, with the longest arrow: 10.4″ a year.',
