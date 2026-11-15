@@ -41,9 +41,9 @@ _PNG: dict[int | str, dict] = {
 _BUSY: dict[int | str, dict] = {
     503: {"model": ErrorResponse, "description": "Too many live frames rendering"},
 }
-# /lightcurve is not available yet with DATA_MODE=irsa.
+# /lightcurve with DATA_MODE=irsa: too many requests already wait for IRSA (as /epochs).
 _UNAVAILABLE: dict[int | str, dict] = {
-    503: {"model": ErrorResponse, "description": "Not available for live data yet"},
+    503: {"model": ErrorResponse, "description": "Too many live requests waiting"},
 }
 
 

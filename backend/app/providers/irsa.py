@@ -45,8 +45,15 @@ so repeating it costs no IRSA query.
 the preset diff renderer. It takes two render slots in one step (never one while
 waiting for the other), renders the frames in parallel, and shares the frame
 deadline, the 404 memory and the cutout cache with ``/frame``; ``/epochs`` returns
-a ``diff_url_template`` for it. ``/lightcurve`` answers ``503 unavailable`` until
-it is implemented for live data. Every IRSA request
+a ``diff_url_template`` for it.
+
+``/lightcurve`` measures the exposures of the ``/epochs`` sequence at
+``LIGHTCURVE_FOV_ARCMIN`` (10, the API default) through the same build path and
+cache entry (so the same 503/504/502 rules apply and its ids are that
+sequence's ids). Builds at that fov also cut a small native-pixel stamp around
+the target from each cleaned cutout (``app.pipeline.photometry``); the request
+then measures the stamps for its ``aperture``, with no further IRSA or disk
+access. Every IRSA request
 takes a process-wide slot (``app.cutouts.limit``). ``app.pipeline`` (reproject,
 dask) is imported on first use only.
 """
@@ -61,7 +68,7 @@ from collections.abc import Callable, Hashable
 from concurrent.futures import FIRST_EXCEPTION, CancelledError, Future
 from concurrent.futures import TimeoutError as FutureTimeout
 from concurrent.futures import wait as futures_wait
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from app.config import Settings
@@ -70,11 +77,14 @@ from app.cutouts.geometry import round_position
 from app.cutouts.limit import LimitedSiaSession
 from app.errors import ApiError, NotFound, Unavailable, UpstreamError, UpstreamTimeout
 from app.models import (
+    BandInfo,
     DiffQuery,
     EpochBase,
     FrameQuery,
+    LightcurvePoint,
     LightcurveQuery,
     LightcurveResponse,
+    Target,
     ViewQuery,
 )
 from app.providers.base import EpochSequence
@@ -90,6 +100,9 @@ NOT_FOUND_MAX_ENTRIES = 256
 FALLBACK_HINT = "Try again in a minute, or use a preset target."
 # Per-visit outcomes that mean "IRSA's data did not reach us", not "no data".
 FAILED_OUTCOMES = ("download_failed", "clean_failed")
+# /lightcurve measures the exposures of the /epochs sequence at this fov (the
+# API default), so its epoch ids are that sequence's ids and it shares its cache.
+LIGHTCURVE_FOV_ARCMIN = 10.0
 
 
 class TtlCache:
@@ -132,6 +145,9 @@ class TtlCache:
 class Built:
     sequence: EpochSequence
     ttl_s: float
+    # epoch id -> native photometry stamp (None: target off the cutout, or the
+    # cutout could not be read again). Filled for LIGHTCURVE_FOV_ARCMIN builds only.
+    stamps: dict[str, Any] = field(default_factory=dict)
 
 
 def _no_url(epoch_id: str, vmin: float, vmax: float) -> str:
@@ -207,11 +223,17 @@ class IrsaProvider:
             return sum(self._waiters.values())
 
     def epochs(self, q: ViewQuery) -> EpochSequence:
+        return self._for_query(self._built(q).sequence, q)
+
+    def _built(self, q: ViewQuery) -> Built:
+        """The cached or freshly built sequence of a view (shared by /epochs and
+        /lightcurve): single flight per key, the waiter cap (503), the deadline
+        (504) and the build's own 502/504."""
         key = self.cache_key(q)
         hit = self._cache.get(key)
         if hit is not None:
             log.info("/epochs %s: cache hit", key)
-            return self._for_query(hit, q)
+            return hit
         s = self._settings
         with self._lock:
             if sum(self._waiters.values()) >= max(1, int(s.epochs_max_waiters)):
@@ -245,7 +267,7 @@ class IrsaProvider:
             raise UpstreamTimeout(
                 f"IRSA did not deliver the SPHEREx data for this view within "
                 f"{s.epochs_deadline_s:g} s. " + FALLBACK_HINT)
-        return self._for_query(built.sequence, q)
+        return built
 
     def _submit(self, fn: Callable[[], Built]) -> Future:
         """Queue ``fn`` for one of the ``BUILD_SLOTS`` worker threads.
@@ -292,7 +314,7 @@ class IrsaProvider:
         with self._lock:
             if not future.cancelled() and future.exception() is None:
                 built: Built = future.result()
-                self._cache.put(key, built.sequence, built.ttl_s)  # before leaving
+                self._cache.put(key, built, built.ttl_s)  # before leaving
             if self._inflight.get(key) is future:
                 del self._inflight[key]
 
@@ -339,7 +361,31 @@ class IrsaProvider:
                     for e in r.epochs],
             prerendered_diffs=[],
             any_pair_diff=True,  # /diff renders any pair: diff_url_template is set
-        ), ttl)
+        ), ttl, self._stamps(seq, q))
+
+    def _stamps(self, seq: Any, q: ViewQuery) -> dict[str, Any]:
+        """Photometry stamps of a ``LIGHTCURVE_FOV_ARCMIN`` build, read from the
+        cutouts the build just cleaned (one more open of each cached file).
+        Other fovs get none: ``/lightcurve`` never reads them."""
+        if round(q.fov, 6) != LIGHTCURVE_FOV_ARCMIN:
+            return {}
+        from app.cutouts.cache import is_resource_error, open_cached
+        from app.pipeline.photometry import extract_stamp
+
+        stamps: dict[str, Any] = {}
+        for epoch_id, cutout in seq.cutouts.items():
+            try:
+                with open_cached(cutout.path) as hdul:
+                    stamps[epoch_id] = extract_stamp(hdul, q.ra, q.dec, self._settings)
+            except Exception as exc:  # one unreadable file never fails the build
+                if is_resource_error(exc):
+                    raise
+                if isinstance(exc, ApiError):
+                    log.info("no photometry stamp for %s: %s", epoch_id, exc.message)
+                else:
+                    log.exception("no photometry stamp for %s", epoch_id)
+                stamps[epoch_id] = None
+        return stamps
 
     @staticmethod
     def _for_query(seq: EpochSequence, q: ViewQuery) -> EpochSequence:
@@ -506,5 +552,31 @@ class IrsaProvider:
         return png
 
     def lightcurve(self, q: LightcurveQuery) -> LightcurveResponse:
-        raise Unavailable("Light curves are not available for live SPHEREx data yet; "
-                          "use a preset target.")
+        """Aperture photometry on every epoch of the live ``/epochs`` sequence at
+        ``LIGHTCURVE_FOV_ARCMIN`` (``app.pipeline.photometry``).
+
+        The sequence comes from the shared build path (cache, single flight,
+        waiter cap 503, deadline 504, 502/504 when downloads fail); the stamps
+        were cut when it was built, so a warm light curve needs no file or IRSA
+        access and is cheap for any ``aperture``.
+        """
+        view = ViewQuery(ra=q.ra, dec=q.dec, band=q.band, fov=LIGHTCURVE_FOV_ARCMIN)
+        built = self._built(view)
+        from app.pipeline.photometry import METHOD, measure
+
+        points = []
+        for e in sorted(built.sequence.epochs, key=lambda e: (e.mjd, e.id)):
+            m = measure(built.stamps.get(e.id), q.aperture, e.quality.status)
+            points.append(LightcurvePoint(
+                epoch_id=e.id, time_utc=e.time_utc, mjd=e.mjd, release=e.release,
+                wavelength_um=e.wavelength_um, flux=m.flux, flux_err=m.flux_err,
+                quality=m.quality))
+        return LightcurveResponse(
+            synthetic=False,
+            target=Target(ra=q.ra, dec=q.dec, name=None),
+            band=BandInfo.for_band(q.band),
+            aperture_arcsec=q.aperture,
+            unit="uJy",
+            method=METHOD,
+            points=points,
+        )

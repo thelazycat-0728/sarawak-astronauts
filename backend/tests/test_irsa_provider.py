@@ -117,12 +117,11 @@ def test_unknown_frame_id_is_404(tmp_path):
     assert_error(t.client.get(f"/frame/{other_band}.png", params=VIEW), 404, "not_found")
 
 
-def test_lightcurve_is_unavailable(tmp_path):
+def test_lightcurve_validates_its_parameters_before_any_irsa_call(tmp_path):
     t = live(tmp_path)
-    assert_error(t.client.get("/lightcurve", params=BARNARD), 503, "unavailable")
-    # Parameters are still validated first.
     assert_error(t.client.get("/lightcurve", params={"ra": 1, "dec": 99}), 400,
                  "invalid_parameter")
+    assert t.sia.calls == [] and t.cutouts.calls == []
 
 
 def test_deadline_returns_504_and_the_build_still_fills_the_cache(tmp_path):
