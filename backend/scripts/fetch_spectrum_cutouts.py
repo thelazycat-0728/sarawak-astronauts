@@ -33,11 +33,12 @@ BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 sys.path.insert(0, str(BACKEND / "scripts"))
 
+from irsa_coverage import PRESETS
+
 from app.config import Settings
 from app.cutouts import default_cache, fetch_cutouts
 from app.errors import ApiError
 from app.irsa.sia import find_epochs
-from irsa_coverage import PRESETS
 
 BANDS = ("D1", "D2", "D3", "D4", "D5", "D6")
 SPECTRUM_FOV_ARCMIN = 3.0

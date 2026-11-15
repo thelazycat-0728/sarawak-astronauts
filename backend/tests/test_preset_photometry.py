@@ -262,13 +262,21 @@ def test_minus_sky_removes_each_frames_median():
     assert frame.image[2, 2] == 10.0  # the input is not changed
 
 
-@pytest.mark.parametrize("pid", ["eps-indi-b", "rw-aur"])
+@pytest.mark.parametrize("pid", ["eps-indi-b", "rw-aur", "wise-0855"])
 def test_committed_coadds_cover_six_arrays(pid):
     index = json.loads((PUBLIC / "presets" / "index.json").read_text("utf-8"))
     entry = next(p for p in index["presets"] if p["id"] == pid)
     coadds = [pp.CoaddEntry.model_validate(c) for c in entry["coadds"]]
     assert [c.band for c in coadds] == ["D1", "D2", "D3", "D4", "D5", "D6"]
     assert all(c.n_frames >= 10 for c in coadds)
+
+
+def test_presets_without_a_trustworthy_spectrum_have_none():
+    index = json.loads((PUBLIC / "presets" / "index.json").read_text("utf-8"))
+    for entry in index["presets"]:
+        if entry["id"] in bpp.NO_SPECTRUM:
+            assert "spectrum_url" not in entry
+            assert not (PUBLIC / "presets" / entry["id"] / pp.SPECTRUM_FILE).exists()
 
 
 def test_committed_rw_aur_spectrum_shows_the_disk_excess():

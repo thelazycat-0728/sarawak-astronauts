@@ -117,9 +117,20 @@ def build_lightcurve(preset: tuple, public: Path, settings: Settings,
                             points=points, tracking=tracking_for(pm))
 
 
+# Presets whose fetched 6-array set must not become a spectrum, with the reason. The
+# co-adds still use the set (build_preset_coadds.py); they show the problem honestly.
+NO_SPECTRUM = {
+    "wise-0855": "a G = 16.3 Gaia star 10.6″ west of WISE 0855 dominates the 12″ "
+                 "aperture below about 3.5 um, where WISE 0855 itself is invisible",
+}
+
+
 def build_spectrum(preset: tuple, target: Target, settings: Settings) -> PresetSpectrum | None:
-    """None when no 6-array set has been fetched for this preset."""
+    """None when no 6-array set has been fetched for this preset, or the preset is in
+    ``NO_SPECTRUM``."""
     pid = preset[0]
+    if pid in NO_SPECTRUM:
+        return None
     spec_settings = spectrum_settings(settings)
     idx = index_path(pid, spec_settings)
     if not idx.is_file():
@@ -157,12 +168,17 @@ def summary(points) -> str:
     return f"{len(points)} points, {q['good']} good, {q['warn']} warn, {q['bad']} bad{flux}"
 
 
-def update_index(root: Path, urls: dict[str, dict[str, str]]) -> None:
+def update_index(root: Path, urls: dict[str, dict]) -> None:
+    """Set the given fields on each preset's index.json entry; a value of None
+    removes the field."""
     path = root / "index.json"
     doc = json.loads(path.read_text(encoding="utf-8"))
     for entry in doc["presets"]:
         for field, url in urls.get(entry["id"], {}).items():
-            entry[field] = url
+            if url is None:
+                entry.pop(field, None)
+            else:
+                entry[field] = url
     _write_json(path, doc)
 
 
@@ -190,7 +206,11 @@ def main(argv: list[str] | None = None) -> int:
         _write_json(PRESETS_DIR / pid / LIGHTCURVE_FILE, lc.model_dump(mode="json"))
         urls[pid] = {"lightcurve_url": f"{URL_ROOT}/{pid}/{LIGHTCURVE_FILE}"}
         print(f"{pid}: light curve {summary(lc.points)}")
-        if spec is not None:
+        if pid in NO_SPECTRUM:
+            (PRESETS_DIR / pid / SPECTRUM_FILE).unlink(missing_ok=True)
+            urls[pid]["spectrum_url"] = None
+            print(f"{pid}: no spectrum ({NO_SPECTRUM[pid]})")
+        elif spec is not None:
             _write_json(PRESETS_DIR / pid / SPECTRUM_FILE, spec.model_dump(mode="json"))
             urls[pid]["spectrum_url"] = f"{URL_ROOT}/{pid}/{SPECTRUM_FILE}"
             print(f"{pid}: spectrum {summary(spec.points)}, bands "

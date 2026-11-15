@@ -398,7 +398,111 @@
         "verdict": "not visible",
         "note": "Measured 6.4″ towards PA 318° against 8.0″ towards 275° expected over 0.98 yr. The target is too faint in these stacks to measure its motion; the expected track is from the catalogue proper motion."
       },
-      "gaia_url": "/presets/wise-0855/gaia.json"
+      "gaia_url": "/presets/wise-0855/gaia.json",
+      "coadds": [
+        {
+          "band": "D1",
+          "url": "/presets/wise-0855/coadds/D1.png",
+          "visit": 2,
+          "n_frames": 18,
+          "wavelength_min_um": 0.7493,
+          "wavelength_max_um": 1.1148,
+          "fov_arcmin": 3.0,
+          "width_px": 30,
+          "height_px": 30,
+          "stretch": {
+            "vmin": -0.022563,
+            "vmax": 0.30815,
+            "asinh_a": 0.1
+          },
+          "flagged_fraction": 0.0
+        },
+        {
+          "band": "D2",
+          "url": "/presets/wise-0855/coadds/D2.png",
+          "visit": 2,
+          "n_frames": 20,
+          "wavelength_min_um": 1.1012,
+          "wavelength_max_um": 1.6301,
+          "fov_arcmin": 3.0,
+          "width_px": 30,
+          "height_px": 30,
+          "stretch": {
+            "vmin": -0.0099005,
+            "vmax": 0.3342,
+            "asinh_a": 0.1
+          },
+          "flagged_fraction": 0.0022
+        },
+        {
+          "band": "D3",
+          "url": "/presets/wise-0855/coadds/D3.png",
+          "visit": 2,
+          "n_frames": 19,
+          "wavelength_min_um": 1.6313,
+          "wavelength_max_um": 2.3853,
+          "fov_arcmin": 3.0,
+          "width_px": 30,
+          "height_px": 30,
+          "stretch": {
+            "vmin": -0.010018,
+            "vmax": 0.24821,
+            "asinh_a": 0.1
+          },
+          "flagged_fraction": 0.0033
+        },
+        {
+          "band": "D4",
+          "url": "/presets/wise-0855/coadds/D4.png",
+          "visit": 2,
+          "n_frames": 18,
+          "wavelength_min_um": 2.4388,
+          "wavelength_max_um": 3.8314,
+          "fov_arcmin": 3.0,
+          "width_px": 30,
+          "height_px": 30,
+          "stretch": {
+            "vmin": -0.0089051,
+            "vmax": 0.12504,
+            "asinh_a": 0.1
+          },
+          "flagged_fraction": 0.0
+        },
+        {
+          "band": "D5",
+          "url": "/presets/wise-0855/coadds/D5.png",
+          "visit": 2,
+          "n_frames": 20,
+          "wavelength_min_um": 3.8215,
+          "wavelength_max_um": 4.4081,
+          "fov_arcmin": 3.0,
+          "width_px": 30,
+          "height_px": 30,
+          "stretch": {
+            "vmin": -0.016619,
+            "vmax": 0.094621,
+            "asinh_a": 0.1
+          },
+          "flagged_fraction": 0.0
+        },
+        {
+          "band": "D6",
+          "url": "/presets/wise-0855/coadds/D6.png",
+          "visit": 2,
+          "n_frames": 20,
+          "wavelength_min_um": 4.4178,
+          "wavelength_max_um": 4.9821,
+          "fov_arcmin": 3.0,
+          "width_px": 30,
+          "height_px": 30,
+          "stretch": {
+            "vmin": -0.025262,
+            "vmax": 0.10611,
+            "asinh_a": 0.1
+          },
+          "flagged_fraction": 0.0
+        }
+      ]
     },
     {
       "id": "rw-aur",
