@@ -8,6 +8,7 @@ This is the contract between the frontend and the FastAPI science backend. Mock 
 - T-007 (live difference images, `DATA_MODE=irsa`): `/diff` works on the live API for any two epochs of a live `/epochs` response; it no longer answers `503 unavailable` for being unimplemented. Its two frames are rendered like `/frame` and share the `/frame` render slots and 60 s deadline, so `503` now means busy and `504` a timeout (section 1 and `/diff`).
 - T-007: live `/epochs` returns a non-null `diff_url_template` (absolute, with the sequence's `ra`, `dec`, `fov` and `band`); `diffs` stays `[]`. Mock and preset responses are unchanged, and no shape changed.
 - T-009 (live light curves, `DATA_MODE=irsa`): `/lightcurve` works on the live API; it no longer answers `503 unavailable` for being unimplemented. It measures the exposures of the live `/epochs` sequence at the default fov (10), so `points[].epoch_id` are that sequence's ids, and it shares that request's cache, 90 s deadline (`504`), waiter cap (`503`, now meaning busy) and `502`/`504` when no cutout could be downloaded. The response shape is unchanged; `/lightcurve` documents the photometry, the `quality` rules and the `method` text.
+- Preset photometry (static files, no API call): every preset in `presets/index.json` gains `lightcurve_url`, a light curve in the `/lightcurve` shape measured on every preset exposure, and `eps-indi-b` gains `spectrum_url`, a spectrum across all six detector arrays, and the three fast movers gain `motion`, their measured shift between the first and last visit stacks against the catalogue proper motion (section 4). All three are optional, additive fields; nothing else in the presets changed.
 - T-009: saturated targets (for example Barnard's Star) come back as `flux: null`, `flux_err: null`, `quality: "bad"` on every point. Mock responses are unchanged.
 
 **Changes in 0.4** (since 0.3):
@@ -309,6 +310,7 @@ Pre-computed demo data for the five test targets lives in static files so the de
   "presets": [
     {"id": "barnards-star", "name": "Barnard's Star", "ra": 269.4464, "dec": 4.7668, "band": "D2",
      "default_fov_arcmin": 6.0, "look_for": "Position shift between visits",
+     "lightcurve_url": "/presets/barnards-star/lightcurve.json",
      "manifests": [
        {"fov_arcmin": 12.0, "url": "/presets/barnards-star/manifest.json", "count": 18, "visits": 3, "stacks": 3},
        {"fov_arcmin": 6.0, "url": "/presets/barnards-star/fov-6/manifest.json", "count": 18, "visits": 3, "stacks": 3},
@@ -316,6 +318,31 @@ Pre-computed demo data for the five test targets lives in static files so the de
      ]}
   ]
 }
+```
+
+- **Light curves** (optional, additive field `lightcurve_url` per preset in `index.json`; every preset has one). `<id>/lightcurve.json` has exactly the `GET /lightcurve` shape (section 3), measured with the same photometry (12″ aperture, median sky annulus, VARIANCE errors, no aperture correction, `flux: null` and `quality: "bad"` when any aperture pixel is masked or saturated), but on **every** exposure of the fov-12 manifest (up to 6 per visit). Each point also carries `visit`. For the fast movers (`barnards-star`, `eps-indi-b`, `wise-0855`) the aperture follows the target, and the file has `tracking: {proper_motion_mas_yr: [pmra_cosdec, pmdec], ref_epoch, note}`. Otherwise `tracking` is null. Points within a visit sit at different wavelengths, so plot brightness against time **per wavelength range**, or use the spectrum. What to expect:
+
+  | Preset | Points | What they show |
+  | --- | --- | --- |
+  | `barnards-star`, `r-dra` | all `bad` | Saturated in every exposure, so no flux; say so in the UI |
+  | `rw-aur` | 17 of 18 measured, S/N 190–450 | Real variability: at about 1.2 µm, visit 3 is about 30–40 % brighter than visit 1 |
+  | `eps-indi-b` | 20 of 24, S/N 60–200 | Mostly its spectrum: about 40 mJy at 1.27 µm and about 6 mJy at 1.37–1.40 µm (water absorption). The same wavelength repeats within about 5 % across visits |
+  | `wise-0855` | 11 of 14 at 4.75–4.97 µm, S/N 1–4 each | Noisy points; their median (about 450 µJy) matches its WISE 4.6 µm brightness |
+
+- **Measured motion** (optional, additive field `motion` on the entries of `barnards-star`, `eps-indi-b` and `wise-0855` in `index.json`), for the motion card and the track overlay on real frames. `motion.visits[]` gives the target's position on each visit stack: `visit`, `n_frames`, `time_utc`, `mjd`, `x_px`, `y_px` (fov-12 pixels; x grows west, y south), `snr` (null when saturated) and `saturated`. A saturated star is located by the centre of its saturated core, an unsaturated one by its centroid. `measured` and `expected` (from the SIMBAD proper motion `proper_motion_mas_yr` over `dt_yr`) are each `{dx_px, dy_px, shift_arcsec, rate_arcsec_yr, pa_deg}`, where `pa_deg` is the direction east of north. `verdict` is `visible` or `not visible`, and `note` is one sentence for the UI:
+
+  | Preset | Measured | Expected | Verdict |
+  | --- | --- | --- | --- |
+  | `barnards-star` | 12.1″ towards PA 349° | 10.3″ towards 356° | visible (saturated: core position) |
+  | `eps-indi-b` | 6.6″ towards 132° | 6.7″ towards 122° | visible |
+  | `wise-0855` | does not match | 8.0″ towards 275° | not visible (too faint; show the catalogue track) |
+
+- **Spectrum** (optional, additive field `spectrum_url`; for now only `eps-indi-b`). `<id>/spectrum.json` has the light-curve fields plus `bands` (the arrays covered, as `band` objects) and `note`. Its points add `band` and `visit` and are sorted by `wavelength_um`, across all six detector arrays (about 0.75–5 µm). Each array comes from one visit, so a static source gives one consistent spectrum; arrays can come from different visits. Example point:
+
+```json
+{"epoch_id": "sx_dr1_2025W40_2A_0123_1_D3", "time_utc": "2025-10-06T07:10:00Z", "mjd": 60954.298611,
+ "release": "DR1", "wavelength_um": 1.874, "flux": 2150.3, "flux_err": 61.2, "quality": "good",
+ "band": "D3", "visit": 2}
 ```
 
 The frontend loads a preset by fetching the `url` for the chosen fov from `index.json` instead of calling `/epochs`. The preset ids and view settings are:
