@@ -10,12 +10,14 @@ import shutil
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from app.pipeline.photometry import METHOD, Measurement
 from tests.conftest import REPO
 
 sys.path.insert(0, str(REPO / "backend" / "scripts"))
+import build_preset_coadds as bpc
 import build_preset_photometry as bpp
 import check_presets
 import preset_photometry as pp
@@ -240,3 +242,42 @@ def test_baseline_ignores_the_photometry_urls(public):
     _edit(public, "index.json", lambda d: d["presets"][1].update(name="changed"))
     errs, _ = check_presets.check(public=public, baseline=check_presets.BASELINE)
     assert any("baseline: index.json fields" in e for e in errs)
+
+
+# ------------------------------------------------------------------ co-adds
+
+
+def test_minus_sky_removes_each_frames_median():
+    from app.pipeline.clean import CleanFrame
+
+    img = np.full((5, 5), 3.0)
+    img[2, 2] = 10.0
+    img[0, 0] = np.nan
+    frame = CleanFrame(image=img, flagged_fraction=0.04, status="good", flags=[],
+                       coverage=1.0, saturated_px=0)
+    out = bpc.minus_sky(frame)
+    assert np.nanmedian(out.image) == 0.0
+    assert out.image[2, 2] == 7.0 and np.isnan(out.image[0, 0])
+    assert frame.image[2, 2] == 10.0  # the input is not changed
+
+
+def test_committed_coadds_cover_six_arrays():
+    index = json.loads((PUBLIC / "presets" / "index.json").read_text("utf-8"))
+    entry = next(p for p in index["presets"] if p["id"] == "eps-indi-b")
+    coadds = [pp.CoaddEntry.model_validate(c) for c in entry["coadds"]]
+    assert [c.band for c in coadds] == ["D1", "D2", "D3", "D4", "D5", "D6"]
+    assert all(c.n_frames >= 10 for c in coadds)
+
+
+def test_checker_validates_coadds(public):
+    def tamper(d):
+        e = next(p for p in d["presets"] if p["id"] == "eps-indi-b")
+        e["coadds"][0], e["coadds"][1] = e["coadds"][1], e["coadds"][0]
+        e["coadds"][2]["url"] = "/presets/eps-indi-b/coadds/wrong.png"
+
+    _edit(public, "index.json", tamper)
+    (public / "presets" / "eps-indi-b" / "coadds" / "D6.png").unlink()
+    errs = _errors(public)
+    assert any("eps-indi-b coadds: bands" in e for e in errs)
+    assert any("D3 url" in e for e in errs)
+    assert any("coadds/D6.png missing" in e for e in errs)

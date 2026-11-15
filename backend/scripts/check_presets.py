@@ -46,6 +46,8 @@ Light curves and spectra (``preset_photometry.py``), for every preset:
 - ``spectrum_url`` is optional (``/presets/<id>/spectrum.json``). The spectrum
   validates, its points are in wavelength order with the same flux rule, ids are
   unique, and ``bands`` lists exactly the arrays of its points.
+- ``coadds`` (optional, ``build_preset_coadds.py``) validates, lists each array once
+  in order, and every co-add URL resolves to an 8-bit grey PNG of its stated size.
 - ``motion`` (``build_preset_motion.py``) sits exactly on the proper-motion movers'
   entries (required when run as a script), validates as ``PresetMotion``, and has
   one position per visit of the fov-12 manifest, from the first to the last visit.
@@ -81,6 +83,7 @@ from irsa_coverage import PRESETS
 from preset_photometry import (
     LIGHTCURVE_FILE,
     SPECTRUM_FILE,
+    CoaddEntry,
     PresetLightcurve,
     PresetMotion,
     PresetSpectrum,
@@ -426,6 +429,32 @@ def _check_motion(pid: str, entry: dict, man: EpochsResponse, errs: list[str],
         errs.append(f"{where}: proper motion differs from preset_science")
 
 
+def _check_coadds(pid: str, entry: dict, public: Path, errs: list[str]) -> None:
+    raw = entry.get("coadds")
+    if raw is None:
+        return
+    where = f"index.json {pid} coadds"
+    try:
+        coadds = [CoaddEntry.model_validate(c) for c in raw]
+    except (ValueError, TypeError) as exc:
+        errs.append(f"{where}: not valid: {str(exc)[:200]}")
+        return
+    bands = [c.band for c in coadds]
+    if not coadds or bands != sorted(set(bands)):
+        errs.append(f"{where}: bands {bands} are empty, repeated or out of order")
+    for c in coadds:
+        if c.url != f"/presets/{pid}/coadds/{c.band}.png":
+            errs.append(f"{where}: {c.band} url {c.url!r} is wrong")
+            continue
+        path = url_to_file(c.url, public)
+        if path is None:
+            errs.append(f"{where}: {c.url} missing")
+            continue
+        _check_png(path, (c.width_px, c.height_px), f"{where} {c.band}", errs)
+        if c.n_frames < 1 or c.stretch.vmax <= c.stretch.vmin:
+            errs.append(f"{where}: {c.band} n_frames or stretch is not usable")
+
+
 def _load(path: Path | None, model, where: str, errs: list[str]):
     if path is None or not path.is_file():
         errs.append(f"{where}: file missing")
@@ -478,6 +507,7 @@ def check_photometry(root: Path, manifests: dict[tuple[str, float], EpochsRespon
                     errs.append(f"{where}: tracking must be set exactly for proper-motion movers")
                 _check_points(lc.points, where, errs)
         _check_motion(pid, entry, man, errs, require)
+        _check_coadds(pid, entry, public, errs)
         url = entry.get("spectrum_url")
         if url is None:
             continue
@@ -517,13 +547,14 @@ def _canonical_sha256(obj: object) -> str:
 
 def _index_without_additions(doc: dict) -> dict:
     """index.json minus the additive fields (T-016 ``stacks`` and ``look_for``; the
-    ``lightcurve_url``, ``spectrum_url`` and ``motion`` of the preset photometry)."""
+    ``lightcurve_url``, ``spectrum_url``, ``motion`` and ``coadds``)."""
     out = json.loads(json.dumps(doc))
     for p in out.get("presets", []):
         p.pop("look_for", None)
         p.pop("lightcurve_url", None)
         p.pop("spectrum_url", None)
         p.pop("motion", None)
+        p.pop("coadds", None)
         for m in p.get("manifests", []):
             m.pop("stacks", None)
     return out
