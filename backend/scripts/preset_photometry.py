@@ -10,6 +10,8 @@ them). Both files sit next to a preset's fov-12 manifest:
 - ``<preset>/spectrum.json`` (only presets with a fetched 6-array set): the same
   points across all detector arrays, each with its ``band`` and ``visit``, sorted
   by wavelength. ``bands`` lists the arrays covered.
+- ``coadds`` on a preset's ``index.json`` entry: one co-added image per detector
+  array (``CoaddEntry``), from the same fetched 6-array set as the spectrum.
 - ``motion`` on a mover's ``index.json`` entry: per-visit stack positions and the
   measured against the catalogue shift (``PresetMotion``).
 """
@@ -25,6 +27,7 @@ from app.models import BandId, BandInfo, LightcurvePoint, LightcurveResponse, Ta
 
 LIGHTCURVE_FILE = "lightcurve.json"
 SPECTRUM_FILE = "spectrum.json"
+COADD_DIR = "coadds"
 APERTURE_ARCSEC = 12.0  # the /lightcurve default
 CENTRE_EPOCH = 2025.5  # preset centres are the targets' ~2025.5 positions (API.md section 4)
 MJD_J2000 = 51544.5
@@ -101,6 +104,29 @@ class PresetMotion(BaseModel):
     expected: Shift
     verdict: Literal["visible", "not visible"]
     note: str
+
+
+class CoaddStretch(BaseModel):
+    vmin: float
+    vmax: float
+    asinh_a: float
+
+
+class CoaddEntry(BaseModel):
+    """One entry of ``coadds`` on a preset's index.json entry (build_preset_coadds.py):
+    the mean of one visit's exposures in one detector array, north up, east left."""
+
+    band: BandId
+    url: str
+    visit: int
+    n_frames: int
+    wavelength_min_um: float
+    wavelength_max_um: float
+    fov_arcmin: float
+    width_px: int
+    height_px: int
+    stretch: CoaddStretch  # this image's own asinh stretch (grey 0 = no data)
+    flagged_fraction: float
 
 
 def julian_year(mjd: float) -> float:

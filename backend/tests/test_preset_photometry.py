@@ -10,12 +10,14 @@ import shutil
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from app.pipeline.photometry import METHOD, Measurement
 from tests.conftest import REPO
 
 sys.path.insert(0, str(REPO / "backend" / "scripts"))
+import build_preset_coadds as bpc
 import build_preset_photometry as bpp
 import check_presets
 import preset_photometry as pp
@@ -151,14 +153,14 @@ def test_checker_wants_tracking_exactly_for_movers(public):
 
 
 def _spectrum(public: Path, points: list[dict], bands: list[str]) -> None:
-    lc = json.loads((public / "presets" / "rw-aur" / pp.LIGHTCURVE_FILE).read_text("utf-8"))
+    lc = json.loads((public / "presets" / "r-dra" / pp.LIGHTCURVE_FILE).read_text("utf-8"))
     doc = {"synthetic": False, "target": lc["target"],
            "bands": [{"id": b, "wavelength_min_um": 1.0, "wavelength_max_um": 2.0} for b in bands],
            "aperture_arcsec": 12.0, "unit": "uJy", "method": "m", "note": "n",
            "tracking": None, "points": points}
-    (public / "presets" / "rw-aur" / pp.SPECTRUM_FILE).write_text(json.dumps(doc), "utf-8")
-    _edit(public, "index.json", lambda d: next(p for p in d["presets"] if p["id"] == "rw-aur")
-          .update(spectrum_url="/presets/rw-aur/spectrum.json"))
+    (public / "presets" / "r-dra" / pp.SPECTRUM_FILE).write_text(json.dumps(doc), "utf-8")
+    _edit(public, "index.json", lambda d: next(p for p in d["presets"] if p["id"] == "r-dra")
+          .update(spectrum_url="/presets/r-dra/spectrum.json"))
 
 
 def _point(i: int, band: str, wave: float, flux: float | None = 10.0) -> dict:
@@ -177,8 +179,8 @@ def test_checker_accepts_a_good_spectrum_and_finds_its_errors(public):
     assert summary["spectrum_points"] == before["spectrum_points"] + 2
     _spectrum(public, [_point(1, "D2", 1.2), _point(2, "D1", 0.8)], ["D1"])
     errs = _errors(public)
-    assert any("rw-aur spectrum: points are empty or not in wavelength order" in e for e in errs)
-    assert any("rw-aur spectrum: bands do not list exactly" in e for e in errs)
+    assert any("r-dra spectrum: points are empty or not in wavelength order" in e for e in errs)
+    assert any("r-dra spectrum: bands do not list exactly" in e for e in errs)
 
 
 def test_checker_validates_motion_on_movers_only(public):
@@ -240,3 +242,55 @@ def test_baseline_ignores_the_photometry_urls(public):
     _edit(public, "index.json", lambda d: d["presets"][1].update(name="changed"))
     errs, _ = check_presets.check(public=public, baseline=check_presets.BASELINE)
     assert any("baseline: index.json fields" in e for e in errs)
+
+
+# ------------------------------------------------------------------ co-adds
+
+
+def test_minus_sky_removes_each_frames_median():
+    from app.pipeline.clean import CleanFrame
+
+    img = np.full((5, 5), 3.0)
+    img[2, 2] = 10.0
+    img[0, 0] = np.nan
+    frame = CleanFrame(image=img, flagged_fraction=0.04, status="good", flags=[],
+                       coverage=1.0, saturated_px=0)
+    out = bpc.minus_sky(frame)
+    assert np.nanmedian(out.image) == 0.0
+    assert out.image[2, 2] == 7.0 and np.isnan(out.image[0, 0])
+    assert frame.image[2, 2] == 10.0  # the input is not changed
+
+
+@pytest.mark.parametrize("pid", ["eps-indi-b", "rw-aur"])
+def test_committed_coadds_cover_six_arrays(pid):
+    index = json.loads((PUBLIC / "presets" / "index.json").read_text("utf-8"))
+    entry = next(p for p in index["presets"] if p["id"] == pid)
+    coadds = [pp.CoaddEntry.model_validate(c) for c in entry["coadds"]]
+    assert [c.band for c in coadds] == ["D1", "D2", "D3", "D4", "D5", "D6"]
+    assert all(c.n_frames >= 10 for c in coadds)
+
+
+def test_committed_rw_aur_spectrum_shows_the_disk_excess():
+    spec = pp.PresetSpectrum.model_validate_json(
+        (PUBLIC / "presets" / "rw-aur" / pp.SPECTRUM_FILE).read_text("utf-8"))
+    assert [b.id for b in spec.bands] == ["D1", "D2", "D3", "D4", "D5", "D6"]
+    assert {p.visit for p in spec.points} == {3}  # one epoch of the variable star
+    good = [p for p in spec.points if p.flux is not None]
+    short = [p.flux for p in good if p.wavelength_um < 1.0]
+    long = [p.flux for p in good if p.wavelength_um > 4.4]
+    # a young star with a warm disk: brighter at 4.4-5 um than below 1 um
+    assert min(long) > 3 * max(short)
+
+
+def test_checker_validates_coadds(public):
+    def tamper(d):
+        e = next(p for p in d["presets"] if p["id"] == "eps-indi-b")
+        e["coadds"][0], e["coadds"][1] = e["coadds"][1], e["coadds"][0]
+        e["coadds"][2]["url"] = "/presets/eps-indi-b/coadds/wrong.png"
+
+    _edit(public, "index.json", tamper)
+    (public / "presets" / "eps-indi-b" / "coadds" / "D6.png").unlink()
+    errs = _errors(public)
+    assert any("eps-indi-b coadds: bands" in e for e in errs)
+    assert any("D3 url" in e for e in errs)
+    assert any("coadds/D6.png missing" in e for e in errs)

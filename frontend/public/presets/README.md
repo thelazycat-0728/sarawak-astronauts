@@ -31,10 +31,13 @@ SPHEREx data: NASA/IPAC Infrared Science Archive (IRSA)
   of the target on every exposure, in the `GET /lightcurve` shape plus `visit`
   per point (and `tracking` for the movers, whose aperture follows their proper
   motion). Saturated targets (Barnard's Star, R Dra) are `bad` with null flux.
+- `coadds` on the entries of `eps-indi-b` and `rw-aur`: one co-added image per
+  detector array in `<id>/coadds/D1.png` to `D6.png` (one visit, about 20
+  exposures each, fov 3), from `backend/scripts/build_preset_coadds.py`.
 - `motion` on the movers' entries in `index.json`: the target's position on
   each visit stack and the measured first-to-last shift against the catalogue
   proper motion (`backend/scripts/build_preset_motion.py`).
-- `<id>/spectrum.json` (`spectrum_url`, only `eps-indi-b` for now): the same
+- `<id>/spectrum.json` (`spectrum_url`, `eps-indi-b` and `rw-aur`): the same
   photometry on one visit of every detector array, sorted by wavelength
   (about 0.75-5 um).
 
