@@ -271,7 +271,6 @@ function ViewerHead({ preset, raDeg, decDeg, expert, field }) {
 function Stage({ field, loading, attempt, error, tryAgain, preset, cur, base, incIdx, expert, selection, onPick }) {
   const v = useViewer();
   const lessonDone = useProgress((s) => s.lessons);
-  const completeLesson = useProgress((s) => s.completeLesson);
   const lesson = v.lessonId ? LESSONS.find((l) => l.id === v.lessonId) : null;
 
   const draw = useCallback((ctx, W, H) => {
@@ -375,10 +374,10 @@ function Stage({ field, loading, attempt, error, tryAgain, preset, cur, base, in
               <p className="mt-1 text-[15px] font-medium">{lesson ? lesson.title : preset.lesson.title}</p>
               {lesson ? (
                 <>
-                  <ol className="mt-2 list-decimal space-y-0.5 pl-4 text-[13px] text-muted">{lesson.steps.map((s) => <li key={s}>{s}</li>)}</ol>
-                  <Button size="sm" variant={lessonDone[lesson.id] ? 'subtle' : 'primary'} className="mt-3" onClick={() => completeLesson(lesson.id)}>
-                    <Check className="size-4" />{lessonDone[lesson.id] ? 'Lesson complete' : 'Mark lesson complete'}
-                  </Button>
+                  <ol className="mt-2 list-decimal space-y-0.5 pl-4 text-[13px] text-muted">{lesson.tasks.map((t) => <li key={t.text}>{t.text}</li>)}</ol>
+                  <p className={cn('mt-3 flex items-center gap-1.5 text-[13px]', lessonDone[lesson.id] ? 'text-good' : 'text-muted')}>
+                    {lessonDone[lesson.id] ? <><Check className="size-4" />Lesson complete. Now try it on the real images.</> : 'Finish this lesson’s practice window in Learn to tick it off.'}
+                  </p>
                 </>
               ) : <p className="mt-1 text-[13px] text-muted">{preset.lesson.text}</p>}
             </div>
