@@ -219,3 +219,49 @@ def test_cap_from_settings(tmp_path):
     cache = default_cache(settings)
     assert cache.max_bytes == 512 * 1024
     assert cache.directory == Path(settings.cutout_cache_dir).resolve()
+
+
+# ------------------------------------------------- T-015: Windows rename races
+
+
+def test_rename_blocked_by_an_existing_final_file_is_a_hit(tmp_path, monkeypatch):
+    """Windows: os.replace fails with PermissionError when another process has
+    the final file open. The file is then complete, so it counts as a hit."""
+    from app.cutouts import cache as cache_mod
+
+    cache = CutoutCache(tmp_path / "c", 10**9)
+    key = "dr1_x_D2_1.0000_+2.0000_10.0"
+    final = cache.path_for(key)
+
+    def other_process_wins(src, dst):
+        Path(dst).write_bytes(b"written by the other process")
+        raise PermissionError(13, "Access is denied", str(dst))
+
+    monkeypatch.setattr(cache_mod, "_replace", other_process_wins)
+    path, cached = cache.get_or_create(key, lambda temp: temp.write_bytes(b"mine"))
+    assert (path, cached) == (final, True)
+    assert final.read_bytes() == b"written by the other process"
+    assert names(tmp_path / "c") == [final.name]  # our temp file is gone
+
+
+def test_rename_permission_error_without_a_final_file_still_raises(tmp_path, monkeypatch):
+    from app.cutouts import cache as cache_mod
+
+    cache = CutoutCache(tmp_path / "c", 10**9)
+
+    def denied(src, dst):
+        raise PermissionError(13, "Access is denied", str(dst))
+
+    monkeypatch.setattr(cache_mod, "_replace", denied)
+    with pytest.raises(PermissionError):
+        cache.get_or_create("dr1_y_D2_1.0000_+2.0000_10.0", lambda t: t.write_bytes(b"x"))
+    assert names(tmp_path / "c") == []
+
+
+def test_discard_file_removes_and_tolerates_missing(tmp_path):
+    from app.cutouts.cache import discard_file
+
+    f = tmp_path / "x.fits"
+    f.write_bytes(b"x")
+    assert discard_file(f) and not f.exists()
+    assert discard_file(f)  # already gone is fine

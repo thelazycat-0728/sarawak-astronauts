@@ -397,5 +397,102 @@
       "url": "/presets/barnards-star/fov-3/diff/sx_dr1_2025W35_1A_0146_1_D2__sx_qr3_2026W35_1A_0092_1_D2.png",
       "scale": 5.0603
     }
-  ]
+  ],
+  "stacks": {
+    "method": "mean",
+    "note": "Each visit stack is the mean of that visit's frames over their valid pixels, with the frames' stretch, so faint sources and small shifts show better. The frames are at slightly different wavelengths, so a stack is a broadband average, not a colour or brightness measurement.",
+    "visits": [
+      {
+        "visit": 1,
+        "n_frames": 6,
+        "epoch_ids": [
+          "sx_dr1_2025W35_1A_0146_1_D2",
+          "sx_dr1_2025W35_1A_0146_2_D2",
+          "sx_dr1_2025W35_1A_0146_3_D2",
+          "sx_dr1_2025W35_1A_0146_4_D2",
+          "sx_dr1_2025W35_1A_0444_1_D2",
+          "sx_dr1_2025W35_1A_0444_2_D2"
+        ],
+        "time_utc": "2025-08-26T05:41:39Z",
+        "mjd": 60913.237262,
+        "wavelength_min_um": 1.23823,
+        "wavelength_max_um": 1.62887,
+        "wavelength_mean_um": 1.46594,
+        "url": "/presets/barnards-star/fov-3/stacks/visit-1.png",
+        "quality": {
+          "status": "good",
+          "flagged_fraction": 0.0,
+          "flags": [
+            "NONFUNC",
+            "COLD",
+            "PERSIST",
+            "HALO"
+          ]
+        }
+      },
+      {
+        "visit": 2,
+        "n_frames": 6,
+        "epoch_ids": [
+          "sx_dr1_2026W12_1A_0311_1_D2",
+          "sx_dr1_2026W12_1A_0311_2_D2",
+          "sx_dr1_2026W12_1A_0311_3_D2",
+          "sx_dr1_2026W12_1A_0311_4_D2",
+          "sx_dr1_2026W12_2A_0371_2_D2",
+          "sx_dr1_2026W12_2A_0371_3_D2"
+        ],
+        "time_utc": "2026-03-18T23:20:41Z",
+        "mjd": 61117.972701,
+        "wavelength_min_um": 1.11853,
+        "wavelength_max_um": 1.41198,
+        "wavelength_mean_um": 1.28612,
+        "url": "/presets/barnards-star/fov-3/stacks/visit-2.png",
+        "quality": {
+          "status": "good",
+          "flagged_fraction": 0.0,
+          "flags": [
+            "NONFUNC",
+            "PERSIST",
+            "HALO",
+            "COLD"
+          ]
+        }
+      },
+      {
+        "visit": 3,
+        "n_frames": 6,
+        "epoch_ids": [
+          "sx_qr3_2026W34_2A_0249_2_D2",
+          "sx_qr3_2026W34_2A_0249_3_D2",
+          "sx_qr3_2026W34_2A_0264_1_D2",
+          "sx_qr3_2026W34_2A_0264_2_D2",
+          "sx_qr3_2026W35_1A_0038_1_D2",
+          "sx_qr3_2026W35_1A_0092_1_D2"
+        ],
+        "time_utc": "2026-08-22T14:31:08Z",
+        "mjd": 61274.604959,
+        "wavelength_min_um": 1.44219,
+        "wavelength_max_um": 1.61362,
+        "wavelength_mean_um": 1.52496,
+        "url": "/presets/barnards-star/fov-3/stacks/visit-3.png",
+        "quality": {
+          "status": "good",
+          "flagged_fraction": 0.0,
+          "flags": [
+            "NONFUNC",
+            "HOT",
+            "HALO",
+            "PERSIST",
+            "COLD"
+          ]
+        }
+      }
+    ],
+    "diff": {
+      "a_visit": 1,
+      "b_visit": 3,
+      "url": "/presets/barnards-star/fov-3/stacks/diff/visit-1__visit-3.png",
+      "scale": 2.9192
+    }
+  }
 }

@@ -64,3 +64,31 @@ def test_cutout_defaults_and_cache_dir_env(monkeypatch):
     assert Settings.from_env().cutout_cache_dir == "/tmp/sx-cache"
     monkeypatch.setenv("CUTOUT_CACHE_DIR", "  ")
     assert Settings.from_env().cutout_cache_dir == s.cutout_cache_dir
+
+
+def test_default_settings_read_the_environment_like_from_env(monkeypatch):
+    monkeypatch.setenv("DATA_MODE", " IRSA ")
+    monkeypatch.setenv("CORS_ORIGINS", "https://a.example")
+    monkeypatch.setenv("CUTOUT_CACHE_DIR", " /tmp/sx-shared ")
+    # CORS_ORIGIN_REGEX and GEMINI_* are read by from_env only (PR #15).
+    for name in ("CORS_ORIGIN_REGEX", "GEMINI_API_KEY", "GEMINI_MODEL",
+                 "GEMINI_FALLBACK_MODEL"):
+        monkeypatch.delenv(name, raising=False)
+    plain = Settings()
+    assert plain == Settings.from_env()
+    assert (plain.data_mode, plain.cors_origins, plain.cutout_cache_dir) == (
+        "irsa", ("https://a.example",), "/tmp/sx-shared")
+    # An explicit value still wins over the environment.
+    assert Settings(cutout_cache_dir="/elsewhere").cutout_cache_dir == "/elsewhere"
+    # Code that builds its own Settings() finds the shared cache directory.
+    from app.cutouts import default_cache
+
+    assert default_cache(Settings()).directory == Path("/tmp/sx-shared").resolve()
+
+
+def test_from_env_only_variables_do_not_leak_into_plain_settings(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGIN_REGEX", r"^https://x\.example$")
+    monkeypatch.setenv("GEMINI_API_KEY", "secret")
+    assert Settings().cors_origin_regex is None and Settings().gemini_api_key is None
+    s = Settings.from_env()
+    assert s.cors_origin_regex == r"^https://x\.example$" and s.gemini_api_key == "secret"

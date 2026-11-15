@@ -58,18 +58,28 @@ N_STATIC_STARS = 45
 STRETCH_ASINH_A = 0.03  # the mock's own softening; real frames use 0.1 (app/config.py)
 NODATA_GRAY = 0  # grey level for pixels with no data (API.md image.nodata_gray)
 
-# (time_utc, release, visit, flagged_fraction, flags). Visits are about 6 months apart.
+# (time_utc, release, visit, flags). Visits are about 6 months apart. Each frame's
+# quality.flagged_fraction is measured: the share of its grey-0 (no-data) pixels.
 EXPOSURES = [
-    ("2025-05-14T03:12:40Z", "DR1", 1, 0.004, []),
-    ("2025-05-14T16:47:05Z", "DR1", 1, 0.006, []),
-    ("2025-05-15T06:20:52Z", "DR1", 1, 0.071, ["PERSIST"]),
-    ("2025-11-11T22:05:18Z", "DR1", 2, 0.003, []),
-    ("2025-11-12T11:39:44Z", "DR1", 2, 0.005, []),
-    ("2025-11-13T01:14:09Z", "DR1", 2, 0.009, ["PERSIST"]),
-    ("2026-05-13T08:31:27Z", "QR3", 3, 0.004, []),
-    ("2026-05-13T22:05:51Z", "QR3", 3, 0.012, []),
-    ("2026-05-14T11:40:16Z", "QR3", 3, 0.006, []),
+    ("2025-05-14T03:12:40Z", "DR1", 1, []),
+    ("2025-05-14T16:47:05Z", "DR1", 1, []),
+    ("2025-05-15T06:20:52Z", "DR1", 1, ["PERSIST"]),
+    ("2025-11-11T22:05:18Z", "DR1", 2, []),
+    ("2025-11-12T11:39:44Z", "DR1", 2, []),
+    ("2025-11-13T01:14:09Z", "DR1", 2, ["PERSIST"]),
+    ("2026-05-13T08:31:27Z", "QR3", 3, []),
+    ("2026-05-13T22:05:51Z", "QR3", 3, []),
+    ("2026-05-14T11:40:16Z", "QR3", 3, []),
 ]
+# No-data patches (exposure index -> patches), well clear of the moving and
+# varying sources. ("disc", x, y, r) is a masked blob (the PERSIST frames);
+# ("east_strip", width) is a strip off the detector at the east (left) edge.
+# Exposure 3 is the `warn` example (about 6.7 % no data).
+NODATA_PATCHES: dict[int, list[tuple]] = {
+    2: [("disc", 18.0, 20.0, 14.0)],
+    5: [("disc", 78.0, 22.0, 5.0)],
+    7: [("east_strip", 1)],
+}
 
 # Moving source (stands in for Barnard's Star): steady motion, mostly north (up).
 MOVER_AMP = 2.5
@@ -139,7 +149,7 @@ def add_star(img: np.ndarray, x: float, y: float, amp: float) -> None:
 
 def asinh_stretch(img: np.ndarray, vmin: float, vmax: float) -> np.ndarray:
     """API.md stretch convention: valid pixels to grey 1-255, NODATA_GRAY (0) for
-    non-finite pixels (the mock has none). Same formula as backend/app/stretch.py."""
+    non-finite pixels (the no-data patches). Same formula as backend/app/stretch.py."""
     valid = np.isfinite(img)
     x = np.clip((np.where(valid, img, vmin) - vmin) / (vmax - vmin), 0.0, 1.0)
     y = np.arcsinh(x / STRETCH_ASINH_A) / np.arcsinh(1.0 / STRETCH_ASINH_A)
@@ -184,12 +194,34 @@ def aperture_flux(img: np.ndarray, x: float, y: float) -> tuple[float, float]:
 # ---------------------------------------------------------------- generate
 
 
+def nodata_mask(index: int) -> np.ndarray:
+    """True where exposure ``index`` has no data (NODATA_PATCHES)."""
+    mask = np.zeros((HEIGHT, WIDTH), dtype=bool)
+    yy, xx = np.mgrid[0:HEIGHT, 0:WIDTH]
+    for patch in NODATA_PATCHES.get(index, []):
+        if patch[0] == "disc":
+            _, x, y, r = patch
+            mask |= (xx - x) ** 2 + (yy - y) ** 2 <= r**2
+        elif patch[0] == "east_strip":
+            mask[:, : patch[1]] = True
+        else:
+            raise ValueError(f"unknown patch {patch!r}")
+    return mask
+
+
+def flagged_fraction(gray: np.ndarray) -> float:
+    """API.md quality.flagged_fraction: the share of grey-0 (no-data) pixels."""
+    return round(float(np.mean(gray == NODATA_GRAY)), 4)
+
+
 def simulate() -> tuple[np.random.Generator, list[float], list[np.ndarray], float, float]:
-    """The synthetic frames in MJy/sr and their shared stretch.
+    """The synthetic frames in MJy/sr (NaN = no data) and their shared stretch.
 
     Returns (rng, mjds, frames, vmin, vmax); ``rng`` continues where the frames
     stopped, so ``generate`` draws the same wavelengths as before. Tests use the
-    frames to check the documented grey-level inverse.
+    frames to check the documented grey-level inverse. The stretch is computed
+    before the no-data patches are cut out, so it is the same as before they
+    existed.
     """
     rng = np.random.default_rng(SEED)
     stars = static_stars(rng)
@@ -212,6 +244,8 @@ def simulate() -> tuple[np.random.Generator, list[float], list[np.ndarray], floa
     pooled = np.stack(frames)
     vmin = round(float(np.percentile(pooled, 10.0)), 4)
     vmax = round(float(np.percentile(pooled, 99.98)), 4)
+    for i, img in enumerate(frames):
+        img[nodata_mask(i)] = np.nan
     return rng, mjds, frames, vmin, vmax
 
 
@@ -223,13 +257,13 @@ def generate() -> None:
             old.unlink()
 
     epochs = []
-    for i, ((time_utc, release, visit, flagged, flags), mjd) in enumerate(
+    for i, ((time_utc, release, visit, flags), mjd) in enumerate(
         zip(EXPOSURES, mjds)
     ):
         epoch_id = f"mock_{time_utc[:10].replace('-', '')}_{i + 1:02d}_{BAND['id']}"
-        save_png(
-            MOCK / "frames" / f"{epoch_id}.png", asinh_stretch(frames[i], vmin, vmax)
-        )
+        gray = asinh_stretch(frames[i], vmin, vmax)
+        save_png(MOCK / "frames" / f"{epoch_id}.png", gray)
+        flagged = flagged_fraction(gray)
         wavelength = rng.uniform(BAND["wavelength_min_um"], BAND["wavelength_max_um"])
         epochs.append(
             {
@@ -387,7 +421,10 @@ Frames use the grey-level convention in `docs/API.md` section 3: grey 0
 (`image.nodata_gray`) means no data, and valid pixels are 1-255 from the asinh
 stretch with `stretch.vmin`, `stretch.vmax` and `stretch.asinh_a`. The mock's
 `asinh_a` is 0.03; real SPHEREx frames use 0.1, so always read it from the JSON.
-The mock has no masked pixels, so grey 0 does not occur in these frames.
+Three frames have synthetic no-data patches (grey 0): a large masked blob in the
+third frame (the `warn` example, `PERSIST`), a small one in the sixth (`PERSIST`)
+and a 1 px off-detector strip at the east (left) edge of the eighth. Each
+`quality.flagged_fraction` is the measured share of grey-0 pixels in its frame.
 
 ## Regenerate
 
@@ -554,7 +591,7 @@ def check_epochs(doc: dict, errs: list[str]) -> set[str]:
         errs.append("epochs.json: stretch.asinh_a must be > 0")
     for i, e in enumerate(doc["epochs"]):
         where = f"epochs.json $.epochs[{i}]"
-        if not EPOCH_ID_RE.match(e["id"]):
+        if not EPOCH_ID_RE.fullmatch(e["id"]):
             errs.append(f"{where}: id {e['id']!r} does not match {EPOCH_ID_RE.pattern}")
         if abs(iso_to_mjd(e["time_utc"]) - e["mjd"]) > 1e-5:
             errs.append(f"{where}: mjd does not match time_utc")
@@ -569,8 +606,17 @@ def check_epochs(doc: dict, errs: list[str]) -> set[str]:
                     errs.append(
                         f"{where}: PNG is {im.size} {im.mode}, expected {size} L"
                     )
-                elif im.getextrema()[0] == NODATA_GRAY:
-                    errs.append(f"{where}: mock frame has no-data pixels (grey 0)")
+                else:
+                    share = flagged_fraction(np.asarray(im))
+                    q = e["quality"]
+                    if abs(q["flagged_fraction"] - share) > 1e-9:
+                        errs.append(
+                            f"{where}: quality.flagged_fraction {q['flagged_fraction']} "
+                            f"is not the frame's share of grey-0 pixels ({share})"
+                        )
+                    if q["status"] != quality_status(q["flagged_fraction"]):
+                        errs.append(f"{where}: quality.status does not match "
+                                    "flagged_fraction")
     for i, dpair in enumerate(doc["diffs"]):
         where = f"epochs.json $.diffs[{i}]"
         if dpair["a"] not in ids or dpair["b"] not in ids:
@@ -585,6 +631,8 @@ def check_epochs(doc: dict, errs: list[str]) -> set[str]:
         errs.append("epochs.json: diff_url_template must contain {a} and {b}")
     if len(ids) < 6:
         errs.append("epochs.json: need at least 6 frames")
+    if not any(e["quality"]["status"] == "warn" for e in doc["epochs"]):
+        errs.append("epochs.json: the mock needs a warn frame for the UI")
     return set(ids)
 
 

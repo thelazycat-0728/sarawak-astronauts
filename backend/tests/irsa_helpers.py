@@ -19,6 +19,20 @@ def fixture_bytes(name: str) -> bytes:
 class FakeResponse:
     content: bytes = b""
     status_code: int = 200
+    headers: dict[str, str] = field(default_factory=dict)
+    error_after: BaseException | None = None  # raised after the first chunk
+    chunks_read: int = 0
+    closed: bool = False
+
+    def iter_content(self, chunk_size: int = 1):
+        for start in range(0, len(self.content), max(1, chunk_size)):
+            self.chunks_read += 1
+            yield self.content[start:start + chunk_size]
+            if self.error_after is not None:
+                raise self.error_after
+
+    def close(self) -> None:
+        self.closed = True
 
 
 @dataclass
@@ -29,8 +43,9 @@ class FakeSession:
     error: BaseException | None = None
     calls: list[dict[str, Any]] = field(default_factory=list)
 
-    def get(self, url, *, params=None, timeout=None, headers=None):
-        self.calls.append({"url": url, "params": params, "timeout": timeout})
+    def get(self, url, *, params=None, timeout=None, headers=None, stream=False):
+        self.calls.append({"url": url, "params": params, "timeout": timeout,
+                           "stream": stream})
         if self.error is not None:
             raise self.error
         assert self.response is not None

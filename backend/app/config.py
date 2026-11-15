@@ -21,6 +21,12 @@ first two):
   ``backend/.cache/cutouts/``, git-ignored). On Render's free plan the disk is wiped
   on every restart, so the cache is only a speed-up.
 
+``DATA_MODE``, ``CORS_ORIGINS`` and ``CUTOUT_CACHE_DIR`` are read from the
+environment whenever a ``Settings`` is created; an explicit argument wins over the
+environment (``Settings(cutout_cache_dir=...)`` in tests). ``CORS_ORIGIN_REGEX``
+and the ``GEMINI_*`` variables are read by ``Settings.from_env()`` only, so a plain
+``Settings()`` never picks up an API key.
+
 Everything else is a plain default that code can override (for example in tests).
 """
 
@@ -40,11 +46,25 @@ def _split_csv(value: str) -> tuple[str, ...]:
     return tuple(part.strip() for part in value.split(",") if part.strip())
 
 
+def _env_data_mode() -> str:
+    return os.environ.get("DATA_MODE", "mock").strip().lower() or "mock"
+
+
+def _env_cors_origins() -> tuple[str, ...]:
+    return _split_csv(os.environ.get("CORS_ORIGINS", "")) or DEFAULT_CORS_ORIGINS
+
+
+def _env_cutout_cache_dir() -> str:
+    return os.environ.get("CUTOUT_CACHE_DIR", "").strip() or DEFAULT_CUTOUT_CACHE_DIR
+
+
 @dataclass(frozen=True)
 class Settings:
-    data_mode: str = "mock"
-    cors_origins: tuple[str, ...] = DEFAULT_CORS_ORIGINS
+    # Environment-backed (see the module docstring).
+    data_mode: str = field(default_factory=_env_data_mode)
+    cors_origins: tuple[str, ...] = field(default_factory=_env_cors_origins)
     # Extra origins allowed by pattern (CORSMiddleware's allow_origin_regex).
+    # Read from CORS_ORIGIN_REGEX by from_env only.
     cors_origin_regex: str | None = None
     # SPHEREx release labels used in responses. Keeping them here means a new
     # release needs no code change. The order matters: when the same exposure is
@@ -60,12 +80,18 @@ class Settings:
     irsa_sia_url: str = "https://irsa.ipac.caltech.edu/SIA"
     # Seconds allowed for connecting to IRSA and for each read from it.
     irsa_timeout_s: float = 30.0
+    # Largest SIA response accepted (streamed; a bigger one is a 502). Barnard's
+    # Star D2 (61 exposures) is 158 kB, about 2.1 kB per exposure, so 16 MB holds
+    # about 7,500 exposures of one band at one position.
+    irsa_sia_max_bytes: int = 16 * 1024 * 1024
     # SPHEREx cutouts (app.cutouts). The cap counts finished cutout files only.
-    cutout_cache_dir: str = DEFAULT_CUTOUT_CACHE_DIR
+    # The directory is environment-backed (CUTOUT_CACHE_DIR).
+    cutout_cache_dir: str = field(default_factory=_env_cutout_cache_dir)
     cutout_cache_max_mb: float = 512.0
     cutout_workers: int = 4  # parallel downloads in a batch
-    # Whole-request limit for one cutout download (connect, every read, and the
-    # total transfer time). A cold 10' cutout took 11-24 s in T-004's tests.
+    # Time budget for one download attempt: connecting, the response headers and
+    # the whole body share it (app.cutouts.download). A cold 10' cutout took
+    # 11-24 s in T-004's tests.
     cutout_timeout_s: float = 60.0
     cutout_retries: int = 2  # extra attempts after a timeout, 5xx or dropped connection
     # Wait before retry n is about backoff * 2**(n-1) (with +-50 % jitter). IRSA
@@ -93,6 +119,16 @@ class Settings:
     epochs_max_waiters: int = 16
     # Whole-request limit for /frame/{id}.png in irsa mode (504 upstream_timeout).
     frame_deadline_s: float = 60.0
+    # Most /frame renders running at once in irsa mode. A request beyond that
+    # waits up to frame_slot_wait_s for a free slot (the wait counts against
+    # frame_deadline_s), then answers 503 unavailable. A render that passed its
+    # deadline keeps its slot until it ends. A live view loads all its frames at
+    # once (3 per view), so 8 slots and a short wait let a few users load together.
+    frame_max_concurrent: int = 8
+    frame_slot_wait_s: float = 3.0
+    # How long a well-formed epoch id that resolved to nothing (404) at a position
+    # is remembered, so repeating it costs no IRSA query and no render.
+    frame_not_found_ttl_s: float = 60.0
 
     # ------------------------------------------------ AI explainer (POST /explain)
     # Google Gemini, free tier (docs/TECH_STACK.md). repr=False keeps the key out of logs.
@@ -138,7 +174,10 @@ class Settings:
     # Saturated star cores are NaN in IMAGE with OVERFLOW set. When True they are
     # filled, before reprojection, with the brightest finite pixel within 2 px, so a
     # bright star renders as a white disc instead of a hole. Display only: the
-    # filled value is a lower bound, not a measurement.
+    # filled value is a lower bound, not a measurement. CleanFrame.filled marks the
+    # affected view pixels; they are left out of the stretch percentiles and must
+    # be left out of photometry (CleanFrame.measurable), but they are displayed and
+    # so do not count as flagged in quality.flagged_fraction.
     pipeline_fill_saturated: bool = True
     # Output grid: north up, east left, centred on the target, side
     # ceil(fov * 60 / scale) pixels (fov=10 gives 97 px). 6.2" is about SPHEREx native.
@@ -174,7 +213,8 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> Settings:
-        origins = _split_csv(os.environ.get("CORS_ORIGINS", ""))
+        """``Settings()`` (which reads DATA_MODE, CORS_ORIGINS and CUTOUT_CACHE_DIR)
+        plus CORS_ORIGIN_REGEX (validated) and the GEMINI_* variables."""
         origin_regex = os.environ.get("CORS_ORIGIN_REGEX", "").strip() or None
         if origin_regex is not None:
             try:
@@ -182,11 +222,7 @@ class Settings:
             except re.error as exc:
                 raise ValueError(f"invalid CORS_ORIGIN_REGEX {origin_regex!r}: {exc}") from exc
         return cls(
-            data_mode=os.environ.get("DATA_MODE", "mock").strip().lower() or "mock",
-            cors_origins=origins or DEFAULT_CORS_ORIGINS,
             cors_origin_regex=origin_regex,
-            cutout_cache_dir=os.environ.get("CUTOUT_CACHE_DIR", "").strip()
-            or DEFAULT_CUTOUT_CACHE_DIR,
             gemini_api_key=os.environ.get("GEMINI_API_KEY", "").strip() or None,
             gemini_model=os.environ.get("GEMINI_MODEL", "").strip() or cls.gemini_model,
             gemini_fallback_model=os.environ.get("GEMINI_FALLBACK_MODEL", "").strip()

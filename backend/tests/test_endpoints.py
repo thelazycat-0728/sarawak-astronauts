@@ -172,3 +172,24 @@ def test_cors_origin_regex_allows_deploy_previews(provider):
     )
     assert resp.status_code == 200
     assert resp.headers["access-control-allow-origin"] == "https://deploy-preview-3--site.netlify.app"
+
+
+def test_cors_regex_origin_also_gets_the_data_mode_header_exposed(provider):
+    """A deploy-preview origin allowed by CORS_ORIGIN_REGEX (PR #15) can read
+    X-Data-Mode (T-014), on a simple request and on a preflight."""
+    settings = Settings(
+        cors_origins=("https://site.netlify.app",),
+        cors_origin_regex=r"^https://deploy-preview-\d+--site\.netlify\.app$",
+    )
+    client = TestClient(create_app(settings=settings, provider=provider))
+    origin = "https://deploy-preview-21--site.netlify.app"
+    resp = client.get("/health", headers={"Origin": origin})
+    assert resp.status_code == 200
+    assert resp.headers["access-control-allow-origin"] == origin
+    exposed = [h.strip().lower()
+               for h in resp.headers["access-control-expose-headers"].split(",")]
+    assert "x-data-mode" in exposed
+    assert resp.headers["x-data-mode"] == "mock"
+    pre = client.options("/health", headers={"Origin": origin,
+                                             "Access-Control-Request-Method": "GET"})
+    assert pre.status_code == 200 and pre.headers["access-control-allow-origin"] == origin

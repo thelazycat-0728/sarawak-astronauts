@@ -344,5 +344,99 @@
       "url": "/presets/wise-0855/fov-6/diff/sx_dr1_2025W19_1B_0116_1_D6__sx_dr1_2026W18_2A_0065_1_D6.png",
       "scale": 0.22068
     }
-  ]
+  ],
+  "stacks": {
+    "method": "mean",
+    "note": "Each visit stack is the mean of that visit's frames over their valid pixels, with the frames' stretch, so faint sources and small shifts show better. The frames are at slightly different wavelengths, so a stack is a broadband average, not a colour or brightness measurement.",
+    "visits": [
+      {
+        "visit": 1,
+        "n_frames": 2,
+        "epoch_ids": [
+          "sx_dr1_2025W19_1B_0116_1_D6",
+          "sx_dr1_2025W19_1B_0138_1_D6"
+        ],
+        "time_utc": "2025-05-05T18:25:47Z",
+        "mjd": 60800.7679,
+        "wavelength_min_um": 4.85988,
+        "wavelength_max_um": 4.96738,
+        "wavelength_mean_um": 4.91363,
+        "url": "/presets/wise-0855/fov-6/stacks/visit-1.png",
+        "quality": {
+          "status": "good",
+          "flagged_fraction": 0.0121,
+          "flags": [
+            "NONFUNC",
+            "COLD",
+            "OUTLIER",
+            "HALO"
+          ]
+        }
+      },
+      {
+        "visit": 2,
+        "n_frames": 6,
+        "epoch_ids": [
+          "sx_dr1_2025W46_2A_0214_3_D6",
+          "sx_dr1_2025W46_2A_0214_4_D6",
+          "sx_dr1_2025W46_2A_0226_1_D6",
+          "sx_dr1_2025W46_2A_0226_2_D6",
+          "sx_dr1_2025W46_2A_0226_3_D6",
+          "sx_dr1_2025W46_2A_0226_4_D6"
+        ],
+        "time_utc": "2025-11-14T13:18:38Z",
+        "mjd": 60993.554605,
+        "wavelength_min_um": 4.77025,
+        "wavelength_max_um": 4.94639,
+        "wavelength_mean_um": 4.85769,
+        "url": "/presets/wise-0855/fov-6/stacks/visit-2.png",
+        "quality": {
+          "status": "good",
+          "flagged_fraction": 0.0,
+          "flags": [
+            "NONFUNC",
+            "COLD",
+            "PERSIST",
+            "OUTLIER",
+            "HALO"
+          ]
+        }
+      },
+      {
+        "visit": 3,
+        "n_frames": 6,
+        "epoch_ids": [
+          "sx_dr1_2026W17_2A_0591_1_D6",
+          "sx_dr1_2026W17_2A_0609_1_D6",
+          "sx_dr1_2026W17_2A_0609_2_D6",
+          "sx_dr1_2026W17_2A_0692_1_D6",
+          "sx_dr1_2026W17_2A_0692_2_D6",
+          "sx_dr1_2026W18_2A_0065_1_D6"
+        ],
+        "time_utc": "2026-04-27T00:37:14Z",
+        "mjd": 61157.025853,
+        "wavelength_min_um": 4.75318,
+        "wavelength_max_um": 4.93131,
+        "wavelength_mean_um": 4.83563,
+        "url": "/presets/wise-0855/fov-6/stacks/visit-3.png",
+        "quality": {
+          "status": "good",
+          "flagged_fraction": 0.0,
+          "flags": [
+            "NONFUNC",
+            "COLD",
+            "PERSIST",
+            "OUTLIER",
+            "HALO"
+          ]
+        }
+      }
+    ],
+    "diff": {
+      "a_visit": 1,
+      "b_visit": 3,
+      "url": "/presets/wise-0855/fov-6/stacks/diff/visit-1__visit-3.png",
+      "scale": 0.20796
+    }
+  }
 }

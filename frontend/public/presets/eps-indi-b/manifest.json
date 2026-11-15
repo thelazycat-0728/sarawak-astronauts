@@ -559,5 +559,134 @@
       "url": "/presets/eps-indi-b/diff/sx_dr1_2025W17_4B_0222_2_D2__sx_qr3_2026W40_1A_0613_1_D2.png",
       "scale": 4.0598
     }
-  ]
+  ],
+  "stacks": {
+    "method": "mean",
+    "note": "Each visit stack is the mean of that visit's frames over their valid pixels, with the frames' stretch, so faint sources and small shifts show better. The frames are at slightly different wavelengths, so a stack is a broadband average, not a colour or brightness measurement.",
+    "visits": [
+      {
+        "visit": 1,
+        "n_frames": 6,
+        "epoch_ids": [
+          "sx_dr1_2025W17_4B_0222_2_D2",
+          "sx_dr1_2025W17_4B_0222_3_D2",
+          "sx_dr1_2025W17_4B_0447_1_D2",
+          "sx_dr1_2025W17_4B_0447_2_D2",
+          "sx_dr1_2025W17_4B_0447_3_D2",
+          "sx_dr1_2025W17_4B_0447_4_D2"
+        ],
+        "time_utc": "2025-04-27T05:01:37Z",
+        "mjd": 60792.209454,
+        "wavelength_min_um": 1.18756,
+        "wavelength_max_um": 1.3679,
+        "wavelength_mean_um": 1.28116,
+        "url": "/presets/eps-indi-b/stacks/visit-1.png",
+        "quality": {
+          "status": "good",
+          "flagged_fraction": 0.0,
+          "flags": [
+            "NONFUNC",
+            "COLD",
+            "PERSIST",
+            "HALO",
+            "OUTLIER"
+          ]
+        }
+      },
+      {
+        "visit": 2,
+        "n_frames": 6,
+        "epoch_ids": [
+          "sx_dr1_2025W41_1A_0067_1_D2",
+          "sx_dr1_2025W41_1A_0067_2_D2",
+          "sx_dr1_2025W41_1A_0081_1_D2",
+          "sx_dr1_2025W41_1A_0108_1_D2",
+          "sx_dr1_2025W41_2B_0083_1_D2",
+          "sx_dr1_2025W43_2A_0023_1_D2"
+        ],
+        "time_utc": "2025-10-09T19:38:36Z",
+        "mjd": 60957.818471,
+        "wavelength_min_um": 1.13539,
+        "wavelength_max_um": 1.57946,
+        "wavelength_mean_um": 1.31685,
+        "url": "/presets/eps-indi-b/stacks/visit-2.png",
+        "quality": {
+          "status": "good",
+          "flagged_fraction": 0.0,
+          "flags": [
+            "NONFUNC",
+            "COLD",
+            "PERSIST",
+            "OUTLIER",
+            "HALO"
+          ]
+        }
+      },
+      {
+        "visit": 3,
+        "n_frames": 6,
+        "epoch_ids": [
+          "sx_dr1_2026W17_2A_0308_3_D2",
+          "sx_dr1_2026W17_2A_0355_1_D2",
+          "sx_dr1_2026W17_2A_0355_2_D2",
+          "sx_dr1_2026W17_2A_0355_3_D2",
+          "sx_dr1_2026W17_2A_0355_4_D2",
+          "sx_dr1_2026W18_2A_0023_1_D2"
+        ],
+        "time_utc": "2026-04-25T23:25:17Z",
+        "mjd": 61155.975887,
+        "wavelength_min_um": 1.10685,
+        "wavelength_max_um": 1.54046,
+        "wavelength_mean_um": 1.34265,
+        "url": "/presets/eps-indi-b/stacks/visit-3.png",
+        "quality": {
+          "status": "good",
+          "flagged_fraction": 0.0,
+          "flags": [
+            "NONFUNC",
+            "COLD",
+            "PERSIST",
+            "HALO",
+            "OUTLIER"
+          ]
+        }
+      },
+      {
+        "visit": 4,
+        "n_frames": 6,
+        "epoch_ids": [
+          "sx_qr3_2026W40_1A_0407_3_D2",
+          "sx_qr3_2026W40_1A_0453_1_D2",
+          "sx_qr3_2026W40_1A_0518_1_D2",
+          "sx_qr3_2026W40_1A_0569_1_D2",
+          "sx_qr3_2026W40_1A_0569_2_D2",
+          "sx_qr3_2026W40_1A_0613_1_D2"
+        ],
+        "time_utc": "2026-09-30T07:37:58Z",
+        "mjd": 61313.318034,
+        "wavelength_min_um": 1.1202,
+        "wavelength_max_um": 1.57959,
+        "wavelength_mean_um": 1.31423,
+        "url": "/presets/eps-indi-b/stacks/visit-4.png",
+        "quality": {
+          "status": "good",
+          "flagged_fraction": 0.0,
+          "flags": [
+            "NONFUNC",
+            "COLD",
+            "PERSIST",
+            "HALO",
+            "STREAK",
+            "OUTLIER"
+          ]
+        }
+      }
+    ],
+    "diff": {
+      "a_visit": 1,
+      "b_visit": 4,
+      "url": "/presets/eps-indi-b/stacks/diff/visit-1__visit-4.png",
+      "scale": 1.5903
+    }
+  }
 }

@@ -1,7 +1,8 @@
 """Shared asinh stretch, 8-bit PNG output, and the stateless ``render_frame``.
 
 - **Stretch.** ``vmin`` and ``vmax`` (MJy/sr) are the ``Settings.stretch_percentiles``
-  (1st and 99.5th) of every valid pixel of every frame in the sequence, rounded to 5
+  (1st and 99.5th) of every valid, measured pixel of every frame in the sequence
+  (filled saturated cores are left out, ``CleanFrame.measurable``), rounded to 5
   significant digits so the values written to JSON give the same PNG bytes when
   they come back as ``frame_url`` parameters. Grey levels follow ``app.stretch``:
   ``x = clip((v - vmin) / (vmax - vmin), 0, 1)``, then
@@ -23,7 +24,6 @@ import math
 from collections.abc import Iterable
 
 import numpy as np
-from astropy.io import fits
 from PIL import Image
 
 from app.config import Settings
@@ -36,8 +36,9 @@ from app.cutouts import (
     make_view,
     resolve_epoch,
 )
+from app.cutouts.cache import open_cached
 from app.cutouts.download import StreamingSession
-from app.errors import InvalidParameter, NotFound, UpstreamError
+from app.errors import InvalidParameter, NotFound
 from app.irsa.epochs import parse_epoch_id
 from app.irsa.sia import HttpSession, validate_band
 from app.pipeline.clean import CleanFrame, clean_cutout
@@ -107,11 +108,17 @@ def _check_stretch(vmin: object, vmax: object) -> tuple[float, float] | None:
 
 
 def clean_path(path, ra: float, dec: float, fov: float, settings: Settings) -> CleanFrame:
-    try:
-        with fits.open(path, memmap=False) as hdul:
-            return clean_cutout(hdul, ra, dec, fov, settings)
-    except OSError as exc:
-        raise UpstreamError("cached cutout could not be read") from exc
+    """Open a cached cutout and clean it.
+
+    A file that cannot be opened or read (missing, just evicted, truncated or
+    otherwise damaged) is removed from the cache, so the next request downloads
+    it again, and raises UpstreamError (``open_cached``). A MemoryError or a
+    "too many open files" error propagates unchanged and keeps the file. Errors
+    from ``clean_cutout`` itself (for example an unexpected ``BUNIT``) propagate
+    unchanged and keep the file.
+    """
+    with open_cached(path) as hdul:
+        return clean_cutout(hdul, ra, dec, fov, settings)
 
 
 def render_frame(
@@ -161,5 +168,6 @@ def render_frame(
         path = get_cutout(record, view.ra, view.dec, view.fov_arcmin, settings=settings,
                           cache=cache, session=session, view=view).path
     frame = clean_path(path, view.ra, view.dec, view.fov_arcmin, settings)
-    lo, hi = stretch if stretch is not None else compute_stretch([frame.image], settings)
+    lo, hi = stretch if stretch is not None else compute_stretch([frame.measurable],
+                                                                 settings)
     return frame_png(frame, lo, hi, settings)

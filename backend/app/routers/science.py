@@ -37,6 +37,10 @@ _PNG: dict[int | str, dict] = {
     404: {"model": ErrorResponse, "description": "Unknown epoch id"},
     **_ERRORS,
 }
+# /frame with DATA_MODE=irsa: too many frames rendering at once.
+_BUSY: dict[int | str, dict] = {
+    503: {"model": ErrorResponse, "description": "Too many live frames rendering"},
+}
 # /diff and /lightcurve are not available yet with DATA_MODE=irsa.
 _UNAVAILABLE: dict[int | str, dict] = {
     503: {"model": ErrorResponse, "description": "Not available for live data yet"},
@@ -109,7 +113,7 @@ def get_epochs(
 
 
 @router.get(
-    "/frame/{id}.png", response_class=Response, responses=_PNG, name="get_frame"
+    "/frame/{id}.png", response_class=Response, responses=_PNG | _BUSY, name="get_frame"
 )
 def get_frame(
     id: Annotated[str, Path(pattern=EPOCH_ID_PATTERN, description="Epoch id")],

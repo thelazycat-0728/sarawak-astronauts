@@ -80,13 +80,13 @@ class MockProvider:
 
     @staticmethod
     def _stem(epoch_id: str) -> str:
-        m = _ID_RE.match(epoch_id)
+        m = _ID_RE.fullmatch(epoch_id)
         if m is None:
             raise ValueError(f"unexpected mock epoch id {epoch_id!r}")
         return m.group(1)
 
     def _resolve(self, epoch_id: str, band: str) -> str:
-        m = _ID_RE.match(epoch_id)
+        m = _ID_RE.fullmatch(epoch_id)
         if m is None or m.group(2) != band or m.group(1) not in self._frames:
             raise NotFound(f"unknown epoch id {epoch_id} for band {band}")
         return m.group(1)

@@ -12,11 +12,13 @@
 The visit middle is halfway between its first and last mid-exposure time.
 
 **Fallback.** The top candidate of every visit is downloaded (one batch). A
-candidate is rejected when its download fails, its view coverage is below
-``per_visit_min_coverage`` (0.9) or its quality is ``bad``; the visit then tries its
-next candidate in the next batch, up to ``per_visit_max_candidates`` (3). When
-every tried candidate is rejected, the visit keeps the downloaded one with the
-lowest flagged fraction if the target is on it, and is skipped otherwise.
+candidate is rejected when its download fails, it cannot be cleaned (outcome
+``clean_failed``: an unreadable cached file or an unexpected unit), its view
+coverage is below ``per_visit_min_coverage`` (0.9) or its quality is ``bad``; the
+visit then tries its next candidate in the next batch, up to
+``per_visit_max_candidates`` (3). When every tried candidate is rejected, the
+visit keeps the downloaded and cleaned one with the lowest flagged fraction if
+the target is on it, and is skipped otherwise.
 
 **Several per visit** (presets, T-006). ``max_per_visit=N`` keeps up to the N best
 accepted candidates of each visit, replacing rejected ones from further down the
@@ -27,15 +29,19 @@ skips a visit with no accepted candidate instead of keeping a rejected one.
 
 from __future__ import annotations
 
+import logging
 import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 
 from app.config import Settings
 from app.cutouts import Cutout, CutoutFailure
-from app.errors import InvalidParameter
+from app.cutouts.cache import is_resource_error
+from app.errors import ApiError, InvalidParameter
 from app.irsa.records import EpochRecord
 from app.pipeline.clean import CleanFrame
+
+log = logging.getLogger("app.pipeline")
 
 
 def _tangent(ra0: float, dec0: float, ra: float, dec: float) -> tuple[float, float] | None:
@@ -123,8 +129,26 @@ class Chosen:
 class Attempt:
     visit: int
     epoch_id: str
-    outcome: str  # accepted, download_failed, low_coverage, bad_quality or masked_core
+    # accepted, download_failed, clean_failed, low_coverage, bad_quality or
+    # masked_core. ``detail`` starts with the API error code for the two failures.
+    outcome: str
     detail: str = ""
+
+
+def clean_failure(exc: Exception) -> str:
+    """``"<code>: <message>"`` for a cutout that downloaded but could not be
+    cleaned (an unreadable cached file, an unexpected BUNIT, or a bug, logged).
+
+    A resource error (MemoryError, too many open files) is re-raised instead:
+    it says nothing about this cutout, so it surfaces as a 500.
+    """
+    if is_resource_error(exc):
+        raise exc
+    if isinstance(exc, ApiError):
+        log.info("cleaning a cutout failed: %s", exc.message)
+        return f"{exc.code}: {exc.message}"
+    log.exception("cleaning a cutout failed unexpectedly")
+    return f"internal_error: {type(exc).__name__}"
 
 
 @dataclass
@@ -207,7 +231,12 @@ def select_per_visit(
                 result.attempts.append(Attempt(visit, epoch.id, "download_failed",
                                                f"{got.code}: {got.reason}"))
                 continue
-            frame = clean(got)
+            try:
+                frame = clean(got)
+            except Exception as exc:  # noqa: BLE001 - logged in clean_failure; one bad file never aborts the sequence
+                result.attempts.append(Attempt(visit, epoch.id, "clean_failed",
+                                               clean_failure(exc)))
+                continue
             if got.coverage < settings.per_visit_min_coverage:
                 outcome = "low_coverage"
             elif frame.status == "bad":

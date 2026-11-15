@@ -105,8 +105,21 @@ def test_mock_frames_invert_to_their_mjysr_values():
     assert (vmin, vmax) == (s.vmin, s.vmax)
     for e, values in zip(doc.epochs, frames, strict=True):
         gray = decode((FRONTEND_MOCK / "frames" / f"{e.id}.png").read_bytes())
-        assert gray.min() >= 1  # the mock has no masked pixels
         assert_recovered(values, gray, s.vmin, s.vmax, s.asinh_a)
+
+
+def test_mock_flagged_fraction_is_the_share_of_grey_zero():
+    doc = EpochsResponse.model_validate_json(
+        (FRONTEND_MOCK / "epochs.json").read_text(encoding="utf-8"))
+    shares = []
+    for e in doc.epochs:
+        gray = decode((FRONTEND_MOCK / "frames" / f"{e.id}.png").read_bytes())
+        share = round(float(np.mean(gray == 0)), 4)
+        assert e.quality.flagged_fraction == share, e.id
+        shares.append(share)
+    statuses = [e.quality.status for e in doc.epochs]
+    assert statuses.count("warn") == 1 and statuses.count("bad") == 0
+    assert sum(s > 0 for s in shares) == 3  # three frames carry no-data patches
 
 
 def test_mock_provider_uses_the_same_inverse(provider: MockProvider):

@@ -7,6 +7,10 @@
 - **Atomic writes:** a cutout is written to a hidden ``.<key>.<random>.tmp`` file in
   the same directory and renamed into place with ``os.replace``, so readers never
   see a partial file. A failed write leaves no entry and removes its temp files.
+  On Windows the rename fails with PermissionError when another process has the
+  final file open; the file is then already complete, so that counts as a hit.
+- **Unreadable files** found later (``discard_file``) are removed, so a retry
+  downloads them again.
 - **One download per key:** a per-key lock inside the process makes concurrent
   requests for one key wait for the first, which then finds the file. (Separate
   processes may still download the same key twice; the rename keeps that safe.)
@@ -18,6 +22,7 @@
 
 from __future__ import annotations
 
+import errno
 import logging
 import os
 import re
@@ -27,6 +32,9 @@ import uuid
 from collections.abc import Callable
 from pathlib import Path
 
+from astropy.io import fits
+
+from app.errors import UpstreamError
 from app.models import BAND_IDS
 
 log = logging.getLogger("app.cutouts")
@@ -35,6 +43,56 @@ _KEY_RE = re.compile(r"^[A-Za-z0-9_.+-]{1,160}$")
 _RELEASE_RE = re.compile(r"^[A-Za-z0-9]{1,16}$")
 _OBS_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,56}$")  # as app.irsa accepts
 STALE_TEMP_S = 3600.0
+_replace = os.replace  # replaced in tests
+# The process ran out of a resource: the file may be fine, so never evict for these.
+_RESOURCE_ERRNOS = frozenset({errno.EMFILE, errno.ENFILE, errno.ENOMEM})
+
+
+def is_resource_error(exc: BaseException) -> bool:
+    """True for MemoryError and for an OSError meaning "too many open files" or
+    "out of memory". These say nothing about the file, so callers let them
+    surface (a 500) instead of evicting or recording a per-cutout failure."""
+    return isinstance(exc, MemoryError) or (
+        isinstance(exc, OSError) and exc.errno in _RESOURCE_ERRNOS)
+
+
+def open_cached(path: str | os.PathLike[str], *, load_data: bool = True) -> fits.HDUList:
+    """Open a cached cutout and parse every header (and, with ``load_data``,
+    read every array), so a damaged file fails here and not later.
+
+    A file that cannot be opened, read or parsed is evicted (``discard_file``),
+    so the next request downloads it again, and UpstreamError is raised. A
+    resource error (``is_resource_error``) propagates unchanged and keeps the file.
+    """
+    try:
+        hdul = fits.open(path, memmap=False)
+        try:
+            for hdu in hdul:
+                _ = hdu.header
+                if load_data:
+                    _ = hdu.data
+        except BaseException:
+            hdul.close()
+            raise
+    except Exception as exc:  # OSError, or astropy's many types for a bad file
+        if is_resource_error(exc):
+            raise
+        discard_file(path)
+        raise UpstreamError("cached cutout could not be read") from exc
+    return hdul
+
+
+def discard_file(path: str | os.PathLike[str]) -> bool:
+    """Remove a cached cutout that turned out to be unreadable, so the next
+    request downloads it again. True if it is gone afterwards. A file that cannot
+    be removed (open elsewhere on Windows) is left and logged."""
+    try:
+        Path(path).unlink(missing_ok=True)
+        log.info("cutout cache: removed unreadable %s", Path(path).name)
+        return True
+    except OSError as exc:
+        log.info("cutout cache: could not remove unreadable %s (%s)", Path(path).name, exc)
+        return False
 
 
 def cutout_key(
@@ -42,11 +100,11 @@ def cutout_key(
 ) -> str:
     """Cache key from already rounded values; ValueError if unsafe as a file name."""
     if not (
-        _RELEASE_RE.match(release) and _OBS_ID_RE.match(obs_id) and band in BAND_IDS
+        _RELEASE_RE.fullmatch(release) and _OBS_ID_RE.fullmatch(obs_id) and band in BAND_IDS
     ):
         raise ValueError(f"unusable cache key parts: {release!r}, {obs_id!r}, {band!r}")
     key = f"{release.lower()}_{obs_id}_{band}_{ra:.4f}_{dec:+.4f}_{size_arcmin:.1f}"
-    if not _KEY_RE.match(key) or ".." in key:
+    if not _KEY_RE.fullmatch(key) or ".." in key:
         raise ValueError(f"unusable cache key: {key!r}")
     return key
 
@@ -59,7 +117,7 @@ class CutoutCache:
         self._key_locks: dict[str, threading.Lock] = {}
 
     def path_for(self, key: str) -> Path:
-        if not _KEY_RE.match(key) or ".." in key:
+        if not _KEY_RE.fullmatch(key) or ".." in key:
             raise ValueError(f"unusable cache key: {key!r}")
         return self.directory / f"{key}.fits"
 
@@ -101,7 +159,15 @@ class CutoutCache:
             temp = self.directory / f".{key}.{uuid.uuid4().hex}.tmp"
             try:
                 create(temp)
-                os.replace(temp, final)
+                try:
+                    _replace(temp, final)
+                except PermissionError:
+                    # Windows: another process has the final file open, so it
+                    # exists and is complete (it was renamed into place whole).
+                    if not final.is_file():
+                        raise
+                    log.info("cutout cache: %s was written by another process", key)
+                    return final, True
             finally:
                 temp.unlink(missing_ok=True)
         self.evict(keep=final)

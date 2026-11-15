@@ -76,6 +76,7 @@ class StreamResponse:
     error_after: BaseException | None = None  # raised after the first chunk
     headers: dict[str, str] = field(default_factory=dict)
     closed: bool = False
+    raw: Any = None  # stands in for urllib3's response (raw.connection.sock)
 
     def iter_content(self, chunk_size: int = 1):
         for start in range(0, len(self.content), self.chunk_size):
@@ -129,7 +130,7 @@ class StreamSession:
                 raise reply
             # A fresh copy, so one canned response can serve many calls.
             return StreamResponse(reply.content, reply.status_code, reply.chunk_size,
-                                  reply.error_after, dict(reply.headers))
+                                  reply.error_after, dict(reply.headers), raw=reply.raw)
         finally:
             with self._lock:
                 self.active -= 1

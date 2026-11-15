@@ -14,8 +14,8 @@ Two data modes, chosen with the `DATA_MODE` environment variable:
   `diff_url_template: null` and `diffs: []`.
 
 `GET /health` always returns `{"status": "ok"}`; the `X-Data-Mode` response header
-(readable from browser JavaScript through CORS) says which mode is running. `POST /explain` (Track C) is not implemented yet;
-`app/models.py` holds its request and response models.
+(readable from browser JavaScript through CORS) says which mode is running. `POST /explain`
+(Track C, Google Gemini) is described under "AI explainer" below.
 
 ## Set up (from `backend/`)
 
@@ -101,19 +101,38 @@ When IRSA fails, the API says so instead of reporting "no data":
   when every failure was a timeout), not cached;
 - a visit lost because its downloads failed: the shorter sequence is returned but
   cached for only 30 s (`epochs_cache_degraded_ttl_s`);
+- a downloaded cutout that cannot be cleaned (an unreadable cached file, which is
+  deleted so the retry downloads it again, or an unexpected unit) counts like a
+  failed download;
 - `count: 0` means IRSA lists no exposure there (cached normally).
 
-More than 16 requests waiting for builds at once (`epochs_max_waiters`) get
-`503 unavailable` straight away. `/frame` gives up after 60 s (`frame_deadline_s`,
-`504`). `/health` runs on the event loop, so slow requests cannot delay it. In this
+Limits (all in `app/config.py` unless noted):
+
+- **Builds:** `/epochs` builds run on 2 worker threads (`BUILD_SLOTS` in
+  `app/providers/irsa.py`); more builds wait in a queue without a thread. More than
+  16 requests waiting for builds at once (`epochs_max_waiters`) get
+  `503 unavailable` straight away.
+- **Frames:** at most 8 `/frame` renders run at once (`frame_max_concurrent`). A
+  request beyond that waits up to 3 s for a free slot (`frame_slot_wait_s`), then
+  gets `503 unavailable`. `/frame` gives up after 60 s (`frame_deadline_s`, `504`),
+  and the slot wait counts against it. A render that timed out keeps its slot
+  until it ends.
+- **Unknown frame ids:** a well-formed id that is not found (404) at a position is
+  remembered for 60 s (`frame_not_found_ttl_s`), so repeating it costs no IRSA query.
+- **IRSA responses:** an SIA answer larger than 16 MB is refused as a 502
+  (`irsa_sia_max_bytes`). One cutout download attempt is cut off after 60 s
+  (`cutout_timeout_s`), even if the server keeps sending bytes slowly.
+
+`/health` runs on the event loop, so slow requests cannot delay it. In this
 mode the `app.*` log lines (for example the per-build timings) appear in uvicorn's
 output.
 
 **The presets are the demo fallback.** The five preset targets (API.md section 4)
 are pre-computed files in `frontend/public/presets/` (built with
-`backend/scripts/build_sequence.py --preset <id>`) that need neither IRSA nor this
-API. When the live API is slow or answers 504, use a preset. (The preset files are
-not in the repository yet.)
+`backend/scripts/build_presets.py`, with visit stacks from
+`backend/scripts/build_stacks.py`, and checked with `backend/scripts/check_presets.py`)
+that need neither IRSA nor this API. When the live API is slow or answers 504, use a
+preset.
 
 ## Test and lint
 
