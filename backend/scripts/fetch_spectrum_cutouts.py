@@ -33,12 +33,11 @@ BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 sys.path.insert(0, str(BACKEND / "scripts"))
 
-from irsa_coverage import PRESETS
-
 from app.config import Settings
 from app.cutouts import default_cache, fetch_cutouts
 from app.errors import ApiError
 from app.irsa.sia import find_epochs
+from irsa_coverage import PRESETS
 
 BANDS = ("D1", "D2", "D3", "D4", "D5", "D6")
 SPECTRUM_FOV_ARCMIN = 3.0
@@ -95,6 +94,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"preset {pid} ({name}) at {ra}, {dec}; cache {cache.directory}")
     total = 0
     records: list[dict] = []
+    fetched: set[str] = set()
     for band in args.bands.split(","):
         started = time.monotonic()
         try:
@@ -119,8 +119,16 @@ def main(argv: list[str] | None = None) -> int:
         total += len(batch.cutouts)
         visit_of = {e.id: e.visit for e in epochs}
         records += [cutout_record(c, visit_of[c.epoch_id]) for c in batch.cutouts]
-    records.sort(key=lambda r: (r["band"], r["mjd"]))
+        fetched.add(band)
     out = index_path(pid, settings)
+    if out.is_file():  # an array whose query failed this time keeps its earlier records
+        earlier = json.loads(out.read_text(encoding="utf-8")).get("cutouts", [])
+        kept = [r for r in earlier if r.get("band") not in fetched]
+        if kept:
+            print(f"kept {len(kept)} earlier records for "
+                  f"{sorted({r['band'] for r in kept})} (not fetched this run)")
+        records += kept
+    records.sort(key=lambda r: (r["band"], r["mjd"]))
     out.write_text(json.dumps({"preset": pid, "ra": ra, "dec": dec,
                                "fov_arcmin": SPECTRUM_FOV_ARCMIN, "cutouts": records},
                               indent=1) + "\n", encoding="utf-8")
