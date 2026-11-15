@@ -1,8 +1,12 @@
 # Science API contract
 
-**Version:** 0.4 (2026-11-15) · **Owner:** Track B (Noah) · **Consumers:** Track A (viewer), Track C (AI explainer)
+**Version:** 0.5 (2026-11-15) · **Owner:** Track B (Noah) · **Consumers:** Track A (viewer), Track C (AI explainer)
 
 This is the contract between the frontend and the FastAPI science backend. Mock responses that follow it live in `frontend/public/mock/` (see its `README.md`). Any change to this file is announced in the team chat first.
+
+**Changes in 0.5** (since 0.4):
+- T-007 (live difference images, `DATA_MODE=irsa`): `/diff` works on the live API for any two epochs of a live `/epochs` response; it no longer answers `503 unavailable` for being unimplemented. Its two frames are rendered like `/frame` and share the `/frame` render slots and 60 s deadline, so `503` now means busy and `504` a timeout (section 1 and `/diff`).
+- T-007: live `/epochs` returns a non-null `diff_url_template` (absolute, with the sequence's `ra`, `dec`, `fov` and `band`); `diffs` stays `[]`. Mock and preset responses are unchanged, and no shape changed.
 
 **Changes in 0.4** (since 0.3):
 - T-015 (live API limits, `DATA_MODE=irsa`): `/frame` renders run in at most 8 slots; a request waits up to 3 s for a free one (the wait counts against the frame deadline), then answers `503 unavailable` (section 1 error table and `/frame`). `/epochs` still answers `502`/`504` when no cutout could be downloaded (a cutout that downloads but cannot be cleaned now counts as a failed download) and `503` when too many requests wait. All other shapes are unchanged.
@@ -46,7 +50,7 @@ Every error, including errors from the PNG endpoints, returns JSON in one shape:
 | 429 | `rate_limited` | Too many requests (mainly `/explain`) |
 | 500 | `internal_error` | Unexpected server error |
 | 502 | `upstream_error` | IRSA or another archive returned an error |
-| 503 | `unavailable` | A service is not configured (for example no LLM key for `/explain`), a feature is not available from the live API yet (`/diff` and `/lightcurve` with `DATA_MODE=irsa`), or the live API is busy: too many requests are already waiting (`/epochs`) or too many frames are being rendered (`/frame`). The frontend should fall back to preset frames, or retry a frame a moment later |
+| 503 | `unavailable` | A service is not configured (for example no LLM key for `/explain`), a feature is not available from the live API yet (`/lightcurve` with `DATA_MODE=irsa`), or the live API is busy: too many requests are already waiting (`/epochs`) or too many frames are being rendered (`/frame` and `/diff`, which share the render slots). The frontend should fall back to preset frames, or retry a frame or diff a moment later |
 | 504 | `upstream_timeout` | An archive did not answer in time. The frontend should fall back to preset frames |
 
 No SPHEREx coverage at a position is **not** an error: `/epochs` returns `200` with `"count": 0` and an empty `epochs` list. When IRSA lists exposures but none of their cutouts could be downloaded, the live API returns `502 upstream_error` (or `504 upstream_timeout` if every download timed out), not `count: 0`.
@@ -105,7 +109,7 @@ Response fields (all required unless marked nullable):
 | `count` | Length of `epochs` |
 | `epochs[]` | `id`, `time_utc`, `mjd`, `visit` (survey pass, 1-based, about every 6 months), `release` (`DR1` or `QR3`), `obs_id` (IRSA exposure id, nullable), `band`, `wavelength_um`, `quality`, `frame_url` |
 | `epochs[].quality` | `{status, flagged_fraction, flags}`. `flagged_fraction` is the share of the frame's pixels rendered as no-data (grey 0): masked pixels and pixels off the detector. `status` is `good` (`flagged_fraction` < 5 %), `warn` (< 25 %) or `bad`. `flags` lists the names of the **masked** SPHEREx `FLAGS` bits present in the view, never `SOURCE` (which is never masked). Informational bits that do not mask a pixel are not listed |
-| `diff_url_template` | Nullable string containing `{a}` and `{b}`. Replace them with two epoch ids to get a difference image URL. `null` for static mocks and presets, and currently `null` from the live API (`/diff` is not live yet) |
+| `diff_url_template` | Nullable string containing `{a}` and `{b}`. Replace them with two epoch ids to get a difference image URL. The live API always sets it (an absolute URL carrying the sequence's `ra`, `dec`, `fov` and `band`); `null` for static mocks and presets |
 | `diffs[]` | Pre-rendered differences `{a, b, url, scale}`. Empty (`[]`) from the live API |
 
 **Grey levels.** A frame pixel with value `v` (MJy/sr) is drawn as
@@ -158,7 +162,7 @@ Example (live API, shortened to two epochs; the full mock is `frontend/public/mo
       "frame_url": "<API_BASE>/frame/sx_2026W20_0412_D2.png?ra=269.4464&dec=4.7668&fov=10&band=D2&vmin=0.0079&vmax=1.9739"
     }
   ],
-  "diff_url_template": null,
+  "diff_url_template": "<API_BASE>/diff?a={a}&b={b}&ra=269.4464&dec=4.7668&fov=10&band=D2",
   "diffs": []
 }
 ```
@@ -179,7 +183,9 @@ Example: `200`, `Content-Type: image/png`, body is the PNG. Errors (JSON): `400 
 
 ### `GET /diff?a&b`
 
-Returns `image/png`, the difference **b − a** of two frames from the same sequence, same size as the frames. Grey 128 means no change, white means brighter in `b`, black means fainter in `b`. A source that moved shows as a black and white pair. The frontend calls this through `diff_url_template`.
+Returns `image/png`, the difference **b − a** of two frames from the same sequence, same size as the frames. Grey 128 means no change, white means brighter in `b`, black means fainter in `b`. A source that moved shows as a black and white pair. A pixel with no data in either frame is drawn as 128 (no change), so diffs have no grey-0 no-data level. The frontend calls this through `diff_url_template`.
+
+Live API: both frames are re-created from their ids like `/frame` (cutout cache, cleaning, north-up grid) and subtracted with the same renderer as the preset diffs. The default `scale` leaves out filled saturated star cores. The two frames take two of the `/frame` render slots together and share its 60 s deadline. Live epochs are one exposure per visit at different wavelengths (`wavelength_um`), so part of a difference can be colour, not time.
 
 | Param | Type | Unit | Default | Notes |
 | --- | --- | --- | --- | --- |
@@ -187,7 +193,7 @@ Returns `image/png`, the difference **b − a** of two frames from the same sequ
 | `ra`, `dec`, `fov`, `band` | as `/epochs` | | required | Filled in by the template |
 | `scale` | float | MJy/sr | 99.5th percentile of abs(b − a) | Value mapped to pure white or black; > 0 |
 
-Errors (JSON): `400 invalid_parameter` (also when `a` equals `b`), `404 not_found`, `502 upstream_error`, `503 unavailable` (live API: not implemented yet; use `diffs[]` from presets), `504 upstream_timeout`.
+Errors (JSON): `400 invalid_parameter` (also when `a` equals `b`), `404 not_found` (either id unknown, or not of this `band`), `502 upstream_error`, `503 unavailable` (live API: two render slots did not free up within the few seconds the request waited; retry a moment later or use a preset), `504 upstream_timeout` (live API: the two frames were not ready within 60 s).
 
 ### `GET /lightcurve?ra&dec&band`
 
