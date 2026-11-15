@@ -9,6 +9,8 @@ Not wired into the routes yet (T-014 adds the IRSA provider). Modules:
 - ``sequence``: ``build_sequence`` returning an ``/epochs`` response plus PNGs.
 - ``diff``: ``b - a`` difference PNGs (grey 128 = no change).
 - ``stack``: per-visit mean of cleaned frames over their valid pixels.
+- ``photometry``: native-pixel aperture photometry for live ``/lightcurve`` (T-009);
+  imported on its own, not re-exported here.
 """
 
 from app.pipeline.clean import (
