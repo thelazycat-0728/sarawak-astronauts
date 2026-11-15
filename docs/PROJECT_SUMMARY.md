@@ -162,7 +162,7 @@ Moving to a real backend later means swapping the browser stores (`useAuth`, `us
 
 | Area | Status |
 | --- | --- |
-| Repository set-up, CI and deploys | Done: GitHub Actions CI, Netlify (frontend) and Render Blueprint (API) |
+| Repository set-up, CI and deploys | Done: GitHub Actions CI and a Render Blueprint for both the API and the frontend (static site). Netlify, the first frontend host, ran out of free credits and is now a fallback |
 | Project summary, tech stack, work plan, API contract | Done (`docs/`) |
 | Level 1 features | Viewer, playback, presets, epoch selection and share URLs built. The five presets show **real SPHEREx frames** (shipped in `frontend/public/presets/`) in each target's own detector array; other arrays use the live API or, without one, the simulator. Typed coordinates use the live API |
 | Level 2 features | Blink, difference, stack, brightness chart, FOV and array controls built on simulated data |

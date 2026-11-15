@@ -9,12 +9,12 @@ See [docs/TECH_STACK.md](../docs/TECH_STACK.md) for the libraries and [docs/API.
 npm install
 npm run dev      # http://localhost:5173
 npm run lint
-npm run build    # output in dist/, deployed by Netlify (see ../netlify.toml)
+npm run build    # output in dist/, deployed as a Render static site (see ../render.yaml)
 ```
 
 ## Environment variables
 
-All are optional. Put them in `frontend/.env.local` (ignored by git) or in Netlify's environment settings. They end up in the public bundle, so never put secrets here.
+All are optional. Put them in `frontend/.env.local` (ignored by git) or in the `sarawak-frontend` service's environment settings on Render. They end up in the public bundle, so never put secrets here.
 
 | Variable | Effect when set | Without it |
 | --- | --- | --- |

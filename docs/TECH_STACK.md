@@ -7,7 +7,7 @@ This document lists the technologies used to build the features in [PROJECT_SUMM
 ## 1. Architecture overview
 
 ```
-Browser (React + Vite, hosted on Netlify)
+Browser (React + Vite, hosted on Render)
    │                         │
    │ accounts, progress,     │ images, spectra, overlays,
    │ points, submissions     │ AI explainer, AI ranking
@@ -18,7 +18,7 @@ Browser localStorage           Python API (FastAPI on Render)
         IRSA (SPHEREx, 2MASS, WISE) · ESA Gaia · SIMBAD · SkyBoT · Google Gemini API
 ```
 
-- The **frontend** is a single-page React app on Netlify. Everything except submitting works without logging in.
+- The **frontend** is a single-page React app on a Render static site. Everything except submitting works without logging in.
 - The **science API** does all FITS processing in Python, because the astronomy libraries live there. The browser never calls IRSA directly (avoids CORS issues and heavy FITS handling in JavaScript).
 - **Accounts** are hard-coded in the frontend (two fixed demo accounts plus accounts created in the browser); progress, submissions, reviews and points stay in the browser. See section 5.
 
@@ -26,7 +26,7 @@ Browser localStorage           Python API (FastAPI on Render)
 
 | Need | Technology | Used for |
 | --- | --- | --- |
-| Framework and build | **React + Vite** | Whole app; Netlify detects Vite automatically |
+| Framework and build | **React + Vite** | Whole app; built to static files in `frontend/dist` |
 | Screens | **React Router** (`react-router` v7) | `/` (Explore), `/learn` (lessons; training games at `/learn/game`), `/play` (submit discoveries; `/submit` redirects here; no submit button for scientists), `/review` (the scientist's **Submissions** tab, shown in the nav slot the dropped time machine had), `/profile` |
 | Styling and UI components | **Tailwind CSS v4** + **Radix UI** primitives, shadcn-style components in `components/ui.jsx` (`clsx`, `tailwind-merge`), **lucide-react** icons | Consistent controls, dialogs and the "?" tooltips for plain-language labels |
 | Shared state | **Zustand** | Current target, band, selected epochs, Beginner/Expert mode |
@@ -115,14 +115,26 @@ With no shared database, the volunteer and the scientist hand submissions over t
 
 | Piece | Platform |
 | --- | --- |
-| Frontend | **Netlify**, deployed from GitHub with a deploy preview for every pull request |
+| Frontend | **Render static site** (`sarawak-frontend` in `render.yaml`), deployed from GitHub on every push to `main`. Netlify was the first host; its free credits ran out, so `netlify.toml` stays only as a fallback |
 | Python API | **Render** web service on the native Python runtime (no Docker), configured in `render.yaml`. Fallbacks: a local laptop, optionally behind a tunnel (see below) |
 | Source control and CI | **GitHub** + **GitHub Actions**: frontend lint and build; backend `ruff` and a syntax check (the pytest suite is not run in CI yet) |
-| Secrets | Environment variables on Netlify and the API host; never in the frontend bundle |
+| Secrets | Environment variables on Render (both services); never in the frontend bundle |
 
-### Netlify configuration
+### Render static site (frontend)
 
-The frontend is a static Vite build, so Netlify only needs the build settings and a fallback rule for client-side routes. Add `netlify.toml` at the repo root:
+The frontend is the `sarawak-frontend` service in `render.yaml`: a free static site (no sleeping, unlike the free API service) that runs `npm ci && npm run lint && npm run build` in `frontend/`, publishes `dist/`, and rewrites `/*` to `/index.html` for client-side routes. `buildFilter` skips rebuilds when a commit doesn't touch `frontend/`.
+
+Setup steps:
+
+1. In Render, open the Blueprint and sync it (or **New → Blueprint** with this repo) so it creates `sarawak-frontend`.
+2. In `sarawak-frontend` → **Environment**, set `VITE_API_URL` to the API's URL (`https://<api>.onrender.com`, no trailing slash). Vite bakes it in at build time, so redeploy after changing it (**Manual Deploy → Clear build cache & deploy**).
+3. Add the site's URL (`https://sarawak-frontend.onrender.com`, or whatever Render assigns) to the API's `CORS_ORIGINS`.
+
+There are no per-PR deploy previews on Render static sites, so `CORS_ORIGIN_REGEX` only matters while the Netlify site is still used.
+
+### Netlify configuration (fallback)
+
+Netlify was the first frontend host. Its free credits ran out, so it's kept only as a fallback. The frontend is a static Vite build, so Netlify only needs the build settings and a fallback rule for client-side routes. Add `netlify.toml` at the repo root:
 
 ```toml
 [build]
@@ -148,7 +160,9 @@ Setup steps:
 3. Add the Netlify domain (`https://<site>.netlify.app`) to the API's `CORS_ORIGINS`. Deploy previews are allowed by pattern through `CORS_ORIGIN_REGEX` (set in `render.yaml`).
 4. Deploy previews are created automatically for every pull request.
 
-**Fallbacks if Netlify is unavailable:** Cloudflare Pages or a Render static site (same build settings, with a `/*` → `/index.html` rewrite). As a last resort for a demo, run `npm run build && npx serve -s dist` on a laptop.
+Manual deploys (`netlify deploy --prod --dir=dist` or drag-and-drop) skip `netlify.toml`, so `frontend/public/_redirects` repeats the `/*` → `/index.html` rule.
+
+**Other fallbacks:** Cloudflare Pages (same build settings, with a `/*` → `/index.html` rewrite). As a last resort for a demo, run `npm run build && npx serve -s dist` on a laptop.
 
 **Why the Python API is not on Netlify:** Netlify doesn't host Python servers or containers. Netlify Functions are short-lived JavaScript/TypeScript/Go functions with tight time limits and no persistent disk. The FITS pipelines need large Python libraries, slow archive queries and a cutout cache, so they run on a long-lived Python server.
 
@@ -186,8 +200,8 @@ Setup steps:
 
 1. In Render, choose **New → Blueprint**, select the GitHub repo, and Render creates the service from `render.yaml`.
 2. Fill in `CORS_ORIGINS` and `GEMINI_API_KEY` when prompted, then check `https://<service>.onrender.com/health`. Get the key free from Google AI Studio (<https://aistudio.google.com>, **Get API key**). Leaving it empty keeps the explainer off (`/explain` answers 503 and the panel uses offline answers).
-3. Set Netlify's `VITE_API_URL` to the Render URL and redeploy the frontend.
-4. After that, every merge to `main` redeploys both the frontend (Netlify) and the API (Render).
+3. Set `VITE_API_URL` on the `sarawak-frontend` static site to the API's URL and redeploy the frontend.
+4. After that, every merge to `main` redeploys both the frontend and the API on Render.
 
 **Free-tier limits:** the service sleeps after about 15 minutes without traffic, and the first request after that takes up to a minute while it wakes. The disk is also wiped on every restart or deploy, so the cutout cache is temporary. Before judging, open `/health` to wake it, and rely on the pre-computed preset frames in `frontend/public/` for the demo.
 
@@ -206,21 +220,21 @@ npm run dev
 
 `http://localhost:5173` is already an allowed CORS origin, so no extra setup is needed.
 
-To let the **Netlify site** call a laptop API, expose it with a tunnel, which provides the HTTPS URL that browsers require:
+To let the **deployed frontend** call a laptop API, expose it with a tunnel, which provides the HTTPS URL that browsers require:
 
 | Tool | Command | Notes |
 | --- | --- | --- |
 | Cloudflare Tunnel | `cloudflared tunnel --url http://localhost:8000` | No account needed; random URL each run |
 | ngrok | `ngrok http 8000` | Free account includes one fixed domain |
 
-Then start the API with `CORS_ORIGINS=https://<site>.netlify.app`, set `VITE_API_URL` on Netlify to the tunnel URL, and redeploy. The laptop must stay awake, and a random tunnel URL means a Netlify redeploy every time it changes. Close the tunnel when it's not in use.
+Then start the API with `CORS_ORIGINS=https://sarawak-frontend.onrender.com`, set `VITE_API_URL` on the static site to the tunnel URL, and redeploy. The laptop must stay awake, and a random tunnel URL means a frontend redeploy every time it changes. Close the tunnel when it's not in use.
 
 ## 8. Security and privacy
 
 - **Validate every input** with Pydantic. User values are converted to numbers and never pasted into ADQL queries as text.
 - **Rate-limit** submissions and the AI explainer, per user and per IP address. The explainer's per-IP limit is in place.
 - **Keep the LLM key server-side.** `GEMINI_API_KEY` lives only in Render's environment. The free Gemini tier may use questions to improve Google's products; the assistant panel says so.
-- **Lock CORS** to the Netlify domain.
+- **Lock CORS** to the frontend's domain.
 - **Scientist role:** in this hackathon build the role is enforced only in the frontend (hidden UI and a route check), which is acceptable because all data stays on the user's own device. A real deployment must enforce it on the server.
 - **Collect minimal personal data** (username and email), publish a privacy policy, and follow Malaysia's Personal Data Protection Act (PDPA).
 
