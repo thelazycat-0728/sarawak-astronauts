@@ -23,3 +23,18 @@ Accounts are hard-coded in the frontend (`frontend/src/lib/accounts.js`); there 
 - **🧊 Frozen for the video recording (from 2026-11-15).** The live site is the version being recorded. The last change before the freeze was the Discover UI update (Play renamed Discover, a Random sky position button, presets above the coordinate input in Explore and never used in Discover). Don't merge to `main` unless it fixes a bug found while recording: every merge that touches `frontend/` or `backend/` redeploys the live site.
 - **We're keeping pull requests to a minimum.** Bundle related changes into as few PRs as possible. Don't open a PR just for a small docs or status tweak; fold it into the next feature PR. For the rest of the hackathon, this replaces the "small PRs, merge every 2–3 hours" rule in the [Work Plan](docs/WORK_PLAN.md). AI coding assistants working in this repo should follow it too when they propose branches and PRs.
 - Feature-by-feature status: see [Project Summary §7](docs/PROJECT_SUMMARY.md#7-current-status).
+
+## Acknowledgements
+
+### SI (Super Intelligence) acknowledgement
+
+This project was built with the help of SI tools:
+
+- **Claude Code** (Anthropic, <https://claude.com/claude-code>): used as a coding assistant to write, review and document parts of the frontend, backend and docs. Commits it helped with are marked `Co-Authored-By: Claude` in the git history. The team reviewed, tested and is responsible for all of the code.
+- **Google Gemini API** (<https://ai.google.dev/gemini-api>): powers the in-app assistant (`POST /explain`) that explains the current view. Its answers are labelled "AI-generated" in the app and are grounded in the project's glossary.
+
+### Data acknowledgements
+
+- **SIMBAD:** This research has made use of the SIMBAD database, operated at CDS, Strasbourg, France (Wenger et al. 2000, A&AS 143, 9). The known proper motions of the preset targets come from SIMBAD: <https://simbad.cds.unistra.fr/simbad/>.
+- **SPHEREx / IRSA:** This research has made use of the NASA/IPAC Infrared Science Archive, which is funded by the National Aeronautics and Space Administration and operated by the California Institute of Technology. All SPHEREx images come from IRSA: <https://irsa.ipac.caltech.edu/Missions/spherex.html>.
+- **Gaia:** This work has made use of data from the European Space Agency (ESA) mission Gaia (<https://www.cosmos.esa.int/gaia>), processed by the Gaia Data Processing and Analysis Consortium (DPAC, <https://www.cosmos.esa.int/web/gaia/dpac/consortium>). Funding for the DPAC has been provided by national institutions, in particular the institutions participating in the Gaia Multilateral Agreement.
