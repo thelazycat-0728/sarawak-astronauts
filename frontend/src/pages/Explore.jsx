@@ -13,7 +13,7 @@ import { useViewer, useUi, useProgress } from '../store';
 import { useField } from '../lib/api';
 import { PRESETS, PRESET_BY_ID, ARRAYS, LESSONS } from '../lib/data';
 import {
-  paintImage, paintDiff, lutForArray, meanOf, drawReticle, drawCompass, aperture, centroid,
+  paintImage, paintDiff, LUTS, lutForArray, meanOf, drawReticle, drawCompass, aperture, centroid,
   spectrum102, MOLECULES, bandLambda,
 } from '../lib/sim';
 import { parseRA, parseDec, formatRA, formatDec, formatDate, cn, mulberry32, hashString } from '../lib/util';
@@ -279,7 +279,9 @@ function Stage({ field, loading, attempt, error, tryAgain, preset, cur, base, in
     const { nx, ny, stacks } = field;
     const sx = W / nx, sy = H / ny;
     const smooth = !expert;
-    const range = { vmin: field.vmin, vmax: field.vmax, lut: lutForArray(field.arrayIdx), smooth };
+    // Expert shows the measured brightness in greyscale; the guided view adds false colour.
+    const lut = expert ? LUTS.grey : lutForArray(field.arrayIdx);
+    const range = { vmin: field.vmin, vmax: field.vmax, lut, smooth };
     if (v.mode === 'diff') paintDiff(ctx, W, H, stacks[base], stacks[cur], nx, ny, { smooth });
     else if (v.mode === 'stack') paintImage(ctx, W, H, meanOf(stacks, incIdx.length ? incIdx : [0]), nx, ny, range);
     else paintImage(ctx, W, H, stacks[cur], nx, ny, range);

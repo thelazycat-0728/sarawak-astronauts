@@ -263,6 +263,8 @@ function makeLut(stops) {
 export const LUTS = {
   sky: makeLut([[7, 10, 18], [16, 21, 42], [56, 58, 126], [150, 140, 236], [236, 232, 255], [255, 255, 255]]),
   ember: makeLut([[8, 7, 12], [40, 15, 24], [118, 40, 42], [226, 118, 62], [255, 214, 162], [255, 255, 255]]),
+  // Plain black-to-white brightness with no added colour (Expert view).
+  grey: makeLut([[0, 0, 0], [255, 255, 255]]),
 };
 export const lutForArray = (a) => (a >= 4 ? LUTS.ember : LUTS.sky);
 
