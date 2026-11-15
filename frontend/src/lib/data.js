@@ -129,15 +129,39 @@ export function customObject(seed) {
 export { default as GLOSSARY } from '../glossary.json';
 
 // ---------------------------------------------------------------- lessons
+// Each lesson runs in a practice window (components/LessonDialog.jsx) on a simulated
+// field. Its tasks are done in order and each one ticks when the learner does it:
+//   watch        see every snapshot in `array` (press play or drag the slider)
+//   mode         switch the view to `mode`
+//   array        switch to detector `array`
+//   find         click the target object
+//   peak         stop on a snapshot where the target is near its brightest
+// hint is shown while the task is active; learned once it is ticked.
 export const LESSONS = [
-  { id: 'move', title: 'Watch Barnard’s Star move', minutes: 2, preset: 'barnard', mode: 'blink', skill: 'Spotting motion',
-    steps: ['Press play and watch the four snapshots.', 'Find the bright point that drifts upward.', 'Open Difference to see the teal–amber pair.'] },
-  { id: 'colour', title: 'Find a star that hides in infrared', minutes: 3, preset: 'wise0855', mode: 'blink', array: 2, skill: 'Using bands',
-    steps: ['Start in array 2: nothing special is there.', 'Switch to array 6.', 'A new object appears and slides sideways.'] },
-  { id: 'subtract', title: 'Catch a one-pixel shift', minutes: 3, preset: 'epsindib', mode: 'diff', skill: 'Difference images',
-    steps: ['Difference subtracts the first snapshot.', 'Fixed stars vanish into the background.', 'Look for a faint teal–amber pair.'] },
-  { id: 'brightness', title: 'See R Draconis brighten and fade', minutes: 2, preset: 'rdra', mode: 'blink', skill: 'Variability',
-    steps: ['Press play: 18 monthly snapshots.', 'One star swells and fades over about 8 months.', 'In Expert mode, open its brightness chart.'] },
+  { id: 'move', title: 'Watch Barnard’s Star move', minutes: 2, preset: 'barnard', array: 3, skill: 'Spotting motion',
+    tasks: [
+      { type: 'watch', text: 'Press play and watch all four snapshots.', hint: 'Each snapshot is one six-month SPHEREx survey. Keep your eyes on the whole field.', learned: 'Background stars stay put from survey to survey.' },
+      { type: 'find', text: 'Click the bright star that drifts upward.', hint: 'Most stars are fixed. One bright point creeps north (up) by a couple of pixels.', learned: 'That is Barnard’s Star, moving 10.4″ a year: the fastest star in the sky.' },
+      { type: 'mode', mode: 'diff', text: 'Switch to Difference to see the teal–amber pair.', hint: 'Difference subtracts the first snapshot from the current one.', learned: 'Teal marks where it was, amber where it is now. Fixed stars cancel out.' },
+    ] },
+  { id: 'colour', title: 'Find a star that hides in infrared', minutes: 3, preset: 'wise0855', array: 2, arrays: [2, 6], skill: 'Using bands',
+    tasks: [
+      { type: 'watch', array: 2, text: 'Play the snapshots in array 2. Nothing special is there.', hint: 'Array 2 sees 1.1–1.6 µm, where ordinary stars are bright.', learned: 'Some objects are too cold to glow at short wavelengths.' },
+      { type: 'array', array: 6, text: 'Switch to array 6.', hint: 'Use the detector-array buttons under the image. Array 6 sees 4.4–5.0 µm.', learned: 'Cold objects glow brightest at long infrared wavelengths.' },
+      { type: 'find', text: 'Click the new object that slides sideways.', hint: 'Play the snapshots again. Something that wasn’t in array 2 now moves left or right.', learned: 'That is WISE 0855, a brown dwarf at about 250 K, colder than a freezer.' },
+    ] },
+  { id: 'subtract', title: 'Catch a one-pixel shift', minutes: 3, preset: 'epsindib', array: 6, skill: 'Difference images',
+    tasks: [
+      { type: 'watch', text: 'Blink through the four snapshots. Can you see anything move?', hint: 'Look closely, but don’t worry if nothing jumps out: the shift is under one pixel.', learned: 'Tiny motions are easy to miss by eye.' },
+      { type: 'mode', mode: 'diff', text: 'Switch to Difference.', hint: 'Difference subtracts the first snapshot from the current one.', learned: 'Fixed stars vanish into the background.' },
+      { type: 'find', text: 'Click the faint teal–amber pair.', hint: 'Look for a small teal spot right next to an amber one. Pick the last snapshot for the biggest shift.', learned: 'That is Epsilon Indi B, a brown dwarf pair moving about 4.7″ a year.' },
+    ] },
+  { id: 'brightness', title: 'See R Draconis brighten and fade', minutes: 2, preset: 'rdra', array: 2, skill: 'Variability',
+    tasks: [
+      { type: 'watch', text: 'Press play and watch the 18 monthly snapshots.', hint: 'Near the ecliptic pole SPHEREx looks almost every month.', learned: 'Nothing moves here, but something changes.' },
+      { type: 'find', text: 'Click the star that swells and fades.', hint: 'One star grows bright, then dims, then brightens again.', learned: 'That is R Draconis, a giant star that pulses every 245 days. Its brightness chart is now open.' },
+      { type: 'peak', text: 'Stop on a month when it is at its brightest.', hint: 'Pause, then drag the slider or click one of the tallest bars in the brightness chart.', learned: 'Measuring brightness over time is how astronomers find and study variable stars.' },
+    ] },
 ];
 
 // ---------------------------------------------------------------- game levels

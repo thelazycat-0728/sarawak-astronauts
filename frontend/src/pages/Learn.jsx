@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Check, Clock, Gamepad2, Lock, Search, ArrowRight } from 'lucide-react';
 import { Button, Kicker, Panel, Chip, StepBadge } from '../components/ui';
-import { useViewer, useProgress, useUi } from '../store';
+import { useProgress } from '../store';
+import { LessonDialog } from '../components/LessonDialog';
 import { LESSONS, LEVELS, GLOSSARY, PRESET_BY_ID } from '../lib/data';
 import { cn } from '../lib/util';
 
@@ -10,20 +11,12 @@ export default function Learn() {
   const navigate = useNavigate();
   const lessons = useProgress((s) => s.lessons);
   const games = useProgress((s) => s.games);
-  const setExpert = useUi((s) => s.setExpert);
   const [q, setQ] = useState('');
+  const [openLesson, setOpenLesson] = useState(null);
 
   const done = LESSONS.filter((l) => lessons[l.id]).length;
   const gamesDone = LEVELS.filter((l) => games[l.id]?.stars > 0).length;
   const trained = done >= 3 && gamesDone >= 2;
-
-  const start = (l) => {
-    const v = useViewer.getState();
-    v.loadPreset(l.preset, { mode: l.mode, ...(l.array ? { arrayIdx: l.array } : {}) });
-    v.setLesson(l.id);
-    setExpert(false);
-    navigate('/');
-  };
 
   const terms = useMemo(() => Object.entries(GLOSSARY).filter(([, g]) => (g.term + g.short).toLowerCase().includes(q.toLowerCase())), [q]);
 
@@ -33,7 +26,7 @@ export default function Learn() {
       <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
         <div className="max-w-2xl">
           <h1 className="text-4xl font-medium tracking-tight text-balance">Learn to spot what moves</h1>
-          <p className="mt-3 text-muted">Short lessons on the real test targets, then two training games. Finish three lessons and two game levels to unlock submitting discoveries in Play.</p>
+          <p className="mt-3 text-muted">Short hands-on lessons on the real test targets, each in a practice window that ticks off every step as you do it, then two training games. Finish three lessons and two game levels to unlock submitting discoveries in Play.</p>
         </div>
         <Panel className="w-full max-w-sm p-5">
           <div className="flex items-center justify-between text-sm"><span>Your training</span><span className="tabular text-muted">{done}/{LESSONS.length} lessons · {gamesDone}/{LEVELS.length} levels</span></div>
@@ -64,9 +57,9 @@ export default function Learn() {
                 <p className="mt-1 text-sm text-muted">Uses {p.name}, {p.type.toLowerCase()}.</p>
               </div>
               <ol className="grid gap-1.5 text-sm text-muted">
-                {l.steps.map((s, k) => <li key={s} className="flex gap-2"><span className="font-mono text-faint">{k + 1}.</span>{s}</li>)}
+                {l.tasks.map((t, k) => <li key={t.text} className="flex gap-2"><span className="font-mono text-faint">{k + 1}.</span>{t.text}</li>)}
               </ol>
-              <Button variant={complete ? 'outline' : 'primary'} className="mt-auto self-start" onClick={() => start(l)}>
+              <Button variant={complete ? 'outline' : 'primary'} className="mt-auto self-start" onClick={() => setOpenLesson(l.id)}>
                 {complete ? 'Do it again' : 'Start lesson'}<ArrowRight className="size-4" />
               </Button>
             </Panel>
@@ -114,6 +107,7 @@ export default function Learn() {
         ))}
         {terms.length === 0 && <p className="px-5 py-6 text-sm text-muted">No terms match “{q}”.</p>}
       </Panel>
+      <LessonDialog lessonId={openLesson} onClose={() => setOpenLesson(null)} onOpenLesson={setOpenLesson} />
     </div>
   );
 }
