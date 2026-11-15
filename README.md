@@ -12,9 +12,9 @@ No sign-up needed: the sign-in window has one-click buttons for both.
 | Account | Username | Password | Use it for |
 | --- | --- | --- | --- |
 | Volunteer | `volunteer` | `starxplorer` | Submitting discoveries in Play (training already done) |
-| Scientist | `scientist` | `starxplorer` | The scientists' review queue |
+| Scientist | `scientist` | `starxplorer` | The **Submissions** tab: reviewing what volunteers submitted (scientists can't submit) |
 
-Accounts are hard-coded in the frontend (`frontend/src/lib/accounts.js`); there is no database.
+Accounts are hard-coded in the frontend (`frontend/src/lib/accounts.js`); there is no database and no Supabase. This is deliberate: the judges can sign in with one click, with no sign-up, email or external service. Submissions are saved in the browser, so the scientist sees them only on the **same device and browser** the volunteer used. To demo the flow, submit as `volunteer`, sign out, then sign in as `scientist` in the same browser.
 
 ## Current status
 

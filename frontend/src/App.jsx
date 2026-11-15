@@ -8,7 +8,6 @@ import Explore from './pages/Explore';
 const Learn = lazy(() => import('./pages/Learn'));
 const Play = lazy(() => import('./pages/Play'));
 const TrainingGame = lazy(() => import('./pages/TrainingGame'));
-const TimeMachine = lazy(() => import('./pages/TimeMachine'));
 const Review = lazy(() => import('./pages/Review'));
 const Profile = lazy(() => import('./pages/Profile'));
 
@@ -28,7 +27,8 @@ export default function App() {
                 <Route path="/learn" element={<Learn />} />
                 <Route path="/learn/game" element={<TrainingGame />} />
                 <Route path="/play" element={<Play />} />
-                <Route path="/time-machine" element={<TimeMachine />} />
+                {/* The time machine was dropped; old links land on Explore. */}
+                <Route path="/time-machine" element={<Navigate to="/" replace />} />
                 <Route path="/submit" element={<Navigate to="/play" replace />} />
                 <Route path="/review" element={<Review />} />
                 <Route path="/profile" element={<Profile />} />

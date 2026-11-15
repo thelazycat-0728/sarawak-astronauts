@@ -226,21 +226,3 @@ export const DEMO_QUEUE = [
     signals: { motion: 'Consistent across 4 snapshots', snr: 6.3, flags: 'Clear', catalogue: 'No match (Gaia, CatWISE)', asteroid: 'No known asteroid' } },
 ];
 
-// ---------------------------------------------------------------- time machine
-export const TM_SURVEYS = {
-  '2MASS': { color: '#45d3b8', band: 'Ks', wave: 2.2 },
-  WISE: { color: '#4ade80', band: 'W1', wave: 3.4 },
-  NEOWISE: { color: '#4ade80', band: 'W1', wave: 3.4 },
-  SPHEREx: { color: '#7c6cf5', band: 'Array 3', wave: 2.0 },
-};
-export function timeMachineEpochs() {
-  const list = [{ survey: '2MASS', year: 1998.8, n: 1 }, { survey: 'WISE', year: 2010.5, n: 12 }];
-  for (let y = 2014.3; y < 2024; y += 1) list.push({ survey: 'NEOWISE', year: +y.toFixed(1), n: 8 });
-  [2025.39, 2025.88, 2026.38, 2026.86].forEach((y) => list.push({ survey: 'SPHEREx', year: y, n: 3 }));
-  return list.map((e) => ({ ...e, t: e.year - 2025.39, label: e.survey, date: String(Math.floor(e.year)), release: e.survey }));
-}
-export const TM_TARGETS = [
-  { id: 'barnard', fov: 12, brightness: 70, note: 'Fastest-moving star in the sky' },
-  { id: 'epsindib', fov: 8, brightness: 22, note: 'Brown dwarf pair, 12 light-years away' },
-  { id: 'wise0855', fov: 8, brightness: 26, coldBefore: 2010, note: 'Invisible until WISE launched in 2009' },
-];

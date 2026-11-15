@@ -76,7 +76,7 @@ export default function Review() {
     return (
       <div className="mx-auto max-w-xl px-[max(16px,env(safe-area-inset-left,0px))] py-20 text-center">
         <span className="mx-auto grid size-12 place-items-center rounded-full border border-line-strong bg-ink-800"><ShieldCheck className="size-5 text-accent-fg" /></span>
-        <h1 className="mt-5 text-3xl font-medium tracking-tight">Scientist review queue</h1>
+        <h1 className="mt-5 text-3xl font-medium tracking-tight">Submissions</h1>
         <p className="mt-3 text-muted">Volunteers’ candidates, ranked by the AI priority model, for scientists to confirm or reject. Only scientist accounts can open it. Use the demo scientist account to try it.</p>
         <div className="mt-6 flex justify-center gap-2">
           {user ? <Button variant="primary" onClick={() => signInDemo('scientist')}><ShieldCheck className="size-4" />Switch to the demo scientist account</Button>
@@ -93,8 +93,9 @@ export default function Review() {
       <Kicker>Scientists</Kicker>
       <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-medium tracking-tight">Review queue</h1>
+          <h1 className="text-4xl font-medium tracking-tight">Submissions</h1>
           <p className="mt-2 text-muted">{pending} candidates waiting. Each has passed automatic quality, motion and catalogue checks. Ranked by AI score weighted by the submitter’s reputation.</p>
+          <p className="mt-1 text-sm text-faint">Volunteers’ submissions are saved in this browser, so you see the ones made on this device. To try it, submit as the demo volunteer in Play, then switch back to this account.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Segmented value={tab} onChange={setTab} label="Queue" options={[{ value: 'pending', label: 'Pending' }, { value: 'done', label: 'Reviewed' }]} />
