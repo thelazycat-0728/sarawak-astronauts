@@ -316,23 +316,42 @@ export function paintDiff(ctx, W, H, a, b, nx, ny, { smooth = true } = {}) {
 }
 
 // ---------------------------------------------------------------- canvas helpers
+const LABEL_FONT = '600 11px "Geist Mono", ui-monospace, monospace';
+const SUB_FONT = '400 10.5px "Geist Mono", ui-monospace, monospace';
+const PLATE = 'rgba(7,10,16,.82)'; // the page's darkest ink, so marks stay readable on bright stars
+
 export function drawReticle(ctx, x, y, { color = '#b8afff', r = 14, label, sub } = {}) {
   ctx.save();
+  const marks = () => {
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.moveTo(x, y - r - 7); ctx.lineTo(x, y - r - 2);
+    ctx.moveTo(x + r + 2, y); ctx.lineTo(x + r + 7, y);
+  };
+  // A dark outline first, then the coloured ring: visible over a saturated star's glow too.
+  ctx.strokeStyle = PLATE;
+  ctx.lineWidth = 4;
+  marks(); ctx.stroke();
   ctx.strokeStyle = color;
   ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x, y - r - 7); ctx.lineTo(x, y - r - 2);
-  ctx.moveTo(x + r + 2, y); ctx.lineTo(x + r + 7, y);
-  ctx.stroke();
+  marks(); ctx.stroke();
   if (label) {
-    ctx.font = '600 11px "Geist Mono", ui-monospace, monospace';
+    const tx = x + r + 12, text = label.toUpperCase();
+    ctx.font = LABEL_FONT;
+    let width = ctx.measureText(text).width;
+    if (sub) { ctx.font = SUB_FONT; width = Math.max(width, ctx.measureText(sub).width); }
+    // A dark plate behind the text.
+    ctx.fillStyle = PLATE;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(tx - 6, y - 16, width + 12, sub ? 34 : 19, 4);
+    else ctx.rect(tx - 6, y - 16, width + 12, sub ? 34 : 19);
+    ctx.fill();
+    ctx.font = LABEL_FONT;
     ctx.fillStyle = '#e9ebf3';
-    ctx.fillText(label.toUpperCase(), x + r + 12, y - 3);
+    ctx.fillText(text, tx, y - 3);
     if (sub) {
-      ctx.font = '400 10.5px "Geist Mono", ui-monospace, monospace';
-      ctx.fillStyle = '#8c93a8';
-      ctx.fillText(sub, x + r + 12, y + 12);
+      ctx.font = SUB_FONT;
+      ctx.fillStyle = '#a3a9bb';
+      ctx.fillText(sub, tx, y + 12);
     }
   }
   ctx.restore();
