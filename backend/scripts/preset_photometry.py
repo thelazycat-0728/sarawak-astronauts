@@ -12,6 +12,8 @@ them). Both files sit next to a preset's fov-12 manifest:
   by wavelength. ``bands`` lists the arrays covered.
 - ``coadds`` on a preset's ``index.json`` entry: one co-added image per detector
   array (``CoaddEntry``), from the same fetched 6-array set as the spectrum.
+- ``<preset>/gaia.json``: Gaia DR3 stars in the fov-12 field for the overlay
+  (``PresetGaia``), with positions moved to the preset's mean epoch.
 - ``motion`` on a mover's ``index.json`` entry: per-visit stack positions and the
   measured against the catalogue shift (``PresetMotion``).
 """
@@ -28,6 +30,11 @@ from app.models import BandId, BandInfo, LightcurvePoint, LightcurveResponse, Ta
 LIGHTCURVE_FILE = "lightcurve.json"
 SPECTRUM_FILE = "spectrum.json"
 COADD_DIR = "coadds"
+GAIA_FILE = "gaia.json"
+GAIA_REF_EPOCH = 2016.0  # Gaia DR3 positions
+GAIA_CREDIT = ("This work has made use of data from the European Space Agency (ESA) "
+               "mission Gaia (https://www.cosmos.esa.int/gaia), processed by the Gaia "
+               "Data Processing and Analysis Consortium (DPAC).")
 APERTURE_ARCSEC = 12.0  # the /lightcurve default
 CENTRE_EPOCH = 2025.5  # preset centres are the targets' ~2025.5 positions (API.md section 4)
 MJD_J2000 = 51544.5
@@ -127,6 +134,34 @@ class CoaddEntry(BaseModel):
     height_px: int
     stretch: CoaddStretch  # this image's own asinh stretch (grey 0 = no data)
     flagged_fraction: float
+
+
+class GaiaStar(BaseModel):
+    source_id: str  # a string: 64-bit ids do not fit a JavaScript number
+    ra: float  # Gaia DR3, epoch 2016.0
+    dec: float
+    pmra: float | None  # mas/yr, times cos(dec); null for 2-parameter solutions
+    pmdec: float | None
+    parallax: float | None  # mas
+    g_mag: float
+    ra_epoch: float  # moved by the proper motion to PresetGaia.epoch
+    dec_epoch: float
+
+
+class PresetGaia(BaseModel):
+    """``<preset>/gaia.json`` (build_preset_gaia.py)."""
+
+    credit: str
+    ref_epoch: float
+    epoch: float  # Julian year of the preset's mean SPHEREx exposure
+    centre_ra: float
+    centre_dec: float
+    radius_arcmin: float
+    g_mag_limit: float
+    max_stars: int
+    truncated: bool
+    count: int
+    stars: list[GaiaStar]
 
 
 def julian_year(mjd: float) -> float:

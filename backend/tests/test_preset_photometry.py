@@ -18,6 +18,7 @@ from tests.conftest import REPO
 
 sys.path.insert(0, str(REPO / "backend" / "scripts"))
 import build_preset_coadds as bpc
+import build_preset_gaia as bpg
 import build_preset_photometry as bpp
 import check_presets
 import preset_photometry as pp
@@ -294,3 +295,47 @@ def test_checker_validates_coadds(public):
     assert any("eps-indi-b coadds: bands" in e for e in errs)
     assert any("D3 url" in e for e in errs)
     assert any("coadds/D6.png missing" in e for e in errs)
+
+
+# ------------------------------------------------------------------ Gaia
+
+
+def test_gaia_row_is_moved_by_its_proper_motion_or_kept_without_one():
+    row = {"source_id": 4472832130942575872, "ra": 269.4485, "dec": 4.7394,
+           "pmra": -801.551, "pmdec": 10362.394, "parallax": 546.976, "phot_g_mean_mag": 8.194}
+    star = bpg.star_from_row(row, 2026.0)
+    assert star.source_id == "4472832130942575872"  # a string for JavaScript
+    assert (star.dec_epoch - star.dec) * 3600 == pytest.approx(10.362394 * 10, rel=1e-6)
+    assert (star.ra_epoch - star.ra) * math.cos(math.radians(4.7394)) * 3600 == pytest.approx(
+        -0.801551 * 10, rel=1e-4)
+    still = bpg.star_from_row(dict(row, pmra=float("nan"), pmdec=None), 2026.0)
+    assert still.pmra is None and (still.ra_epoch, still.dec_epoch) == (still.ra, still.dec)
+
+
+def test_committed_gaia_files_cover_every_preset():
+    index = json.loads((PUBLIC / "presets" / "index.json").read_text("utf-8"))
+    for entry in index["presets"]:
+        assert entry["gaia_url"] == f"/presets/{entry['id']}/gaia.json"
+    barnard = pp.PresetGaia.model_validate_json(
+        (PUBLIC / "presets" / "barnards-star" / pp.GAIA_FILE).read_text("utf-8"))
+    star = max(barnard.stars, key=lambda s: abs(s.pmdec or 0))
+    assert star.pmdec > 10000  # Barnard's Star itself
+    off = math.hypot((star.ra_epoch - 269.4464) * math.cos(math.radians(4.7668)),
+                     star.dec_epoch - 4.7668) * 3600
+    assert off < 12  # moved to the preset epoch, it sits on the preset centre
+
+
+def test_checker_validates_gaia(public):
+    def tamper(d):
+        by_id = {p["id"]: p for p in d["presets"]}
+        by_id["r-dra"]["gaia_url"] = "/presets/r-dra/other.json"
+        by_id["wise-0855"].pop("gaia_url")
+
+    _edit(public, "index.json", tamper)
+    _edit(public, "rw-aur/gaia.json", lambda d: d["stars"].reverse())
+    _edit(public, "eps-indi-b/gaia.json", lambda d: d.update(count=d["count"] + 1))
+    errs = _errors(public)
+    assert any("r-dra: gaia_url" in e for e in errs)
+    assert any("wise-0855: gaia_url missing" in e for e in errs)
+    assert any("rw-aur gaia: stars are not sorted" in e for e in errs)
+    assert any("eps-indi-b gaia: count" in e for e in errs)

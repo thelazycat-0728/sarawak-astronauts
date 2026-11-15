@@ -46,6 +46,9 @@ Light curves and spectra (``preset_photometry.py``), for every preset:
 - ``spectrum_url`` is optional (``/presets/<id>/spectrum.json``). The spectrum
   validates, its points are in wavelength order with the same flux rule, ids are
   unique, and ``bands`` lists exactly the arrays of its points.
+- ``gaia_url`` (``/presets/<id>/gaia.json``, ``build_preset_gaia.py``; required when
+  run as a script) validates as ``PresetGaia``: count matches, stars sorted by G and
+  under the limit, unique ids, every star within ``radius_arcmin`` of the centre.
 - ``coadds`` (optional, ``build_preset_coadds.py``) validates, lists each array once
   in order, and every co-add URL resolves to an 8-bit grey PNG of its stated size.
 - ``motion`` (``build_preset_motion.py``) sits exactly on the proper-motion movers'
@@ -66,6 +69,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -81,9 +85,11 @@ sys.path.insert(0, str(BACKEND / "scripts"))
 from build_presets import CREDIT, MIN_CORE_VALID, PRESET_FOVS, VARIABLES, manifest_url
 from irsa_coverage import PRESETS
 from preset_photometry import (
+    GAIA_FILE,
     LIGHTCURVE_FILE,
     SPECTRUM_FILE,
     CoaddEntry,
+    PresetGaia,
     PresetLightcurve,
     PresetMotion,
     PresetSpectrum,
@@ -455,6 +461,41 @@ def _check_coadds(pid: str, entry: dict, public: Path, errs: list[str]) -> None:
             errs.append(f"{where}: {c.band} n_frames or stretch is not usable")
 
 
+def _separation_arcmin(ra1: float, dec1: float, ra2: float, dec2: float) -> float:
+    r1, d1, r2, d2 = map(math.radians, (ra1, dec1, ra2, dec2))
+    h = (math.sin((d2 - d1) / 2) ** 2
+         + math.cos(d1) * math.cos(d2) * math.sin((r2 - r1) / 2) ** 2)
+    return math.degrees(2 * math.asin(min(1.0, math.sqrt(h)))) * 60.0
+
+
+def _check_gaia(preset: tuple, entry: dict, public: Path, errs: list[str],
+                require: bool) -> None:
+    pid = preset[0]
+    url = entry.get("gaia_url")
+    where = f"{pid} gaia"
+    if url is None:
+        if require:
+            errs.append(f"index.json {pid}: gaia_url missing")
+        return
+    if url != f"/presets/{pid}/{GAIA_FILE}":
+        errs.append(f"index.json {pid}: gaia_url {url!r} is wrong")
+        return
+    gaia = _load(url_to_file(url, public), PresetGaia, where, errs)
+    if gaia is None:
+        return
+    if gaia.count != len(gaia.stars) or gaia.count > gaia.max_stars:
+        errs.append(f"{where}: count {gaia.count} does not match the stars")
+    mags = [s.g_mag for s in gaia.stars]
+    if mags != sorted(mags) or any(m >= gaia.g_mag_limit for m in mags):
+        errs.append(f"{where}: stars are not sorted by g_mag or exceed the limit")
+    if len({s.source_id for s in gaia.stars}) != len(gaia.stars):
+        errs.append(f"{where}: source ids repeat")
+    far = [s.source_id for s in gaia.stars
+           if _separation_arcmin(s.ra, s.dec, preset[2], preset[3]) > gaia.radius_arcmin * 1.01]
+    if far:
+        errs.append(f"{where}: {len(far)} stars lie outside radius_arcmin")
+
+
 def _load(path: Path | None, model, where: str, errs: list[str]):
     if path is None or not path.is_file():
         errs.append(f"{where}: file missing")
@@ -508,6 +549,7 @@ def check_photometry(root: Path, manifests: dict[tuple[str, float], EpochsRespon
                 _check_points(lc.points, where, errs)
         _check_motion(pid, entry, man, errs, require)
         _check_coadds(pid, entry, public, errs)
+        _check_gaia(preset, entry, public, errs, require)
         url = entry.get("spectrum_url")
         if url is None:
             continue
@@ -547,7 +589,7 @@ def _canonical_sha256(obj: object) -> str:
 
 def _index_without_additions(doc: dict) -> dict:
     """index.json minus the additive fields (T-016 ``stacks`` and ``look_for``; the
-    ``lightcurve_url``, ``spectrum_url``, ``motion`` and ``coadds``)."""
+    ``lightcurve_url``, ``spectrum_url``, ``motion``, ``coadds`` and ``gaia_url``)."""
     out = json.loads(json.dumps(doc))
     for p in out.get("presets", []):
         p.pop("look_for", None)
@@ -555,6 +597,7 @@ def _index_without_additions(doc: dict) -> dict:
         p.pop("spectrum_url", None)
         p.pop("motion", None)
         p.pop("coadds", None)
+        p.pop("gaia_url", None)
         for m in p.get("manifests", []):
             m.pop("stacks", None)
     return out
