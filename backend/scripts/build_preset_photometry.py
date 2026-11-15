@@ -65,10 +65,12 @@ SPECTRUM_METHOD = METHOD.replace(" Each epoch is at its own wavelength (waveleng
                                  "so part of a change between points can be colour, "
                                  "not time.", "")
 SPECTRUM_NOTE = (
-    "One visit per detector array, so every array is sampled within a few days. "
-    "Arrays can come from different visits; a variable star can change between them. "
-    "Fluxes have no aperture correction, and the PSF grows with wavelength, so the "
-    "long-wavelength points lose more of the star's light."
+    "Each detector array comes from one visit. SPHEREx observes the arrays in pairs "
+    "(D1 with D4, D2 with D5, D3 with D6), and the pairs can be days apart, even "
+    "within one visit; arrays can also come from different visits. A variable star "
+    "can change in between, which shows as a step at an array boundary. Fluxes have "
+    "no aperture correction, and the PSF grows with wavelength, so the "
+    "long-wavelength points lose a little more of the star's light."
 )
 
 

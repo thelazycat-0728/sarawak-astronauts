@@ -428,7 +428,112 @@
           "stacks": 3
         }
       ],
-      "lightcurve_url": "/presets/rw-aur/lightcurve.json"
+      "lightcurve_url": "/presets/rw-aur/lightcurve.json",
+      "spectrum_url": "/presets/rw-aur/spectrum.json",
+      "coadds": [
+        {
+          "band": "D1",
+          "url": "/presets/rw-aur/coadds/D1.png",
+          "visit": 3,
+          "n_frames": 18,
+          "wavelength_min_um": 0.7537,
+          "wavelength_max_um": 1.1041,
+          "fov_arcmin": 3.0,
+          "width_px": 30,
+          "height_px": 30,
+          "stretch": {
+            "vmin": -0.033313,
+            "vmax": 24.099,
+            "asinh_a": 0.1
+          },
+          "flagged_fraction": 0.0
+        },
+        {
+          "band": "D2",
+          "url": "/presets/rw-aur/coadds/D2.png",
+          "visit": 3,
+          "n_frames": 18,
+          "wavelength_min_um": 1.1217,
+          "wavelength_max_um": 1.6462,
+          "fov_arcmin": 3.0,
+          "width_px": 30,
+          "height_px": 30,
+          "stretch": {
+            "vmin": -0.033028,
+            "vmax": 30.188,
+            "asinh_a": 0.1
+          },
+          "flagged_fraction": 0.0
+        },
+        {
+          "band": "D3",
+          "url": "/presets/rw-aur/coadds/D3.png",
+          "visit": 3,
+          "n_frames": 18,
+          "wavelength_min_um": 1.6436,
+          "wavelength_max_um": 2.3848,
+          "fov_arcmin": 3.0,
+          "width_px": 30,
+          "height_px": 30,
+          "stretch": {
+            "vmin": -0.035436,
+            "vmax": 27.847,
+            "asinh_a": 0.1
+          },
+          "flagged_fraction": 0.0
+        },
+        {
+          "band": "D4",
+          "url": "/presets/rw-aur/coadds/D4.png",
+          "visit": 3,
+          "n_frames": 18,
+          "wavelength_min_um": 2.452,
+          "wavelength_max_um": 3.789,
+          "fov_arcmin": 3.0,
+          "width_px": 30,
+          "height_px": 30,
+          "stretch": {
+            "vmin": -0.039613,
+            "vmax": 36.555,
+            "asinh_a": 0.1
+          },
+          "flagged_fraction": 0.0
+        },
+        {
+          "band": "D5",
+          "url": "/presets/rw-aur/coadds/D5.png",
+          "visit": 3,
+          "n_frames": 19,
+          "wavelength_min_um": 3.8149,
+          "wavelength_max_um": 4.4223,
+          "fov_arcmin": 3.0,
+          "width_px": 30,
+          "height_px": 30,
+          "stretch": {
+            "vmin": -0.051726,
+            "vmax": 59.527,
+            "asinh_a": 0.1
+          },
+          "flagged_fraction": 0.0
+        },
+        {
+          "band": "D6",
+          "url": "/presets/rw-aur/coadds/D6.png",
+          "visit": 3,
+          "n_frames": 18,
+          "wavelength_min_um": 4.4281,
+          "wavelength_max_um": 4.9813,
+          "fov_arcmin": 3.0,
+          "width_px": 30,
+          "height_px": 30,
+          "stretch": {
+            "vmin": -0.068123,
+            "vmax": 86.6,
+            "asinh_a": 0.1
+          },
+          "flagged_fraction": 0.0
+        }
+      ]
     },
     {
       "id": "r-dra",
