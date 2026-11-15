@@ -13,7 +13,7 @@ export const useViewer = create((set) => ({
   ra: PRESET_BY_ID.barnard.raStr,
   dec: PRESET_BY_ID.barnard.decStr,
   fov: 6,
-  arrayIdx: 3,
+  arrayIdx: PRESET_BY_ID.barnard.defaultArray,
   channel: null,
   mode: 'blink',
   epochIdx: 0,

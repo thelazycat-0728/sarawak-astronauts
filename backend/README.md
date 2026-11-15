@@ -14,8 +14,8 @@ Two data modes, chosen with the `DATA_MODE` environment variable:
   `diff_url_template: null` and `diffs: []`.
 
 `GET /health` always returns `{"status": "ok"}`; the `X-Data-Mode` response header
-(readable from browser JavaScript through CORS) says which mode is running. `POST /explain` (Track C) is not implemented yet;
-`app/models.py` holds its request and response models.
+(readable from browser JavaScript through CORS) says which mode is running. `POST /explain`
+(Track C, Google Gemini) is described under "AI explainer" below.
 
 ## Set up (from `backend/`)
 
@@ -36,8 +36,31 @@ Then open <http://localhost:8000/docs> or
 <http://localhost:8000/epochs?ra=269.4464&dec=4.7668>.
 
 Optional environment variables: `DATA_MODE` (`mock`, the default, or `irsa`),
-`CORS_ORIGINS` (comma-separated, default `http://localhost:5173`) and
-`CUTOUT_CACHE_DIR` (where cutouts are cached, default `backend/.cache/cutouts/`).
+`CORS_ORIGINS` (comma-separated, default `http://localhost:5173`),
+`CORS_ORIGIN_REGEX` (optional; origins it fully matches are also allowed, used for
+Netlify deploy previews such as `^https://deploy-preview-\d+--<site>\.netlify\.app$`) and
+`CUTOUT_CACHE_DIR` (where cutouts are cached, default `backend/.cache/cutouts/`),
+`GEMINI_API_KEY` (turns on the AI explainer, `POST /explain`; free key from
+<https://aistudio.google.com>, never commit it), `GEMINI_MODEL` (default
+`gemini-3.8-flash`) and `GEMINI_FALLBACK_MODEL` (default `gemini-3.5-flash-lite`,
+asked once when the main model is overloaded, out of quota or unknown).
+
+### AI explainer (`POST /explain`)
+
+`app/ai/` sends each question to Google Gemini (free tier) with the glossary
+(`app/ai/glossary.json`, a copy of `frontend/src/glossary.json`) and the current view
+in the prompt. Without `GEMINI_API_KEY` the endpoint answers `503` and the frontend
+uses its offline answers. Limits: 6 questions a minute and 60 a day per IP
+(`Settings.explain_rate_per_minute` / `explain_rate_per_day`). The tests use a fake
+explainer and never call Gemini. To try it locally (PowerShell):
+
+```
+$env:GEMINI_API_KEY = "<your key>"; .venv/Scripts/python -m uvicorn app.main:app --reload
+```
+
+Then `POST http://localhost:8000/explain` with `{"question": "What is proper motion?"}`
+from <http://localhost:8000/docs>, or run the frontend with `VITE_API_URL=http://localhost:8000`
+and open the assistant panel. Token counts are logged at INFO (`app.ai`).
 
 ### Live SPHEREx data (`DATA_MODE=irsa`)
 
@@ -106,9 +129,10 @@ output.
 
 **The presets are the demo fallback.** The five preset targets (API.md section 4)
 are pre-computed files in `frontend/public/presets/` (built with
-`backend/scripts/build_sequence.py --preset <id>`) that need neither IRSA nor this
-API. When the live API is slow or answers 504, use a preset. (The preset files are
-not in the repository yet.)
+`backend/scripts/build_presets.py`, with visit stacks from
+`backend/scripts/build_stacks.py`, and checked with `backend/scripts/check_presets.py`)
+that need neither IRSA nor this API. When the live API is slow or answers 504, use a
+preset.
 
 ## Test and lint
 

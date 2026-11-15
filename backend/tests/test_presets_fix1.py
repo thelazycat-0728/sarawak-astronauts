@@ -162,7 +162,7 @@ def test_preset_texts_are_honest():
     api = (REPO / "docs" / "API.md").read_text(encoding="utf-8")
     for text in look.values():
         assert text in api  # the API.md section 4 table carries the same texts
-    assert "co-moving" not in api and "Version:** 0.2" in api
+    assert "co-moving" not in api and "Changes in 0.2" in api
 
 
 # ------------------------------------------------------------ checker

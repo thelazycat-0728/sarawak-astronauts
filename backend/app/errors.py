@@ -47,6 +47,11 @@ class NotFound(ApiError):
     code = "not_found"
 
 
+class RateLimited(ApiError):
+    status_code = 429
+    code = "rate_limited"
+
+
 class UpstreamError(ApiError):
     status_code = 502
     code = "upstream_error"

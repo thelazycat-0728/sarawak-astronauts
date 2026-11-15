@@ -35,12 +35,16 @@ export const MONTHLY = Array.from({ length: 18 }, (_, i) => {
 
 // ---------------------------------------------------------------- presets
 // flux = peak brightness per detector array (simulation units, noise = 1).
+// slug = folder under public/presets/ holding real SPHEREx frames for this target;
+// realArray = the one detector array those frames cover (index.json "band"). The
+// default array is that one, so a preset opens on real data.
 const P = [
   {
     id: 'barnard', name: "Barnard's Star", type: 'High proper motion star',
     raStr: '17h57m48.50s', decStr: '+04°41′36.2″',
     kind: 'motion', pm: [-801.6, 10362.4], pmText: '10.4″/yr',
-    flux: [60, 75, 70, 45, 34, 28], spectrum: 'm-dwarf', epochs: SURVEYS, defaultArray: 3, seed: 101,
+    flux: [60, 75, 70, 45, 34, 28], spectrum: 'm-dwarf', epochs: SURVEYS, defaultArray: 2, seed: 101,
+    slug: 'barnards-star', realArray: 2,
     lesson: { kicker: 'Movement lesson', title: 'What changed position?', text: 'Watch the bright point travel while the background stars stay fixed.' },
     facts: [
       'A red dwarf about 6 light-years away, one of the Sun’s closest neighbours.',
@@ -52,7 +56,8 @@ const P = [
     id: 'epsindib', name: 'Epsilon Indi B', type: 'Brown dwarf pair',
     raStr: '22h04m10.52s', decStr: '−56°46′57.7″',
     kind: 'motion', pm: [3966.7, -2536.2], pmText: '4.7″/yr',
-    flux: [6, 14, 16, 15, 20, 22], spectrum: 't-dwarf', epochs: SURVEYS, defaultArray: 6, seed: 202,
+    flux: [6, 14, 16, 15, 20, 22], spectrum: 't-dwarf', epochs: SURVEYS, defaultArray: 2, seed: 202,
+    slug: 'eps-indi-b', realArray: 2,
     lesson: { kicker: 'Subtle motion lesson', title: 'Too small to see? Subtract.', text: 'It moves less than a pixel a year. Switch to Difference and look for a teal–amber pair.' },
     facts: [
       'Two brown dwarfs orbiting the star Epsilon Indi A, about 12 light-years away.',
@@ -65,6 +70,7 @@ const P = [
     raStr: '08h55m10.831s', decStr: '−07°14′42.53″',
     kind: 'motion', pm: [-8118, 680], pmText: '8.1″/yr',
     flux: [0, 0, 0.8, 9, 20, 30], spectrum: 'y-dwarf', epochs: SURVEYS, defaultArray: 6, seed: 303,
+    slug: 'wise-0855', realArray: 6,
     lesson: { kicker: 'Colour lesson', title: 'Where did it go?', text: 'This brown dwarf is too cold to glow at short wavelengths. Compare array 2 with array 6.' },
     facts: [
       'About 7.4 light-years away and one of the coldest brown dwarfs known, roughly 250 K.',
@@ -77,6 +83,7 @@ const P = [
     raStr: '05h07m49.54s', decStr: '+30°24′05.1″',
     kind: 'variable', pm: [0, 0], lc: [1, 0.42, 0.88, 0.58],
     flux: [40, 50, 55, 60, 58, 55], spectrum: 'yso', epochs: SURVEYS, defaultArray: 2, seed: 404,
+    slug: 'rw-aur', realArray: 2,
     lesson: { kicker: 'Brightness lesson', title: 'Which star faded?', text: 'Nothing moves here. Blink Survey 1 against Survey 2 and find the star that dims.' },
     facts: [
       'A young star system in Auriga, still surrounded by gas and dust.',
@@ -89,6 +96,7 @@ const P = [
     raStr: '16h32m40.17s', decStr: '+66°45′17.8″',
     kind: 'variable', pm: [0, 0], period: 245, amp: 0.55,
     flux: [30, 48, 55, 50, 44, 40], spectrum: 'mira', epochs: MONTHLY, defaultArray: 2, seed: 505,
+    slug: 'r-dra', realArray: 2,
     lesson: { kicker: 'Brightness lesson', title: 'Watch it pulse', text: 'Near the ecliptic pole SPHEREx looks every month. Press play and watch one star breathe in and out.' },
     facts: [
       'A Mira variable: a cool giant star that swells and shrinks with a period of about 245 days.',
@@ -116,28 +124,9 @@ export function customObject(seed) {
 }
 
 // ---------------------------------------------------------------- glossary
-export const GLOSSARY = {
-  ra: { term: 'Right ascension (RA)', short: 'The sky’s “longitude”, measured east in hours, minutes and seconds (24h = full circle).' },
-  dec: { term: 'Declination (Dec)', short: 'The sky’s “latitude”, from −90° at the south celestial pole to +90° at the north.' },
-  fov: { term: 'Field of view', short: 'How much sky the image covers, in arcminutes (′). Bigger fields catch faster movers but take longer to load.' },
-  arcsec: { term: 'Arcsecond (″)', short: '1/3600 of a degree. The full Moon is about 1,800″ across; a SPHEREx pixel is 6.15″.' },
-  epoch: { term: 'Snapshot (epoch)', short: 'One visit to this patch of sky. SPHEREx revisits the whole sky about every six months.' },
-  band: { term: 'Infrared colour (band)', short: 'A narrow slice of infrared wavelengths. SPHEREx records 102 of them, from 0.75 to 5.0 µm.' },
-  array: { term: 'Detector array', short: 'SPHEREx has six detectors, each covering a range of wavelengths. Stacking a whole array gives a cleaner image.' },
-  blink: { term: 'Blink', short: 'Flipping between snapshots, the way Clyde Tombaugh found Pluto in 1930. Anything that jumps is moving.' },
-  difference: { term: 'Difference image', short: 'One snapshot subtracted from another. Fixed stars cancel out; movers leave a teal (was here) and amber (now here) pair.' },
-  stack: { term: 'Stack (co-add)', short: 'Averaging snapshots together. Noise drops, so faint still objects stand out, but movers smear.' },
-  pm: { term: 'Proper motion', short: 'How fast a star drifts across the sky, in arcseconds per year. Nearby stars move most.' },
-  browndwarf: { term: 'Brown dwarf', short: 'An object too heavy to be a planet but too light to burn like a star. Cold ones glow mainly in infrared.' },
-  variable: { term: 'Variable star', short: 'A star whose brightness changes over time, from pulsing, eclipses or passing dust.' },
-  flags: { term: 'Contamination flags', short: 'Markers on pixels affected by glitches such as cosmic rays, ghosts or glare. Flagged pixels are hidden.' },
-  zodi: { term: 'Zodiacal light', short: 'Faint glow from dust in our Solar System. It changes with the seasons, so it is removed before comparing snapshots.' },
-  spectrum: { term: 'Spectrum', short: 'Brightness at each wavelength. Dips reveal molecules such as water ice, methane or carbon dioxide.' },
-  gaia: { term: 'Gaia', short: 'ESA mission that measured positions and motions of almost 2 billion stars. Used to check whether a mover is already known.' },
-  wise: { term: 'WISE / CatWISE', short: 'NASA infrared survey from 2010 onward. Catches cold objects Gaia can’t see.' },
-  release: { term: 'Data release', short: 'A published batch of processed images. DR1 covers surveys 1–2; QR3 adds newer data every week.' },
-  candidate: { term: 'Candidate', short: 'A possible discovery waiting for a scientist to check it. Not confirmed until verified.' },
-};
+// Shared with the backend's AI explainer (backend/app/ai/glossary.json is a copy;
+// a backend test checks the two match). Edit frontend/src/glossary.json, then copy it.
+export { default as GLOSSARY } from '../glossary.json';
 
 // ---------------------------------------------------------------- lessons
 export const LESSONS = [

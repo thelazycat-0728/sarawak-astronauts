@@ -11,9 +11,11 @@ from app.providers import make_provider
 def test_defaults(monkeypatch):
     monkeypatch.delenv("DATA_MODE", raising=False)
     monkeypatch.delenv("CORS_ORIGINS", raising=False)
+    monkeypatch.delenv("CORS_ORIGIN_REGEX", raising=False)
     s = Settings.from_env()
     assert s.data_mode == "mock"
     assert s.cors_origins == ("http://localhost:5173",)
+    assert s.cors_origin_regex is None
     assert s.spherex_releases == ("DR1", "QR3")
 
 
@@ -23,6 +25,16 @@ def test_env_overrides(monkeypatch):
     s = Settings.from_env()
     assert s.data_mode == "mock"
     assert s.cors_origins == ("https://a.example", "https://b.example")
+
+
+def test_cors_origin_regex_env(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGIN_REGEX", r" ^https://deploy-preview-\d+--site\.netlify\.app$ ")
+    assert Settings.from_env().cors_origin_regex == r"^https://deploy-preview-\d+--site\.netlify\.app$"
+    monkeypatch.setenv("CORS_ORIGIN_REGEX", "   ")
+    assert Settings.from_env().cors_origin_regex is None
+    monkeypatch.setenv("CORS_ORIGIN_REGEX", "https://(unclosed")
+    with pytest.raises(ValueError, match="invalid CORS_ORIGIN_REGEX"):
+        Settings.from_env()
 
 
 def test_unknown_data_mode_fails_fast():
@@ -58,6 +70,10 @@ def test_default_settings_read_the_environment_like_from_env(monkeypatch):
     monkeypatch.setenv("DATA_MODE", " IRSA ")
     monkeypatch.setenv("CORS_ORIGINS", "https://a.example")
     monkeypatch.setenv("CUTOUT_CACHE_DIR", " /tmp/sx-shared ")
+    # CORS_ORIGIN_REGEX and GEMINI_* are read by from_env only (PR #15).
+    for name in ("CORS_ORIGIN_REGEX", "GEMINI_API_KEY", "GEMINI_MODEL",
+                 "GEMINI_FALLBACK_MODEL"):
+        monkeypatch.delenv(name, raising=False)
     plain = Settings()
     assert plain == Settings.from_env()
     assert (plain.data_mode, plain.cors_origins, plain.cutout_cache_dir) == (
@@ -68,3 +84,11 @@ def test_default_settings_read_the_environment_like_from_env(monkeypatch):
     from app.cutouts import default_cache
 
     assert default_cache(Settings()).directory == Path("/tmp/sx-shared").resolve()
+
+
+def test_from_env_only_variables_do_not_leak_into_plain_settings(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGIN_REGEX", r"^https://x\.example$")
+    monkeypatch.setenv("GEMINI_API_KEY", "secret")
+    assert Settings().cors_origin_regex is None and Settings().gemini_api_key is None
+    s = Settings.from_env()
+    assert s.cors_origin_regex == r"^https://x\.example$" and s.gemini_api_key == "secret"

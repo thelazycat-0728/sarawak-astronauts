@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Search, ChevronRight, Sparkles, Play, Pause, SkipBack, SkipForward, CircleHelp, Crosshair,
-  Layers, ScanLine, Gauge, Flag, Lightbulb, Check, GraduationCap,
+  Layers, ScanLine, Gauge, Flag, Lightbulb, Check, GraduationCap, RotateCcw,
 } from 'lucide-react';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip, CartesianGrid,
@@ -30,7 +30,7 @@ export default function Explore() {
   const expert = useUi((s) => s.expert);
   const preset = v.targetId ? PRESET_BY_ID[v.targetId] : null;
   const raDeg = parseRA(v.ra), decDeg = parseDec(v.dec);
-  const { data: field, loading, source, error } = useField({
+  const { data: field, loading, source, error, attempt, tryAgain } = useField({
     targetId: v.targetId, raDeg, decDeg, fov: v.fov, arrayIdx: v.arrayIdx, channel: v.channel,
   });
 
@@ -75,6 +75,7 @@ export default function Explore() {
     if (!field) return null;
     if (pick) return pick;
     if (field.object && field.object.kind !== 'asteroid' && !field.object.mystery) return { type: 'object' };
+    if (field.live) return centrePoint(field);
     if (!field.stars.length) return null;
     let best = 0;
     field.stars.forEach((s, i) => { if (s.peak > field.stars[best].peak) best = i; });
@@ -85,6 +86,12 @@ export default function Explore() {
     if (!field) return;
     const op = field.object && field.visibleAt(cur) ? field.posAt(cur) : null;
     if (op && Math.hypot(op[0] - x, op[1] - y) < 3) { setPick({ type: 'object' }); return; }
+    if (field.live) {
+      // Live data has no star list: snap to the light centre near the click.
+      const [cx, cy] = centroid(field.stacks[cur], field.nx, field.ny, x, y);
+      setPick({ type: 'point', x: cx, y: cy });
+      return;
+    }
     let bi = -1, bd = 3;
     field.stars.forEach((s, i) => { const d = Math.hypot(s.x - x, s.y - y); if (d < bd) { bd = d; bi = i; } });
     if (bi >= 0) setPick({ type: 'star', i: bi });
@@ -98,7 +105,7 @@ export default function Explore() {
         <div className="min-w-0 border-t border-line lg:border-t-0 lg:border-l">
           <ViewerHead preset={preset} raDeg={raDeg} decDeg={decDeg} expert={expert} field={field} />
           <Stage
-            field={field} loading={loading} preset={preset} cur={cur} base={base} incIdx={incIdx}
+            field={field} loading={loading} attempt={attempt} error={error} tryAgain={tryAgain} preset={preset} cur={cur} base={base} incIdx={incIdx}
             expert={expert} selection={selection} onPick={expert ? onPick : undefined}
           />
           {field && <TimelineBar field={field} included={included} cur={cur} />}
@@ -261,7 +268,7 @@ function ViewerHead({ preset, raDeg, decDeg, expert, field }) {
   );
 }
 
-function Stage({ field, loading, preset, cur, base, incIdx, expert, selection, onPick }) {
+function Stage({ field, loading, attempt, error, tryAgain, preset, cur, base, incIdx, expert, selection, onPick }) {
   const v = useViewer();
   const lessonDone = useProgress((s) => s.lessons);
   const completeLesson = useProgress((s) => s.completeLesson);
@@ -339,7 +346,7 @@ function Stage({ field, loading, preset, cur, base, incIdx, expert, selection, o
 
     // Selected source (Expert).
     if (expert && selection) {
-      const p = selection.type === 'object' ? field.posAt(cur) : [field.stars[selection.i].x, field.stars[selection.i].y];
+      const p = selectionAt(field, selection, cur);
       if (p) {
         ctx.save();
         ctx.strokeStyle = '#ffb15c';
@@ -379,8 +386,10 @@ function Stage({ field, loading, preset, cur, base, incIdx, expert, selection, o
           )}
         </SkyCanvas>
       ) : (
-        <div className="grid aspect-[5/3] place-items-center text-sm text-muted">
-          {loading ? <span className="label-mono animate-pulse">Fetching SPHEREx cutouts…</span> : 'Enter a sky position to begin.'}
+        <div className="grid aspect-[5/3] place-items-center p-6 text-sm text-muted">
+          {loading ? <LiveLoading attempt={attempt} />
+            : error ? <LiveError message={error} onRetry={tryAgain} />
+              : 'Enter a sky position to begin.'}
         </div>
       )}
       <div className="label-mono flex flex-wrap items-center justify-between gap-2 border-t border-line px-6 py-2.5 text-muted">
@@ -476,15 +485,58 @@ function ModeBar({ expert, hasField }) {
   );
 }
 
+// Live views can take a minute or two the first time: IRSA is slow, and the API
+// builds the cutouts before answering (docs/API.md).
+function LiveLoading({ attempt = 1 }) {
+  const [start] = useState(() => Date.now());
+  const [now, setNow] = useState(start);
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const secs = Math.round((now - start) / 1000);
+  return (
+    <div className="max-w-sm text-center" role="status">
+      <p className="label-mono animate-pulse">Fetching SPHEREx images… {secs}s</p>
+      {secs >= 8 && (
+        <p className="mt-3 text-[13px] leading-relaxed text-muted">
+          The first look at a new patch of sky can take 1–2 minutes while the images download from the SPHEREx archive. Repeat visits are almost instant.
+          {attempt > 1 && ` Still preparing (try ${attempt} of 3).`}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function LiveError({ message, onRetry }) {
+  const loadPreset = useViewer((s) => s.loadPreset);
+  return (
+    <div className="max-w-md text-center" role="alert">
+      <p className="text-fg">This view couldn’t load</p>
+      <p className="mt-2 text-[13px] leading-relaxed text-muted">{message}</p>
+      <div className="mt-4 flex justify-center">
+        <Button size="sm" variant="outline" onClick={onRetry}><RotateCcw className="size-4" />Try again</Button>
+      </div>
+      <p className="label-mono mt-5 text-faint">Or explore a known object</p>
+      <div className="mt-2 flex flex-wrap justify-center gap-2">
+        {PRESETS.map((p) => (
+          <button key={p.id} type="button" onClick={() => loadPreset(p.id)}
+            className="rounded-full border border-line-strong px-3 py-1.5 text-[13px] text-fg hover:border-accent">{p.name}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function StatusBar({ field, incIdx, source, error }) {
   const live = field?.synthetic ? 'Live API · synthetic mock data' : 'Live from IRSA';
-  const label = { demo: 'Demo frames', precomputed: 'Pre-computed frames', live, none: 'No field' }[source] ?? 'Demo frames';
+  const label = { demo: 'Demo frames', preset: 'Real SPHEREx frames (preset)', live, error: 'Live API', none: 'No field' }[source] ?? 'Demo frames';
   return (
     <div className="label-mono flex flex-wrap items-center justify-between gap-3 border-t border-line px-6 py-3 text-muted lg:col-span-2">
       <span className="flex items-center gap-2">
-        <span className={cn('size-1.5 rounded-full', source === 'live' ? 'bg-good' : 'bg-amber')} />
+        <span className={cn('size-1.5 rounded-full', source === 'live' || source === 'preset' ? 'bg-good' : 'bg-amber')} />
         SPHEREx public data · <span className="text-fg">{label}</span>
-        {error && <span className="normal-case tracking-normal text-amber">({error} Showing demo frames.)</span>}
+        {error && <span className="normal-case tracking-normal text-amber">(Live view unavailable)</span>}
       </span>
       {field && (
         <span className="flex flex-wrap items-center gap-x-5 gap-y-1">
@@ -530,10 +582,29 @@ function BeginnerGuide() {
 const axis = { stroke: '#5b6378', fontSize: 11, fontFamily: 'Geist Mono, monospace' };
 const tooltipStyle = { background: '#121827', border: '1px solid #2a3249', borderRadius: 8, fontSize: 12 };
 
+/** Pixel position of the selected source in snapshot e (null if unknown). */
+function selectionAt(field, selection, e) {
+  if (!selection) return null;
+  if (selection.type === 'object') return field.posAt(e);
+  if (selection.type === 'point') return [selection.x, selection.y];
+  const st = field.stars[selection.i];
+  return st ? [st.x, st.y] : null;
+}
+
+/** Default selection on live data: the light centre nearest the middle, which is the position the user asked for. */
+function centrePoint(field) {
+  const { nx, ny } = field;
+  const mean = meanOf(field.stacks, field.stacks.map((_, i) => i));
+  const [x, y] = centroid(mean, nx, ny, nx / 2, ny / 2, 3);
+  return { type: 'point', x, y };
+}
+
 function Analysis({ field, preset, incIdx, cur, selection }) {
   const v = useViewer();
-  const selPos = (e) => (selection?.type === 'object' ? field.posAt(e) : selection ? [field.stars[selection.i].x, field.stars[selection.i].y] : null);
-  const selName = selection?.type === 'object' ? (preset?.name ?? field.object?.name ?? 'Source') : selection ? `Star #${selection.i + 1}` : '—';
+  const selPos = (e) => selectionAt(field, selection, e);
+  const selName = selection?.type === 'object' ? (preset?.name ?? field.object?.name ?? 'Source')
+    : selection?.type === 'point' ? `Position ${Math.round(selection.x)}, ${Math.round(selection.y)}`
+      : selection ? `Star #${selection.i + 1}` : '—';
 
   const brightness = useMemo(() => {
     if (!selection) return [];
@@ -544,7 +615,7 @@ function Analysis({ field, preset, incIdx, cur, selection }) {
   }, [field, incIdx, selection]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const spectrum = useMemo(() => {
-    if (!selection) return [];
+    if (!selection || field.live) return [];
     if (selection.type === 'object') {
       const o = field.object;
       return spectrum102(o.spectrum ?? 'star', o.flux?.[2] || 10, hashString(o.id ?? 'o'));
@@ -576,8 +647,10 @@ function Analysis({ field, preset, incIdx, cur, selection }) {
           </div>
           <p className="mt-2 text-xs text-muted">Array {arr.n} covers {arr.lo}–{arr.hi} µm. All 17 bands stacked for the cleanest image.</p>
           <div className="mt-4 border-t border-line pt-4">
-            <Switch id="single-band" label="Single band" checked={v.channel != null} onChange={(on) => v.setChannel(on ? 8 : null)} />
-            {v.channel != null && (
+            {field.live ? (
+              <p className="text-xs text-muted">Single bands aren’t available for live SPHEREx views yet; each array is shown stacked.</p>
+            ) : <Switch id="single-band" label="Single band" checked={v.channel != null} onChange={(on) => v.setChannel(on ? 8 : null)} />}
+            {!field.live && v.channel != null && (
               <div className="mt-3">
                 <input type="range" min={0} max={16} value={v.channel} onChange={(e) => v.setChannel(Number(e.target.value))} className="w-full" aria-label="Band within array" />
                 <p className="tabular mt-1 text-xs text-muted">Band {v.channel + 1} of 17 · λ = {bandLambda(v.arrayIdx, v.channel).toFixed(3)} µm. Narrower band: more colour detail, more noise.</p>
@@ -620,7 +693,9 @@ function Analysis({ field, preset, incIdx, cur, selection }) {
               </ComposedChart>
             </ResponsiveContainer>
           </div>
-          <p className="text-xs text-muted">Built on the fly from all six arrays. Dashed lines mark where molecules absorb.</p>
+          <p className="text-xs text-muted">{field.live
+            ? 'Spectra need single-band data, which the live SPHEREx service doesn’t provide yet. Try a known object to see one.'
+            : 'Built on the fly from all six arrays. Dashed lines mark where molecules absorb.'}</p>
         </Panel>
 
         <MotionCard field={field} incIdx={incIdx} />
@@ -632,7 +707,9 @@ function Analysis({ field, preset, incIdx, cur, selection }) {
             <Switch id="ov-wise" label={<span>CatWISE <span className="text-muted">· squares, sees cold objects</span></span>} checked={v.overlays.wise} onChange={() => v.toggleOverlay('wise')} />
             <Switch id="ov-track" label={<span>Predicted track <span className="text-muted">· from proper motion</span></span>} checked={v.overlays.track} onChange={() => v.toggleOverlay('track')} />
           </div>
-          <p className="mt-4 text-xs text-muted">A source moving with no Gaia or CatWISE match is a candidate worth flagging.</p>
+          <p className="mt-4 text-xs text-muted">{field.live
+            ? 'Gaia and CatWISE overlays aren’t connected to live SPHEREx views yet.'
+            : 'A source moving with no Gaia or CatWISE match is a candidate worth flagging.'}</p>
         </Panel>
 
         <MetadataCard field={field} incIdx={incIdx} cur={cur} />

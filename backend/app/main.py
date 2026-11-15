@@ -7,19 +7,22 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.ai import Explainer, make_explainer
+from app.ai.ratelimit import RateLimiter
 from app.config import Settings
 from app.errors import catch_unhandled, install_error_handlers
 from app.providers import DataProvider, make_provider
-from app.routers import health, science
+from app.routers import explain, health, science
 
 _LOG_HANDLER_NAME = "app-irsa-info"
 
 
 def configure_logging(settings: Settings) -> None:
-    """In irsa mode, show ``app.*`` INFO lines (build timings, cache hits) next to
-    uvicorn's own output. uvicorn configures only its own loggers, so without a
-    handler these lines would be dropped. Safe to call more than once."""
-    if settings.data_mode != "irsa":
+    """In irsa mode, or with the AI explainer on, show ``app.*`` INFO lines (build
+    timings, cache hits, explainer token counts) next to uvicorn's own output.
+    uvicorn configures only its own loggers, so without a handler these lines
+    would be dropped. Safe to call more than once."""
+    if settings.data_mode != "irsa" and not settings.gemini_api_key:
         return
     logger = logging.getLogger("app")
     logger.setLevel(logging.INFO)
@@ -30,9 +33,16 @@ def configure_logging(settings: Settings) -> None:
         logger.addHandler(handler)
 
 
+_FROM_SETTINGS = object()
+
+
 def create_app(
-    settings: Settings | None = None, provider: DataProvider | None = None
+    settings: Settings | None = None,
+    provider: DataProvider | None = None,
+    explainer: Explainer | None | object = _FROM_SETTINGS,
 ) -> FastAPI:
+    """``explainer``: pass one (or None for "not configured") to override the one
+    built from the settings, for example in tests."""
     settings = settings or Settings.from_env()
     configure_logging(settings)
     app = FastAPI(
@@ -42,6 +52,10 @@ def create_app(
     )
     app.state.settings = settings
     app.state.provider = provider or make_provider(settings)
+    app.state.explainer = make_explainer(settings) if explainer is _FROM_SETTINGS else explainer
+    app.state.explain_limiter = RateLimiter(
+        settings.explain_rate_per_minute, settings.explain_rate_per_day
+    )
 
     install_error_handlers(app)
     # Middleware added last runs first: CORS wraps the 500 catcher, so error
@@ -50,6 +64,7 @@ def create_app(
     app.add_middleware(
         CORSMiddleware,
         allow_origins=list(settings.cors_origins),
+        allow_origin_regex=settings.cors_origin_regex,
         allow_methods=["GET", "POST"],
         allow_headers=["Content-Type"],
         expose_headers=[health.DATA_MODE_HEADER],
@@ -57,6 +72,7 @@ def create_app(
 
     app.include_router(health.router)
     app.include_router(science.router)
+    app.include_router(explain.router)
     return app
 
 
