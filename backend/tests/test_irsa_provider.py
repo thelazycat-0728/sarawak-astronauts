@@ -73,7 +73,9 @@ def test_epochs_is_one_cleaned_exposure_per_visit(tmp_path):
     assert doc.count == 3 and [e.visit for e in doc.epochs] == [1, 2, 3]
     assert len({e.visit for e in doc.epochs}) == doc.count  # one per visit
     assert [e.mjd for e in doc.epochs] == sorted(e.mjd for e in doc.epochs)
-    assert doc.diff_url_template is None and doc.diffs == []
+    assert doc.diffs == []
+    assert doc.diff_url_template == ("http://testserver/diff?a={a}&b={b}&ra=269.4464"
+                                     "&dec=4.7668&fov=10&band=D2")
     assert (doc.image.width_px, doc.image.height_px) == (97, 97)
     assert doc.stretch.shared and doc.stretch.vmax > doc.stretch.vmin
     assert doc.target.ra == BARNARD["ra"] and doc.target.dec == BARNARD["dec"]
@@ -115,10 +117,8 @@ def test_unknown_frame_id_is_404(tmp_path):
     assert_error(t.client.get(f"/frame/{other_band}.png", params=VIEW), 404, "not_found")
 
 
-def test_diff_and_lightcurve_are_unavailable(tmp_path):
+def test_lightcurve_is_unavailable(tmp_path):
     t = live(tmp_path)
-    resp = t.client.get("/diff", params={**VIEW, "a": "sx_a_D2", "b": "sx_b_D2"})
-    assert_error(resp, 503, "unavailable")
     assert_error(t.client.get("/lightcurve", params=BARNARD), 503, "unavailable")
     # Parameters are still validated first.
     assert_error(t.client.get("/lightcurve", params={"ra": 1, "dec": 99}), 400,

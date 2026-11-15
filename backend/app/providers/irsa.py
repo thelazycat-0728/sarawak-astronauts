@@ -39,8 +39,14 @@ to ``frame_slot_wait_s`` (3 s) for a free slot (the wait counts against the
 deadline) and then answers ``503 unavailable``. A render that passed its deadline keeps its slot until it ends, so slow
 renders cannot pile up threads. A well-formed id that resolves to nothing (404)
 is remembered for ``frame_not_found_ttl_s`` (60 s) per rounded position and band,
-so repeating it costs no IRSA query. ``/diff`` and ``/lightcurve`` answer
-``503 unavailable`` until they are implemented for live data. Every IRSA request
+so repeating it costs no IRSA query.
+
+``/diff`` loads both frames the same way (``load_frame``) and subtracts them with
+the preset diff renderer. It takes two render slots in one step (never one while
+waiting for the other), renders the frames in parallel, and shares the frame
+deadline, the 404 memory and the cutout cache with ``/frame``; ``/epochs`` returns
+a ``diff_url_template`` for it. ``/lightcurve`` answers ``503 unavailable`` until
+it is implemented for live data. Every IRSA request
 takes a process-wide slot (``app.cutouts.limit``). ``app.pipeline`` (reproject,
 dask) is imported on first use only.
 """
@@ -52,8 +58,9 @@ import queue
 import threading
 import time
 from collections.abc import Callable, Hashable
-from concurrent.futures import CancelledError, Future
+from concurrent.futures import FIRST_EXCEPTION, CancelledError, Future
 from concurrent.futures import TimeoutError as FutureTimeout
+from concurrent.futures import wait as futures_wait
 from dataclasses import dataclass
 from typing import Any
 
@@ -331,7 +338,7 @@ class IrsaProvider:
             epochs=[EpochBase.model_validate(e.model_dump(exclude={"frame_url"}))
                     for e in r.epochs],
             prerendered_diffs=[],
-            any_pair_diff=False,
+            any_pair_diff=True,  # /diff renders any pair: diff_url_template is set
         ), ttl)
 
     @staticmethod
@@ -345,6 +352,69 @@ class IrsaProvider:
 
     # ------------------------------------------------------------ other routes
 
+    def _miss_key(self, epoch_id: str, q: ViewQuery) -> tuple[str, float, float, str]:
+        ra, dec = round_position(q.ra, q.dec)
+        return epoch_id, ra, dec, q.band
+
+    def _check_known_missing(self, miss_key: Hashable) -> None:
+        known_missing = self._not_found.get(miss_key)
+        if known_missing is not None:
+            raise NotFound(known_missing)
+
+    def _render(self, jobs: list[tuple[Hashable, Callable[[], Any]]],
+                timeout_message: str) -> list[Any]:
+        """Run ``jobs`` (not-found key, render function) in the frame render slots
+        and return their results in order, within ``frame_deadline_s``.
+
+        The request takes ``min(len(jobs), frame_max_concurrent)`` slots in one
+        step, waiting up to ``frame_slot_wait_s`` for all of them (503 if they do
+        not free up), so it never holds one slot while it waits for another. Each
+        slot runs its share of the jobs on its own daemon thread and frees the
+        slot when that share ends, also after the deadline (504), so a late
+        render still fills the cutout cache. The first error ends the request; a
+        NotFound is remembered for ``frame_not_found_ttl_s`` under its job's key.
+        """
+        s = self._settings
+        started = time.monotonic()
+        cap = max(1, int(s.frame_max_concurrent))
+        slots = min(len(jobs), cap)
+        wait = max(0.0, min(s.frame_slot_wait_s, s.frame_deadline_s))
+        if not self._take_frame_slots(slots, wait):
+            raise Unavailable("Too many live SPHEREx frames are being rendered right "
+                              "now. " + FALLBACK_HINT)
+        # The wait for the slots counts against the deadline.
+        left = max(0.0, s.frame_deadline_s - (time.monotonic() - started))
+        futures: list[Future] = [Future() for _ in jobs]
+
+        def run(indices: range) -> None:
+            try:
+                for i in indices:
+                    futures[i].set_running_or_notify_cancel()
+                    _resolve(futures[i], jobs[i][1], "/frame render")
+            finally:
+                self._free_frame_slot()
+
+        threads_started = 0
+        try:
+            for k in range(slots):
+                threading.Thread(target=run, args=(range(k, len(jobs), slots),),
+                                 name="frame-render", daemon=True).start()
+                threads_started += 1
+        except BaseException:
+            self._free_frame_slot(slots - threads_started)
+            raise
+        done, pending = futures_wait(futures, timeout=left,
+                                     return_when=FIRST_EXCEPTION)
+        for (miss_key, _), future in zip(jobs, futures, strict=True):
+            if future in done and future.exception() is not None:
+                exc = future.exception()
+                if isinstance(exc, NotFound):
+                    self._not_found.put(miss_key, exc.message)
+                raise exc
+        if pending:
+            raise UpstreamTimeout(timeout_message + FALLBACK_HINT)
+        return [f.result() for f in futures]
+
     def frame_png(self, epoch_id: str, q: FrameQuery) -> bytes:
         """``render_frame`` with an overall deadline and a concurrency cap.
 
@@ -354,18 +424,8 @@ class IrsaProvider:
         is remembered for ``frame_not_found_ttl_s``.
         """
         s = self._settings
-        ra, dec = round_position(q.ra, q.dec)
-        miss_key = (epoch_id, ra, dec, q.band)
-        known_missing = self._not_found.get(miss_key)
-        if known_missing is not None:
-            raise NotFound(known_missing)
-        started = time.monotonic()
-        wait = max(0.0, min(s.frame_slot_wait_s, s.frame_deadline_s))
-        if not self._take_frame_slot(wait):
-            raise Unavailable("Too many live SPHEREx frames are being rendered right "
-                              "now. " + FALLBACK_HINT)
-        # The wait for a slot counts against the frame deadline.
-        left = max(0.0, s.frame_deadline_s - (time.monotonic() - started))
+        miss_key = self._miss_key(epoch_id, q)
+        self._check_known_missing(miss_key)
 
         def render() -> bytes:
             from app.pipeline import render_frame  # heavy: reproject, dask
@@ -374,47 +434,34 @@ class IrsaProvider:
                                 settings=s, session=self._cutout_session,
                                 sia_session=self._sia, query_cache=self._query_cache)
 
-        def run() -> None:
-            try:
-                _resolve(future, render, "/frame render")
-            finally:
-                self._free_frame_slot()
+        (png,) = self._render(
+            [(miss_key, render)],
+            f"IRSA did not deliver this SPHEREx frame within {s.frame_deadline_s:g} s. ")
+        return png
 
-        future: Future = Future()
-        future.set_running_or_notify_cancel()
-        try:
-            threading.Thread(target=run, name="frame-render", daemon=True).start()
-        except BaseException:
-            self._free_frame_slot()
-            raise
-        try:
-            return future.result(timeout=left)
-        except FutureTimeout:
-            raise UpstreamTimeout(
-                f"IRSA did not deliver this SPHEREx frame within {s.frame_deadline_s:g} "
-                "s. " + FALLBACK_HINT) from None
-        except NotFound as exc:
-            self._not_found.put(miss_key, exc.message)
-            raise
-
-    def _take_frame_slot(self, wait_s: float) -> bool:
-        """Take a render slot, waiting up to ``wait_s`` for one to free up."""
+    def _take_frame_slots(self, n: int, wait_s: float) -> bool:
+        """Take ``n`` render slots at once (all or none), waiting up to ``wait_s``."""
         cap = max(1, int(self._settings.frame_max_concurrent))
+        n = max(1, min(n, cap))
         with self._frame_cond:
             self._frames_waiting += 1
             try:
-                if not self._frame_cond.wait_for(lambda: self._rendering < cap,
+                if not self._frame_cond.wait_for(lambda: self._rendering + n <= cap,
                                                  timeout=wait_s):
                     return False
-                self._rendering += 1
+                self._rendering += n
                 return True
             finally:
                 self._frames_waiting -= 1
 
-    def _free_frame_slot(self) -> None:
+    def _free_frame_slot(self, n: int = 1) -> None:
+        if n <= 0:
+            return
         with self._frame_cond:
-            self._rendering -= 1
-            self._frame_cond.notify()
+            self._rendering -= n
+            # Wake every waiter: a /diff needs two free slots, a /frame one, so
+            # waking only one could pick a waiter that cannot go yet.
+            self._frame_cond.notify_all()
 
     @property
     def frames_rendering(self) -> int:
@@ -429,8 +476,34 @@ class IrsaProvider:
             return self._frames_waiting
 
     def diff_png(self, q: DiffQuery) -> bytes:
-        raise Unavailable("Difference images are not available for live SPHEREx data "
-                          "yet; use a preset target to compare frames.")
+        """``b - a`` of two live frames (``load_frame``) on the view's grid.
+
+        Both frames render in the ``/frame`` render slots (two taken at once)
+        under one ``frame_deadline_s``, so a diff costs what its two frames cost.
+        The PNG uses the preset diff renderer (``diff_frames``)."""
+        s = self._settings
+        miss_keys = [self._miss_key(epoch_id, q) for epoch_id in (q.a, q.b)]
+        for miss_key in miss_keys:
+            self._check_known_missing(miss_key)
+
+        def loader(epoch_id: str) -> Callable[[], Any]:
+            def load() -> Any:
+                from app.pipeline import load_frame  # heavy: reproject, dask
+
+                return load_frame(epoch_id, q.ra, q.dec, q.fov, q.band, settings=s,
+                                  session=self._cutout_session, sia_session=self._sia,
+                                  query_cache=self._query_cache)
+
+            return load
+
+        frame_a, frame_b = self._render(
+            [(miss_keys[0], loader(q.a)), (miss_keys[1], loader(q.b))],
+            f"IRSA did not deliver the two SPHEREx frames for this difference within "
+            f"{s.frame_deadline_s:g} s. ")
+        from app.pipeline import diff_frames
+
+        png, _ = diff_frames(frame_a, frame_b, q.scale)
+        return png
 
     def lightcurve(self, q: LightcurveQuery) -> LightcurveResponse:
         raise Unavailable("Light curves are not available for live SPHEREx data yet; "
