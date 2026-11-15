@@ -199,7 +199,111 @@
         "verdict": "visible",
         "note": "Measured 6.6″ towards PA 132° against 6.7″ towards 122° expected over 1.43 yr."
       },
-      "spectrum_url": "/presets/eps-indi-b/spectrum.json"
+      "spectrum_url": "/presets/eps-indi-b/spectrum.json",
+      "coadds": [
+        {
+          "band": "D1",
+          "url": "/presets/eps-indi-b/coadds/D1.png",
+          "visit": 2,
+          "n_frames": 20,
+          "wavelength_min_um": 0.75,
+          "wavelength_max_um": 1.1045,
+          "fov_arcmin": 3.0,
+          "width_px": 30,
+          "height_px": 30,
+          "stretch": {
+            "vmin": -0.055802,
+            "vmax": 1.1746,
+            "asinh_a": 0.1
+          },
+          "flagged_fraction": 0.0
+        },
+        {
+          "band": "D2",
+          "url": "/presets/eps-indi-b/coadds/D2.png",
+          "visit": 1,
+          "n_frames": 20,
+          "wavelength_min_um": 1.107,
+          "wavelength_max_um": 1.6514,
+          "fov_arcmin": 3.0,
+          "width_px": 30,
+          "height_px": 30,
+          "stretch": {
+            "vmin": -0.040261,
+            "vmax": 4.5694,
+            "asinh_a": 0.1
+          },
+          "flagged_fraction": 0.0
+        },
+        {
+          "band": "D3",
+          "url": "/presets/eps-indi-b/coadds/D3.png",
+          "visit": 4,
+          "n_frames": 20,
+          "wavelength_min_um": 1.6195,
+          "wavelength_max_um": 2.4147,
+          "fov_arcmin": 3.0,
+          "width_px": 30,
+          "height_px": 30,
+          "stretch": {
+            "vmin": -0.026349,
+            "vmax": 2.2342,
+            "asinh_a": 0.1
+          },
+          "flagged_fraction": 0.0
+        },
+        {
+          "band": "D4",
+          "url": "/presets/eps-indi-b/coadds/D4.png",
+          "visit": 2,
+          "n_frames": 20,
+          "wavelength_min_um": 2.4418,
+          "wavelength_max_um": 3.7872,
+          "fov_arcmin": 3.0,
+          "width_px": 30,
+          "height_px": 30,
+          "stretch": {
+            "vmin": -0.01809,
+            "vmax": 1.9489,
+            "asinh_a": 0.1
+          },
+          "flagged_fraction": 0.0
+        },
+        {
+          "band": "D5",
+          "url": "/presets/eps-indi-b/coadds/D5.png",
+          "visit": 1,
+          "n_frames": 20,
+          "wavelength_min_um": 3.8291,
+          "wavelength_max_um": 4.4236,
+          "fov_arcmin": 3.0,
+          "width_px": 30,
+          "height_px": 30,
+          "stretch": {
+            "vmin": -0.027907,
+            "vmax": 2.6794,
+            "asinh_a": 0.1
+          },
+          "flagged_fraction": 0.0
+        },
+        {
+          "band": "D6",
+          "url": "/presets/eps-indi-b/coadds/D6.png",
+          "visit": 4,
+          "n_frames": 20,
+          "wavelength_min_um": 4.4078,
+          "wavelength_max_um": 5.0049,
+          "fov_arcmin": 3.0,
+          "width_px": 30,
+          "height_px": 30,
+          "stretch": {
+            "vmin": -0.026115,
+            "vmax": 1.2077,
+            "asinh_a": 0.1
+          },
+          "flagged_fraction": 0.0
+        }
+      ]
     },
     {
       "id": "wise-0855",
