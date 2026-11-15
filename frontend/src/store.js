@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { safeStorage, uid } from './lib/util';
 import { PRESET_BY_ID } from './lib/data';
+import { DEMO_BY_USERNAME, demoRecord, hashPassword, USERNAME_RE, MIN_PASSWORD } from './lib/accounts';
 
 const reducedMotion = () => {
   try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
@@ -63,26 +64,66 @@ export const useUi = create(
   ),
 );
 
-/** Demo accounts. With Supabase configured, setFromSupabase() fills this from the real session. */
+/**
+ * Accounts, hard-coded (lib/accounts.js): no server. `accounts` holds every account used
+ * in this browser (the two demo accounts once signed into, plus any created here), keyed
+ * by id; `user` is the signed-in one. Each keeps its own points.
+ */
 export const useAuth = create(
   persist(
-    (set, get) => ({
-      user: null,
-      signIn: ({ name, email }) => set({
-        user: { id: uid(), name, email, role: 'volunteer', points: 0, events: [], joined: new Date().toISOString() },
-      }),
-      setFromSupabase: (u) => set((s) => ({
-        user: u ? { ...(s.user ?? { points: 0, events: [], role: 'volunteer' }), id: u.id, email: u.email, name: u.user_metadata?.name ?? u.email.split('@')[0] } : null,
-      })),
-      signOut: () => set({ user: null }),
-      setRole: (role) => set((s) => (s.user ? { user: { ...s.user, role } } : s)),
-      addPoints: (n, reason) => {
-        const u = get().user;
-        if (!u) return;
-        set({ user: { ...u, points: u.points + n, events: [{ n, reason, at: new Date().toISOString() }, ...u.events].slice(0, 50) } });
-      },
-    }),
-    { name: 'starxplorer-auth', storage: safeStorage },
+    (set, get) => {
+      const login = (account) => set((s) => ({ accounts: { ...s.accounts, [account.id]: account }, user: account }));
+      return {
+        accounts: {},
+        user: null,
+
+        /** Signs in with a username and password. Returns an error message, or null. */
+        signIn: async (username, password) => {
+          const name = username.trim().toLowerCase();
+          const demo = DEMO_BY_USERNAME[name];
+          if (demo) {
+            if (password !== demo.password) return 'Wrong password for this demo account.';
+            login(get().accounts[demo.id] ?? demoRecord(demo));
+            return null;
+          }
+          const account = Object.values(get().accounts).find((a) => a.username === name && a.passwordHash);
+          if (!account || account.passwordHash !== await hashPassword(name, password)) return 'Wrong username or password.';
+          login(account);
+          return null;
+        },
+        /** One-click sign-in to a fixed demo account ('volunteer' or 'scientist'). */
+        signInDemo: (username) => {
+          const demo = DEMO_BY_USERNAME[username];
+          login(get().accounts[demo.id] ?? demoRecord(demo));
+        },
+        /** Creates a volunteer account in this browser. Returns an error message, or null. */
+        signUp: async ({ username, name, password }) => {
+          const u = username.trim().toLowerCase();
+          if (!USERNAME_RE.test(u)) return 'Usernames are 3–20 characters: letters, numbers, dots and underscores.';
+          if (DEMO_BY_USERNAME[u] || Object.values(get().accounts).some((a) => a.username === u)) return 'That username is taken.';
+          if (password.length < MIN_PASSWORD) return `Passwords need at least ${MIN_PASSWORD} characters.`;
+          login({
+            id: uid(), username: u, name: name.trim() || u, role: 'volunteer', points: 0, events: [],
+            joined: new Date().toISOString(), passwordHash: await hashPassword(u, password),
+          });
+          return null;
+        },
+        signOut: () => set({ user: null }),
+        /** Adds points to an account: the signed-in one unless `userId` is given. */
+        addPoints: (n, reason, userId = get().user?.id) => {
+          const a = get().accounts[userId];
+          if (!a) return;
+          const next = { ...a, points: a.points + n, events: [{ n, reason, at: new Date().toISOString() }, ...a.events].slice(0, 50) };
+          set((s) => ({ accounts: { ...s.accounts, [a.id]: next }, user: s.user?.id === a.id ? next : s.user }));
+        },
+      };
+    },
+    {
+      name: 'starxplorer-auth', storage: safeStorage, version: 2,
+      // Version 1 kept a single email-based account; it can't sign in any more.
+      migrate: () => ({ accounts: {}, user: null }),
+      partialize: (s) => ({ accounts: s.accounts, user: s.user }),
+    },
   ),
 );
 

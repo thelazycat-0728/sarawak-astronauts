@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, MemoryRouter, Routes, Route, Navigate } from 'react-router';
 import { Header, Footer } from './components/Header';
 import { SignInDialog, Assistant } from './components/Overlays';
-import { useSupabaseSession } from './lib/supabase';
 import { Toaster, TipProvider } from './components/ui';
 import Explore from './pages/Explore';
 
@@ -17,7 +16,6 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Router = import.meta.env.VITE_ROUTER === 'memory' ? MemoryRouter : BrowserRouter;
 
 export default function App() {
-  useSupabaseSession();
   return (
     <Router>
       <TipProvider delayDuration={150}>

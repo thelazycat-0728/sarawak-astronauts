@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router';
 import { LogIn, LogOut, Trophy, Bookmark, Trash2, ShieldCheck, Award } from 'lucide-react';
-import { Button, Kicker, Panel, Chip, Segmented } from '../components/ui';
+import { Button, Kicker, Panel, Chip } from '../components/ui';
 import { useAuth, useUi, useProgress, useViewer } from '../store';
 import { rankFor, RANKS, LESSONS, LEVELS } from '../lib/data';
 import { ReputationCard } from '../components/Reputation';
@@ -17,7 +17,6 @@ const VERDICT = { confirmed: ['Confirmed by a scientist', 'good'], known: ['Know
 export default function Profile() {
   const user = useAuth((s) => s.user);
   const signOut = useAuth((s) => s.signOut);
-  const setRole = useAuth((s) => s.setRole);
   const setSignIn = useUi((s) => s.setSignIn);
   const { lessons, games, savedViews, removeView } = useProgress();
   const mine = useMySubmissions();
@@ -46,7 +45,7 @@ export default function Profile() {
     return (
       <div className="mx-auto max-w-xl px-[max(16px,env(safe-area-inset-left,0px))] py-20 text-center">
         <h1 className="text-3xl font-medium tracking-tight">Your progress</h1>
-        <p className="mt-3 text-muted">As a guest you’ve finished {lessonsDone} lessons and {levelsDone} game levels, saved in this browser only. Sign in to keep progress across devices, submit findings and earn ranks.</p>
+        <p className="mt-3 text-muted">As a guest you’ve finished {lessonsDone} lessons and {levelsDone} game levels, saved in this browser only. Sign in to submit discoveries, earn points and build your reputation. The demo accounts in the sign-in window get you in straight away.</p>
         <Button variant="primary" className="mt-6" onClick={() => setSignIn(true)}><LogIn className="size-4" />Sign in</Button>
       </div>
     );
@@ -63,7 +62,7 @@ export default function Profile() {
           <span className="grid size-16 place-items-center rounded-xl bg-accent-soft text-2xl font-semibold text-accent-fg">{user.name[0]?.toUpperCase()}</span>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-2xl font-medium">{user.name}</h1>
-            <p className="truncate text-sm text-muted">{user.email}</p>
+            <p className="truncate font-mono text-sm text-muted">@{user.username}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               <Chip tone={user.role === 'scientist' ? 'teal' : 'accent'}>{user.role === 'scientist' ? <><ShieldCheck className="size-3" />Scientist</> : 'Volunteer'}</Chip>
               <Chip>Joined {new Date(user.joined).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}</Chip>
@@ -155,8 +154,7 @@ export default function Profile() {
       </div>
 
       <Panel className="mt-10 flex flex-wrap items-center gap-4 p-5">
-        <p className="label-mono text-muted">Demo controls</p>
-        <Segmented size="sm" label="Account role" value={user.role} onChange={setRole} options={[{ value: 'volunteer', label: 'Volunteer' }, { value: 'scientist', label: 'Scientist' }]} />
+        <p className="text-sm text-muted">Signed in as <span className="font-mono text-fg">{user.username}</span>{user.id.startsWith('demo-') ? ' (demo account)' : ''}.</p>
         <Button size="sm" variant="ghost" className="ml-auto" onClick={() => { signOut(); navigate('/'); }}><LogOut className="size-4" />Sign out</Button>
       </Panel>
     </div>

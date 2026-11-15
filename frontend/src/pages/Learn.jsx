@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Check, Clock, Gamepad2, Lock, Search, ArrowRight } from 'lucide-react';
 import { Button, Kicker, Panel, Chip, StepBadge } from '../components/ui';
-import { useProgress } from '../store';
+import { useProgress, useAuth } from '../store';
 import { LessonDialog } from '../components/LessonDialog';
 import { LESSONS, LEVELS, GLOSSARY, PRESET_BY_ID } from '../lib/data';
 import { cn } from '../lib/util';
@@ -16,7 +16,8 @@ export default function Learn() {
 
   const done = LESSONS.filter((l) => lessons[l.id]).length;
   const gamesDone = LEVELS.filter((l) => games[l.id]?.stars > 0).length;
-  const trained = done >= 3 && gamesDone >= 2;
+  const user = useAuth((s) => s.user);
+  const trained = Boolean(user?.trained) || (done >= 3 && gamesDone >= 2);
 
   const terms = useMemo(() => Object.entries(GLOSSARY).filter(([, g]) => (g.term + g.short).toLowerCase().includes(q.toLowerCase())), [q]);
 

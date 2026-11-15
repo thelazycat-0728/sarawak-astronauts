@@ -45,7 +45,7 @@ function userCandidate(it) {
 
 export default function Review() {
   const user = useAuth((s) => s.user);
-  const setRole = useAuth((s) => s.setRole);
+  const signInDemo = useAuth((s) => s.signInDemo);
   const setSignIn = useUi((s) => s.setSignIn);
   const items = useSubmissions((s) => s.items);
   const demoVerdicts = useSubmissions((s) => s.demoVerdicts);
@@ -57,7 +57,7 @@ export default function Review() {
     // Each submitter's reputation, from all of their submissions.
     const repOf = (it) => reputationFor(items.filter((x) => authorKey(x) === authorKey(it))).score;
     const mine = items.filter((it) => it.outcome === 'candidate').map((it) => ({
-      id: it.id, code: it.code, by: it.by, agreed: 1, ai: it.score, rep: repOf(it), ageH: Math.max(0, Math.round((now - Date.parse(it.at)) / 36e5)),
+      id: it.id, code: it.code, by: it.by, userId: it.userId, agreed: 1, ai: it.score, rep: repOf(it), ageH: Math.max(0, Math.round((now - Date.parse(it.at)) / 36e5)),
       note: it.note, hiddenNote: it.noteHidden, user: true, verdict: it.verdict,
       signals: {
         motion: it.checks.find((c) => c.id === 'motion')?.detail, snr: +(it.snr ?? 0).toFixed(1), flags: 'Clear',
@@ -77,9 +77,9 @@ export default function Review() {
       <div className="mx-auto max-w-xl px-[max(16px,env(safe-area-inset-left,0px))] py-20 text-center">
         <span className="mx-auto grid size-12 place-items-center rounded-full border border-line-strong bg-ink-800"><ShieldCheck className="size-5 text-accent-fg" /></span>
         <h1 className="mt-5 text-3xl font-medium tracking-tight">Scientist review queue</h1>
-        <p className="mt-3 text-muted">Volunteers’ candidates, ranked by the AI priority model, for scientists to confirm or reject. Only scientist accounts can open it; the role is enforced in the database.</p>
+        <p className="mt-3 text-muted">Volunteers’ candidates, ranked by the AI priority model, for scientists to confirm or reject. Only scientist accounts can open it. Use the demo scientist account to try it.</p>
         <div className="mt-6 flex justify-center gap-2">
-          {user ? <Button variant="primary" onClick={() => setRole('scientist')}>Switch this demo account to scientist</Button>
+          {user ? <Button variant="primary" onClick={() => signInDemo('scientist')}><ShieldCheck className="size-4" />Switch to the demo scientist account</Button>
             : <Button variant="primary" onClick={() => setSignIn(true)}><LogIn className="size-4" />Sign in</Button>}
         </div>
       </div>
@@ -145,7 +145,7 @@ function Candidate({ q }) {
   const decide = (v) => {
     if (q.user) {
       review(q.id, v);
-      if (v === 'confirmed') { addPoints(50, `Verified finding ${q.code}`); toast('Confirmed. The volunteer earns +50 points.', 'good'); }
+      if (v === 'confirmed') { addPoints(50, `Verified finding ${q.code}`, q.userId); toast(`Confirmed. ${q.by} earns +50 points.`, 'good'); }
     } else reviewDemo(q.id, v);
   };
   const undo = () => (q.user ? review(q.id, undefined) : reviewDemo(q.id, undefined));

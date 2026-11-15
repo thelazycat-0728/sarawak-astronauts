@@ -158,6 +158,6 @@ Everything except submitting is **open to everyone without logging in**. An acco
 | Level 2 features | Blink, difference, stack, brightness chart, FOV and array controls built on simulated data |
 | Level 3 features | Spectrum view, simulated Gaia overlay and a 25-year time machine page built on simulated data. Object tracking, WISE overlay and real catalogues not started |
 | Public engagement (tutorials, games) | Glossary tooltips, Beginner/Expert mode, guided tour, lessons and training game built |
-| Accounts & submissions | Submit, review and profile pages work with browser-only accounts. Supabase login is wired but no tables exist yet |
+| Accounts & submissions | Hard-coded accounts, no database: demo accounts `volunteer` / `starxplorer` and `scientist` / `starxplorer`, plus accounts created in the browser. Play, Review and Profile work with them |
 | AI explainer assistant | ✅ Done (tested locally 2026-11-14): `POST /explain` answers with Google Gemini (free tier, `gemini-3.8-flash` with `gemini-3.5-flash-lite` as fallback), grounded in the glossary and the current view, rate-limited per IP. Live on the deployed site once `GEMINI_API_KEY` is set on Render; until then, and whenever Gemini fails, the assistant gives labelled offline answers |
 | Science backend | `/epochs` and `/frame` serve real SPHEREx data with `DATA_MODE=irsa` (synthetic data with `mock`). CORS accepts Netlify deploy previews through `CORS_ORIGIN_REGEX` |

@@ -1,58 +1,81 @@
 import { useEffect, useRef, useState } from 'react';
-import { Sparkles, Send, Mail, BookOpen } from 'lucide-react';
-import { Modal, Sheet, Button, Chip } from './ui';
+import { Sparkles, Send, BookOpen, LogIn, ShieldCheck, UserRound } from 'lucide-react';
+import { Modal, Sheet, Button, Chip, Segmented } from './ui';
 import { useUi, useAuth, useViewer } from '../store';
 import { explain } from '../lib/api';
 import { PRESET_BY_ID, ARRAYS } from '../lib/data';
 import { cn } from '../lib/util';
-import { HAS_SUPABASE, supabase } from '../lib/supabase';
+import { DEMO_ACCOUNTS } from '../lib/accounts';
 
+const FIELD = 'h-10 rounded-md border border-line-strong bg-ink-900 px-3 outline-none focus:border-accent';
+
+function Field({ id, label, ...props }) {
+  return (
+    <label htmlFor={id} className="grid gap-1.5 text-sm">
+      <span className="label-mono text-muted">{label}</span>
+      <input id={id} className={FIELD} {...props} />
+    </label>
+  );
+}
+
+/** Sign in, create an account, or use a fixed demo account (lib/accounts.js). */
 export function SignInDialog() {
   const open = useUi((s) => s.signInOpen);
   const setOpen = useUi((s) => s.setSignIn);
   const toast = useUi((s) => s.toast);
-  const signIn = useAuth((s) => s.signIn);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const { signIn, signUp, signInDemo } = useAuth();
+  const [tab, setTab] = useState('signin');
+  const [form, setForm] = useState({ username: '', name: '', password: '' });
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const change = (k) => (e) => { setForm((f) => ({ ...f, [k]: e.target.value })); setError(''); };
+  const done = (msg) => { toast(msg, 'good'); setOpen(false); setForm({ username: '', name: '', password: '' }); setError(''); };
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!/^[\w.+-]+@[\w-]+\.[\w.]+$/.test(email)) { setError('Enter a valid email address.'); return; }
-    if (HAS_SUPABASE) {
-      const client = await supabase();
-      const { error: err } = await client.auth.signInWithOtp({ email, options: { data: { name: name || email.split('@')[0] } } });
-      if (err) { setError(err.message); return; }
-      toast('Check your inbox for a sign-in link.', 'good');
-    } else {
-      signIn({ name: name.trim() || email.split('@')[0], email });
-      toast('Signed in. Your progress now follows your account.', 'good');
-    }
-    setOpen(false);
+    setBusy(true);
+    const err = tab === 'signin' ? await signIn(form.username, form.password) : await signUp(form);
+    setBusy(false);
+    if (err) setError(err);
+    else done(tab === 'signin' ? 'Signed in.' : 'Account created. You’re signed in.');
   };
-  const google = async () => {
-    const client = await supabase();
-    await client?.auth.signInWithOAuth({ provider: 'google' });
-  };
+  const demo = (a) => { signInDemo(a.username); done(`Signed in as ${a.name}.`); };
 
   return (
-    <Modal open={open} onOpenChange={setOpen} title="Sign in to StarXplorer" description="An account lets you submit findings to scientists, earn points and keep progress across devices. Everything else works without one.">
-      <form onSubmit={submit} className="grid gap-4">
-        <label className="grid gap-1.5 text-sm">
-          <span className="label-mono text-muted">Display name</span>
-          <input id="signin-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. stargazer_kch" className="h-10 rounded-md border border-line-strong bg-ink-900 px-3 outline-none focus:border-accent" />
-        </label>
-        <label className="grid gap-1.5 text-sm">
-          <span className="label-mono text-muted">Email</span>
-          <input id="signin-email" type="email" required value={email} onChange={(e) => { setEmail(e.target.value); setError(''); }} placeholder="you@example.com" className="h-10 rounded-md border border-line-strong bg-ink-900 px-3 outline-none focus:border-accent" />
-        </label>
-        {error && <p className="text-sm text-bad">{error}</p>}
-        <Button type="submit" variant="primary"><Mail className="size-4" />{HAS_SUPABASE ? 'Email me a sign-in link' : 'Sign in'}</Button>
-        {HAS_SUPABASE && <Button variant="outline" onClick={google}>Continue with Google</Button>}
-        <p className="text-xs leading-relaxed text-faint">
-          {HAS_SUPABASE ? 'We store only your display name and email.' : 'Demo mode: Supabase isn’t configured, so this account lives in this browser only.'} See our privacy notice before submitting findings.
-        </p>
-      </form>
+    <Modal open={open} onOpenChange={setOpen} title="Sign in to StarXplorer" className="max-w-lg"
+      description="An account lets you submit discoveries, earn points and build your reputation. Exploring and Learn work without one.">
+      <div className="grid gap-5">
+        <section aria-labelledby="demo-accounts" className="rounded-lg border border-accent/40 bg-accent-soft/40 p-4">
+          <h3 id="demo-accounts" className="label-mono text-accent-fg">Demo accounts</h3>
+          <div className="mt-3 grid gap-2">
+            {DEMO_ACCOUNTS.map((a) => (
+              <div key={a.id} className="flex flex-wrap items-center gap-3 rounded-md border border-line bg-ink-900 p-3">
+                <div className="min-w-0 flex-1 text-sm">
+                  <p className="flex flex-wrap items-center gap-2 font-medium">
+                    {a.role === 'scientist' ? <ShieldCheck className="size-4 text-teal" /> : <UserRound className="size-4 text-accent-fg" />}
+                    {a.role === 'scientist' ? 'Scientist' : 'Volunteer'}
+                    <span className="font-mono text-xs font-normal text-muted">{a.username} / {a.password}</span>
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted">{a.blurb}</p>
+                </div>
+                <Button size="sm" variant="primary" onClick={() => demo(a)}>Use this account</Button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <Segmented value={tab} onChange={(t) => { setTab(t); setError(''); }} label="Account" className="justify-self-start"
+          options={[{ value: 'signin', label: 'Sign in' }, { value: 'signup', label: 'Create account' }]} />
+        <form onSubmit={submit} className="grid gap-4">
+          {tab === 'signup' && <Field id="signin-name" label="Display name" value={form.name} onChange={change('name')} placeholder="e.g. Stargazer from Kuching" autoComplete="nickname" />}
+          <Field id="signin-username" label="Username" required value={form.username} onChange={change('username')} placeholder={tab === 'signup' ? 'e.g. stargazer_kch' : 'Your username'} autoComplete="username" autoCapitalize="none" />
+          <Field id="signin-password" label="Password" type="password" required value={form.password} onChange={change('password')} autoComplete={tab === 'signup' ? 'new-password' : 'current-password'} />
+          {error && <p className="text-sm text-bad">{error}</p>}
+          <Button type="submit" variant="primary" disabled={busy}><LogIn className="size-4" />{tab === 'signin' ? 'Sign in' : 'Create account'}</Button>
+          <p className="text-xs leading-relaxed text-faint">Accounts are kept in this browser only; there is no server. Don’t reuse a password from another site.</p>
+        </form>
+      </div>
     </Modal>
   );
 }
