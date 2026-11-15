@@ -1,0 +1,225 @@
+{
+  "synthetic": false,
+  "target": {
+    "ra": 269.4464,
+    "dec": 4.7668,
+    "name": "Barnard's Star",
+    "frame": "ICRS"
+  },
+  "band": {
+    "id": "D2",
+    "wavelength_min_um": 1.1,
+    "wavelength_max_um": 1.62
+  },
+  "aperture_arcsec": 12.0,
+  "unit": "uJy",
+  "method": "Aperture photometry at a fixed position on the native SPHEREx pixels (IMAGE - ZODI, MJy/sr) of each epoch's exposure: a circular aperture of radius aperture_arcsec with exact pixel overlap, minus the median of a sky annulus from aperture + 12\" to aperture + 36\"; flux_err from the VARIANCE plane plus the sky-median error. No aperture correction, so point-source fluxes are low. Any masked, saturated or off-frame pixel in the aperture gives a null flux and quality bad. Each epoch is at its own wavelength (wavelength_um), so part of a change between points can be colour, not time. Presets measure every exposure of the sequence (up to 6 per visit), so points within a visit sample several wavelengths a few hours apart.",
+  "points": [
+    {
+      "epoch_id": "sx_dr1_2025W35_1A_0146_1_D2",
+      "time_utc": "2025-08-25T17:09:20Z",
+      "mjd": 60912.714813,
+      "release": "DR1",
+      "wavelength_um": 1.51651,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 1
+    },
+    {
+      "epoch_id": "sx_dr1_2025W35_1A_0146_2_D2",
+      "time_utc": "2025-08-25T17:11:29Z",
+      "mjd": 60912.716305,
+      "release": "DR1",
+      "wavelength_um": 1.55338,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 1
+    },
+    {
+      "epoch_id": "sx_dr1_2025W35_1A_0146_3_D2",
+      "time_utc": "2025-08-25T17:13:38Z",
+      "mjd": 60912.717797,
+      "release": "DR1",
+      "wavelength_um": 1.59071,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 1
+    },
+    {
+      "epoch_id": "sx_dr1_2025W35_1A_0146_4_D2",
+      "time_utc": "2025-08-25T17:15:47Z",
+      "mjd": 60912.71929,
+      "release": "DR1",
+      "wavelength_um": 1.62887,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 1
+    },
+    {
+      "epoch_id": "sx_dr1_2025W35_1A_0444_1_D2",
+      "time_utc": "2025-08-27T06:38:47Z",
+      "mjd": 60914.276937,
+      "release": "DR1",
+      "wavelength_um": 1.23823,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 1
+    },
+    {
+      "epoch_id": "sx_dr1_2025W35_1A_0444_2_D2",
+      "time_utc": "2025-08-27T06:40:56Z",
+      "mjd": 60914.27843,
+      "release": "DR1",
+      "wavelength_um": 1.26794,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 1
+    },
+    {
+      "epoch_id": "sx_dr1_2026W12_1A_0311_1_D2",
+      "time_utc": "2026-03-17T16:20:23Z",
+      "mjd": 61116.680818,
+      "release": "DR1",
+      "wavelength_um": 1.31574,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 2
+    },
+    {
+      "epoch_id": "sx_dr1_2026W12_1A_0311_2_D2",
+      "time_utc": "2026-03-17T16:22:32Z",
+      "mjd": 61116.682309,
+      "release": "DR1",
+      "wavelength_um": 1.34693,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 2
+    },
+    {
+      "epoch_id": "sx_dr1_2026W12_1A_0311_3_D2",
+      "time_utc": "2026-03-17T16:24:40Z",
+      "mjd": 61116.683802,
+      "release": "DR1",
+      "wavelength_um": 1.37902,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 2
+    },
+    {
+      "epoch_id": "sx_dr1_2026W12_1A_0311_4_D2",
+      "time_utc": "2026-03-17T16:26:49Z",
+      "mjd": 61116.685294,
+      "release": "DR1",
+      "wavelength_um": 1.41198,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 2
+    },
+    {
+      "epoch_id": "sx_dr1_2026W12_2A_0371_2_D2",
+      "time_utc": "2026-03-21T13:13:48Z",
+      "mjd": 61120.551246,
+      "release": "DR1",
+      "wavelength_um": 1.11853,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 2
+    },
+    {
+      "epoch_id": "sx_dr1_2026W12_2A_0371_3_D2",
+      "time_utc": "2026-03-21T13:15:57Z",
+      "mjd": 61120.552738,
+      "release": "DR1",
+      "wavelength_um": 1.14455,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 2
+    },
+    {
+      "epoch_id": "sx_qr3_2026W34_2A_0249_2_D2",
+      "time_utc": "2026-08-21T17:19:27Z",
+      "mjd": 61273.721843,
+      "release": "QR3",
+      "wavelength_um": 1.44219,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 3
+    },
+    {
+      "epoch_id": "sx_qr3_2026W34_2A_0249_3_D2",
+      "time_utc": "2026-08-21T17:21:36Z",
+      "mjd": 61273.723336,
+      "release": "QR3",
+      "wavelength_um": 1.47719,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 3
+    },
+    {
+      "epoch_id": "sx_qr3_2026W34_2A_0264_1_D2",
+      "time_utc": "2026-08-21T18:56:00Z",
+      "mjd": 61273.788888,
+      "release": "QR3",
+      "wavelength_um": 1.50229,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 3
+    },
+    {
+      "epoch_id": "sx_qr3_2026W34_2A_0264_2_D2",
+      "time_utc": "2026-08-21T18:58:09Z",
+      "mjd": 61273.79038,
+      "release": "QR3",
+      "wavelength_um": 1.53859,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 3
+    },
+    {
+      "epoch_id": "sx_qr3_2026W35_1A_0038_1_D2",
+      "time_utc": "2026-08-24T04:00:25Z",
+      "mjd": 61276.166956,
+      "release": "QR3",
+      "wavelength_um": 1.57588,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 3
+    },
+    {
+      "epoch_id": "sx_qr3_2026W35_1A_0092_1_D2",
+      "time_utc": "2026-08-24T10:31:14Z",
+      "mjd": 61276.438351,
+      "release": "QR3",
+      "wavelength_um": 1.61362,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 3
+    }
+  ],
+  "tracking": {
+    "proper_motion_mas_yr": [
+      -802.0,
+      10362.0
+    ],
+    "ref_epoch": 2025.5,
+    "note": "The aperture follows the target's proper motion, so a fast mover stays centred in every exposure."
+  }
+}

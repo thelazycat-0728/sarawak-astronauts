@@ -1,0 +1,181 @@
+{
+  "synthetic": false,
+  "target": {
+    "ra": 133.7609,
+    "dec": -7.2423,
+    "name": "WISE 0855-0714",
+    "frame": "ICRS"
+  },
+  "band": {
+    "id": "D6",
+    "wavelength_min_um": 4.42,
+    "wavelength_max_um": 5.0
+  },
+  "aperture_arcsec": 12.0,
+  "unit": "uJy",
+  "method": "Aperture photometry at a fixed position on the native SPHEREx pixels (IMAGE - ZODI, MJy/sr) of each epoch's exposure: a circular aperture of radius aperture_arcsec with exact pixel overlap, minus the median of a sky annulus from aperture + 12\" to aperture + 36\"; flux_err from the VARIANCE plane plus the sky-median error. No aperture correction, so point-source fluxes are low. Any masked, saturated or off-frame pixel in the aperture gives a null flux and quality bad. Each epoch is at its own wavelength (wavelength_um), so part of a change between points can be colour, not time. Presets measure every exposure of the sequence (up to 6 per visit), so points within a visit sample several wavelengths a few hours apart.",
+  "points": [
+    {
+      "epoch_id": "sx_dr1_2025W19_1B_0116_1_D6",
+      "time_utc": "2025-05-05T16:49:00Z",
+      "mjd": 60800.700695,
+      "release": "DR1",
+      "wavelength_um": 4.96738,
+      "flux": 172.8,
+      "flux_err": 203.2,
+      "quality": "warn",
+      "visit": 1
+    },
+    {
+      "epoch_id": "sx_dr1_2025W19_1B_0138_1_D6",
+      "time_utc": "2025-05-05T20:02:33Z",
+      "mjd": 60800.835104,
+      "release": "DR1",
+      "wavelength_um": 4.85988,
+      "flux": 465.8,
+      "flux_err": 200.0,
+      "quality": "warn",
+      "visit": 1
+    },
+    {
+      "epoch_id": "sx_dr1_2025W46_2A_0214_3_D6",
+      "time_utc": "2025-11-14T12:12:37Z",
+      "mjd": 60993.508759,
+      "release": "DR1",
+      "wavelength_um": 4.77025,
+      "flux": 339.2,
+      "flux_err": 183.8,
+      "quality": "warn",
+      "visit": 2
+    },
+    {
+      "epoch_id": "sx_dr1_2025W46_2A_0214_4_D6",
+      "time_utc": "2025-11-14T12:14:46Z",
+      "mjd": 60993.510252,
+      "release": "DR1",
+      "wavelength_um": 4.80486,
+      "flux": 752.8,
+      "flux_err": 198.0,
+      "quality": "warn",
+      "visit": 2
+    },
+    {
+      "epoch_id": "sx_dr1_2025W46_2A_0226_1_D6",
+      "time_utc": "2025-11-14T13:47:53Z",
+      "mjd": 60993.574916,
+      "release": "DR1",
+      "wavelength_um": 4.8393,
+      "flux": 448.7,
+      "flux_err": 200.9,
+      "quality": "warn",
+      "visit": 2
+    },
+    {
+      "epoch_id": "sx_dr1_2025W46_2A_0226_2_D6",
+      "time_utc": "2025-11-14T13:50:02Z",
+      "mjd": 60993.576408,
+      "release": "DR1",
+      "wavelength_um": 4.87477,
+      "flux": 663.9,
+      "flux_err": 202.8,
+      "quality": "warn",
+      "visit": 2
+    },
+    {
+      "epoch_id": "sx_dr1_2025W46_2A_0226_3_D6",
+      "time_utc": "2025-11-14T13:52:11Z",
+      "mjd": 60993.5779,
+      "release": "DR1",
+      "wavelength_um": 4.91054,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 2
+    },
+    {
+      "epoch_id": "sx_dr1_2025W46_2A_0226_4_D6",
+      "time_utc": "2025-11-14T13:54:20Z",
+      "mjd": 60993.579393,
+      "release": "DR1",
+      "wavelength_um": 4.94639,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 2
+    },
+    {
+      "epoch_id": "sx_dr1_2026W17_2A_0591_1_D6",
+      "time_utc": "2026-04-26T02:04:06Z",
+      "mjd": 61156.086177,
+      "release": "DR1",
+      "wavelength_um": 4.82162,
+      "flux": 491.3,
+      "flux_err": 186.7,
+      "quality": "warn",
+      "visit": 3
+    },
+    {
+      "epoch_id": "sx_dr1_2026W17_2A_0609_1_D6",
+      "time_utc": "2026-04-26T03:40:52Z",
+      "mjd": 61156.153382,
+      "release": "DR1",
+      "wavelength_um": 4.75318,
+      "flux": null,
+      "flux_err": null,
+      "quality": "bad",
+      "visit": 3
+    },
+    {
+      "epoch_id": "sx_dr1_2026W17_2A_0609_2_D6",
+      "time_utc": "2026-04-26T03:43:03Z",
+      "mjd": 61156.154892,
+      "release": "DR1",
+      "wavelength_um": 4.78722,
+      "flux": 413.6,
+      "flux_err": 174.7,
+      "quality": "warn",
+      "visit": 3
+    },
+    {
+      "epoch_id": "sx_dr1_2026W17_2A_0692_1_D6",
+      "time_utc": "2026-04-26T11:51:08Z",
+      "mjd": 61156.493847,
+      "release": "DR1",
+      "wavelength_um": 4.89549,
+      "flux": 33.6,
+      "flux_err": 185.8,
+      "quality": "warn",
+      "visit": 3
+    },
+    {
+      "epoch_id": "sx_dr1_2026W17_2A_0692_2_D6",
+      "time_utc": "2026-04-26T11:53:17Z",
+      "mjd": 61156.495339,
+      "release": "DR1",
+      "wavelength_um": 4.93131,
+      "flux": 183.2,
+      "flux_err": 196.1,
+      "quality": "warn",
+      "visit": 3
+    },
+    {
+      "epoch_id": "sx_dr1_2026W18_2A_0065_1_D6",
+      "time_utc": "2026-04-30T18:30:56Z",
+      "mjd": 61160.771483,
+      "release": "DR1",
+      "wavelength_um": 4.82494,
+      "flux": 669.4,
+      "flux_err": 180.7,
+      "quality": "warn",
+      "visit": 3
+    }
+  ],
+  "tracking": {
+    "proper_motion_mas_yr": [
+      -8124.0,
+      673.0
+    ],
+    "ref_epoch": 2025.5,
+    "note": "The aperture follows the target's proper motion, so a fast mover stays centred in every exposure."
+  }
+}
