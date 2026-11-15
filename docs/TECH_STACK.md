@@ -27,7 +27,7 @@ Browser localStorage           Python API (FastAPI on Render)
 | Need | Technology | Used for |
 | --- | --- | --- |
 | Framework and build | **React + Vite** | Whole app; Netlify detects Vite automatically |
-| Screens | **React Router** (`react-router` v7) | `/` (Explore), `/learn` (lessons; training games at `/learn/game`), `/play` (submit discoveries; `/submit` redirects here), `/time-machine`, `/review`, `/profile` |
+| Screens | **React Router** (`react-router` v7) | `/` (Explore), `/learn` (lessons; training games at `/learn/game`), `/play` (submit discoveries; `/submit` redirects here; no submit button for scientists), `/review` (the scientist's **Submissions** tab, shown in the nav slot the dropped time machine had), `/profile` |
 | Styling and UI components | **Tailwind CSS v4** + **Radix UI** primitives, shadcn-style components in `components/ui.jsx` (`clsx`, `tailwind-merge`), **lucide-react** icons | Consistent controls, dialogs and the "?" tooltips for plain-language labels |
 | Shared state | **Zustand** | Current target, band, selected epochs, Beginner/Expert mode |
 | Shareable views | URL search params | `?target=barnard` or `?ra=…&dec=…`, plus `fov` (3, 6 or 12 arcmin), `array` (1–6) and `mode` (`blink`, `diff`, `stack`), reproduces a view (Level 3 public sharing) |
@@ -37,7 +37,7 @@ Browser localStorage           Python API (FastAPI on Render)
 | Guided tour | **driver.js** | First-run tour and target tutorials (`lib/tour.js`) |
 | Glossary | `frontend/src/glossary.json` (re-exported as `GLOSSARY` from `lib/data.js`); the backend keeps a copy in `backend/app/ai/glossary.json`, and a test checks the two match | Single source for tooltips, the glossary page and the AI explainer's grounding |
 | Guest progress | Browser `localStorage` (Zustand `persist`) | Tutorial and game progress, accounts, submissions, points and the review queue |
-| Demo safety | Pre-computed real SPHEREx frames in `public/presets/`; built-in simulator (`lib/sim.js`) | The five presets load real frames even if IRSA or the backend is slow or down. Games, lessons and the time machine still render simulated fields |
+| Demo safety | Pre-computed real SPHEREx frames in `public/presets/`; built-in simulator (`lib/sim.js`) | The five presets load real frames even if IRSA or the backend is slow or down. Games and lessons still render simulated fields |
 
 ## 3. Science backend (Python)
 
@@ -51,10 +51,10 @@ Browser localStorage           Python API (FastAPI on Render)
 | Numerics | **numpy**, **scipy** | Masking, stacking, subtraction, smoothing |
 | Photometry and tracking | **photutils** | Brightness inspection (Level 2) and centroids for object tracking (Level 3) |
 | Image output | **Pillow** | PNG frames for the viewer |
-| Background jobs | FastAPI `BackgroundTasks` (upgrade to **RQ + Redis** later) | Slow jobs such as the time machine |
+| Background jobs | FastAPI `BackgroundTasks` (upgrade to **RQ + Redis** later) | Slow jobs such as long multi-epoch builds |
 | Rate limiting | In-memory per-IP limiter (`backend/app/ai/ratelimit.py`) | The AI explainer: 6 questions a minute and 60 a day per IP. Submissions are limited per account by the reputation-based wait (`lib/reputation.js`) |
 | LLM client | **google-genai** (Google Gemini API, free tier) | The AI explainer (`backend/app/ai/`) |
-| Existing pipelines | `spherex_blink.py`, `time_machine.py` | Core processing, to be wrapped as API endpoints. Not in the repo yet |
+| Existing pipelines | `spherex_blink.py` | Core processing, to be wrapped as API endpoints. Not in the repo yet (`time_machine.py` is no longer needed: the time machine was dropped) |
 
 ### Handling the 102 bands
 
@@ -78,22 +78,29 @@ Browser localStorage           Python API (FastAPI on Render)
 | SPHEREx DR1 All-Sky Cube | IRSA HiPS | Context map, quick-look spectra |
 | Gaia DR3 | ESA Gaia Archive TAP (via astroquery) | Gaia overlay, proper motions, known-star matching |
 | CatWISE2020 / AllWISE | IRSA TAP | WISE overlay; brown dwarfs too faint for Gaia |
-| 2MASS and WISE/NEOWISE images | IRSA SIA + cutouts | 25-year time machine |
 | SIMBAD | astroquery | Target name lookup, object types |
 | SkyBoT (IMCCE) | Cone-search service | Known-asteroid matching for submissions and ranking |
 
 ## 5. Accounts, submissions and points
 
-Accounts are **hard-coded in the frontend**: there is no database or auth server. This keeps the demo self-contained and lets the judging panel sign in with one click.
+Accounts are **hard-coded in the frontend**: there is no database or auth server. **Supabase was dropped** (it had been the plan for magic-link login and a `submissions` table). The judging panel must be able to sign in as either role with one click, with no sign-up, email or outside service that could fail during judging.
 
 | Need | Technology | Notes |
 | --- | --- | --- |
 | Demo accounts | Fixed in `frontend/src/lib/accounts.js` | `volunteer` / `starxplorer` (training already done, can submit in Play) and `scientist` / `starxplorer` (opens the review queue). Shown with one-click buttons in the sign-in window. Public on purpose |
 | Other accounts | Created in the sign-in window, stored in the browser (`useAuth` in `src/store.js`) | Username + password; only a salted SHA-256 hash of the password is kept |
-| Roles | Fixed per account | `volunteer` or `scientist`; only scientists can open `/review` |
-| Submissions, points, reputation | Browser `localStorage` (Zustand `persist`) | Each account keeps its own points; reputation and the wait between submissions come from the account's own submissions (`lib/reputation.js`) |
+| Roles | Fixed per account | `volunteer` submits in Play. `scientist` doesn't get a submit button; instead it gets a **Submissions** tab (`/review`) in the nav slot the time machine used to have. Only scientists can open `/review` |
+| Submissions, points, reputation | Browser `localStorage` (Zustand `persist`, key `starxplorer-submissions`) | Each account keeps its own points; reputation and the wait between submissions come from the account's own submissions (`lib/reputation.js`) |
 
-**Limitation:** everything lives in one browser, so accounts and submissions don't follow a user to another device, and clearing site data resets them. Moving them to a shared database later would mean replacing `useAuth` and `useSubmissions` in `src/store.js`.
+### Same-device workaround for the scientist dashboard
+
+With no shared database, the volunteer and the scientist hand submissions over through the **browser's storage on one device**:
+
+1. A volunteer submits in Play. The submission is saved to `localStorage` in that browser (like a cookie, but with room for the epochs, notes and signals).
+2. The volunteer signs out and the scientist signs in **on the same device and browser**.
+3. The Submissions tab reads every submission from that storage, whichever account made it, and the scientist's verdict is written back to the same place, so the volunteer's points update when they sign in again.
+
+**Limitation:** this only works on one device and browser. Accounts and submissions don't follow anyone to another device, a private window starts empty, and clearing site data resets everything. Moving to a shared database later means replacing `useAuth` and `useSubmissions` in `src/store.js` with API calls; the pages can stay the same.
 
 ## 6. AI services
 
@@ -214,14 +221,13 @@ Then start the API with `CORS_ORIGINS=https://<site>.netlify.app`, set `VITE_API
 - **Rate-limit** submissions and the AI explainer, per user and per IP address. The explainer's per-IP limit is in place.
 - **Keep the LLM key server-side.** `GEMINI_API_KEY` lives only in Render's environment. The free Gemini tier may use questions to improve Google's products; the assistant panel says so.
 - **Lock CORS** to the Netlify domain.
-- **Enforce the scientist role in the database** (row-level security), not just by hiding UI.
+- **Scientist role:** in this hackathon build the role is enforced only in the frontend (hidden UI and a route check), which is acceptable because all data stays on the user's own device. A real deployment must enforce it on the server.
 - **Collect minimal personal data** (username and email), publish a privacy policy, and follow Malaysia's Personal Data Protection Act (PDPA).
 
 ## 9. Open items for PROJECT_SUMMARY.md
 
-- Add the **25-year time machine** (2MASS → WISE/NEOWISE → SPHEREx) to Level 3.
 - Add **note moderation** as a third AI service.
-- Add the **scientist review dashboard** as a feature row (it is implied by pipeline step 5).
+- Add the **scientist review dashboard** (the Submissions tab) as a feature row (it is implied by pipeline step 5).
 - Add **pre-computed demo data** to the design considerations, so the judging demo never depends on a live query.
 
 ## 10. Credits

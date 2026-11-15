@@ -315,19 +315,6 @@ export function paintDiff(ctx, W, H, a, b, nx, ny, { smooth = true } = {}) {
   blit(ctx, W, H, img, nx, ny, smooth);
 }
 
-/** First snapshot in blue, latest in amber: fixed stars come out white. */
-export function paintComposite(ctx, W, H, a, b, nx, ny, { vmin, vmax, smooth = true }) {
-  const img = new ImageData(nx, ny), px = img.data, span = vmax - vmin || 1, soft = 9, k = Math.asinh(soft);
-  for (let i = 0; i < nx * ny; i++) {
-    const xa = stretch(a[i], vmin, span, k, soft) || 0, xb = stretch(b[i], vmin, span, k, soft) || 0;
-    px[i * 4] = Math.min(255, 8 + 92 * xa + 247 * xb);
-    px[i * 4 + 1] = Math.min(255, 10 + 175 * xa + 172 * xb);
-    px[i * 4 + 2] = Math.min(255, 18 + 255 * xa + 92 * xb);
-    px[i * 4 + 3] = 255;
-  }
-  blit(ctx, W, H, img, nx, ny, smooth);
-}
-
 // ---------------------------------------------------------------- canvas helpers
 export function drawReticle(ctx, x, y, { color = '#b8afff', r = 14, label, sub } = {}) {
   ctx.save();

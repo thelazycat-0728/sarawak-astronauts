@@ -22,13 +22,13 @@ People can work in parallel because the interfaces are **agreed in the first hou
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Must**                                    | Coordinate input (sexagesimal and decimal), SPHEREx image retrieval, date/epoch selection, time-series viewer, playback controls, five target presets, pre-computed demo frames, shareable URL, deployed site                                        |
 | **Should**                                  | Blink comparison, image subtraction, brightness-over-time chart, metadata panel, FOV control, band selection (6 co-added arrays), plain-language labels and glossary tooltips, Beginner/Expert toggle, guided first-run tour, AI explainer assistant |
-| **Stretch**                                 | Gaia overlay (Aladin Lite), individual-band selection (102 bands), spectrum at a pixel, object tracking, "Spot the mover" game, accounts and observation submission (Supabase)                                                                       |
-| **Cut** (future work, mention in the pitch) | AI priority ranking (no training data yet), scientist review dashboard, points and ranks, note moderation, image-score CNN, WISE overlay, 25-year time machine, "Did it change?" game                                                                |
+| **Stretch**                                 | Gaia overlay (Aladin Lite), individual-band selection (102 bands), spectrum at a pixel, object tracking, "Spot the mover" game, hard-coded accounts, observation submission and the scientist's Submissions tab (browser storage, no Supabase)              |
+| **Cut** (future work, mention in the pitch) | AI priority ranking (no training data yet), note moderation, image-score CNN, WISE overlay, 25-year time machine (dropped), Supabase or any shared account database (dropped), "Did it change?" game                               |
 
 Hackathon simplifications to the [TECH_STACK.md](TECH_STACK.md):
 
 - No Redis or background job queue. Slow requests fall back to the pre-computed frames.
-- No Supabase unless the accounts Stretch item is reached. Guest progress uses `localStorage` only.
+- No Supabase. Accounts are hard-coded so the judges can sign in with one click, and progress and submissions use `localStorage` only. A scientist sees submissions made on the same device and browser (see TECH_STACK §5).
 - The frontend is hosted on **Netlify** (configured in `netlify.toml`). If Netlify fails, use Cloudflare Pages or a Render static site, or run the built site from a laptop with `npx serve -s dist`.
 - The API runs on **Render**'s free tier with the native Python runtime (`render.yaml`, no Docker). If Render fails, run the API on a laptop, behind a tunnel if the Netlify site needs it (see TECH_STACK §7). If all hosting fails, the demo runs on the pre-computed frames alone.
 
@@ -43,7 +43,7 @@ Agree these before splitting up, and commit them to `docs/`:
 | **URL params** (`ra`, `dec`, `fov`, `band`, `epochs`, `mode`) and the Zustand store shape                                                      | A     | B, C      |
 | **Repo layout** (`frontend/`, `backend/`) and environment variable names                                                                       | C     | All       |
 
-Also in hour 0–1: whoever has `spherex_blink.py` and `time_machine.py` (listed as existing pipelines in the tech stack) commits them, so B can start from them.
+Also in hour 0–1: whoever has `spherex_blink.py` (listed as an existing pipeline in the tech stack) commits it, so B can start from it.
 
 ### Working rules
 
@@ -85,7 +85,7 @@ Also in hour 0–1: whoever has `spherex_blink.py` and `time_machine.py` (listed
 | **Day 1 AM** (Must)                | Repo scaffold and layout; GitHub Actions (lint and build); Netlify deploy for the frontend (`netlify.toml`, see TECH_STACK §7); API deploy on Render (`render.yaml`, see TECH_STACK §7); CORS and secrets                        |
 | **Day 1 PM** (Should)              | `glossary.json` with plain-language labels and "?" tooltip text, each checked against its source definition; tooltip component for A to drop in; draft the pitch outline        |
 | **Day 2 AM** (Should)              | AI explainer: `POST /explain` calling an LLM with the glossary and current frame metadata as context, rate-limited, answers labelled "AI-generated"; chat panel in the frontend |
-| **Day 2 PM** (Stretch, then pitch) | Supabase magic-link login and a simple `submissions` table with a submit form, if time allows; **from 14:00, slides, demo script and backup screen recording**                  |
+| **Day 2 PM** (Stretch, then pitch) | Scientist Submissions tab (replacing the time machine tab) and no submit button for scientists, if time allows; **from 14:00, slides, demo script and backup screen recording** |
 
 ## 6. Timeline
 

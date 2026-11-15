@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router';
-import { LogIn, Lock, Timer, CircleCheck, CircleX, CircleHelp, Send, RotateCcw, ArrowRight, Play as PlayIcon, Pause, SkipBack, SkipForward } from 'lucide-react';
+import { LogIn, Lock, ShieldCheck, Timer, CircleCheck, CircleX, CircleHelp, Send, RotateCcw, ArrowRight, Play as PlayIcon, Pause, SkipBack, SkipForward } from 'lucide-react';
 import { Button, Kicker, Panel, Chip, SkyCanvas, Term, Segmented, StepBadge } from '../components/ui';
 import { TargetPanel } from '../components/TargetPanel';
 import { WindowTimeline } from '../components/WindowTimeline';
@@ -28,6 +28,7 @@ export default function Play() {
   const [params] = useSearchParams();
   const user = useAuth((s) => s.user);
   const setSignIn = useUi((s) => s.setSignIn);
+  const signInDemo = useAuth((s) => s.signInDemo);
   const lessons = useProgress((s) => s.lessons);
   const games = useProgress((s) => s.games);
   const navigate = useNavigate();
@@ -41,6 +42,15 @@ export default function Play() {
     return (
       <Gate icon={LogIn} title="Sign in to submit discoveries" text="Exploring and the Learn section are open to everyone. Submitting a discovery needs an account: it stops spam, credits your finds to you and builds your reputation, so scientists can follow up. Short on time? Use the demo volunteer account.">
         <Button variant="primary" onClick={() => setSignIn(true)}><LogIn className="size-4" />Sign in</Button>
+      </Gate>
+    );
+  }
+  // Scientists review submissions; they don't make them, so no submit form for them.
+  if (user.role === 'scientist') {
+    return (
+      <Gate icon={ShieldCheck} title="Scientists review, volunteers submit" text="Scientist accounts don’t submit discoveries. Open the Submissions tab to review what volunteers sent from this browser. To try submitting, switch to the demo volunteer account.">
+        <Button variant="primary" onClick={() => navigate('/review')}><ShieldCheck className="size-4" />Open Submissions</Button>
+        <Button variant="ghost" onClick={() => signInDemo('volunteer')}>Switch to the demo volunteer account</Button>
       </Gate>
     );
   }

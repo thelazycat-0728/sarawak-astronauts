@@ -10,7 +10,6 @@ const NAV = [
   { to: '/', label: 'Explore', end: true },
   { to: '/learn', label: 'Learn' },
   { to: '/play', label: 'Play' },
-  { to: '/time-machine', label: 'Time machine' },
 ];
 
 export function Header() {
@@ -42,7 +41,8 @@ export function Header() {
     toast('View saved. Find it on your profile.', 'good');
   };
 
-  const nav = [...NAV, ...(user?.role === 'scientist' ? [{ to: '/review', label: 'Review' }] : [])];
+  // Scientists get the Submissions tab (the review queue) in the slot the time machine had.
+  const nav = [...NAV, ...(user?.role === 'scientist' ? [{ to: '/review', label: 'Submissions' }] : [])];
 
   return (
     <header className="sticky z-40 border-b border-line bg-ink-950/90 backdrop-blur" style={{ top: 'env(safe-area-inset-top, 0px)' }}>

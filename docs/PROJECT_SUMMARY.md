@@ -128,7 +128,17 @@ Everything except submitting is **open to everyone without logging in**. An acco
 | **Submit observations** to scientists | ❌ | ✅ |
 | Earn points and ranks | ❌ | ✅ |
 
-**Architecture implication:** this adds a backend (user accounts and authentication, a submissions database, a scientist review dashboard, and the two AI services) on top of the otherwise front-end-only viewer.
+**Architecture implication (full product):** a real deployment would add a backend (user accounts and authentication, a submissions database, a scientist review dashboard, and the two AI services) on top of the otherwise front-end-only viewer.
+
+### Hackathon build: no account backend
+
+For the competition we **dropped Supabase** (and any other account or database service). The judges must be able to try every role at once, with no sign-up, email link or outside service that could fail during judging. So:
+
+- **Accounts are hard-coded** in the frontend: `volunteer` / `starxplorer` and `scientist` / `starxplorer`, offered as one-click buttons in the sign-in window.
+- **The scientist dashboard is a Submissions tab.** For the `scientist` account it takes the navigation slot the time machine used to have, and it lists every submission for review (confirmed, known object, artefact or rejected). The submit button is hidden for scientists, because scientists review and volunteers submit.
+- **Submissions are stored on the device.** When a volunteer submits, the submission is saved in the browser's own storage (`localStorage`, which works like a cookie but holds more data). When a scientist later signs in **on the same device and browser**, the Submissions tab reads them from that storage. This is a workaround for having no shared database: submissions don't travel between devices, and clearing site data removes them. For the demo, submit as `volunteer`, sign out, and sign in as `scientist` in the same browser.
+
+Moving to a real backend later means swapping the browser stores (`useAuth`, `useSubmissions` in `frontend/src/store.js`) for API calls. The screens can stay as they are.
 
 ### Risks to manage
 
@@ -156,8 +166,8 @@ Everything except submitting is **open to everyone without logging in**. An acco
 | Project summary, tech stack, work plan, API contract | Done (`docs/`) |
 | Level 1 features | Viewer, playback, presets, epoch selection and share URLs built. The five presets show **real SPHEREx frames** (shipped in `frontend/public/presets/`) in each target's own detector array; other arrays use the live API or, without one, the simulator. Typed coordinates use the live API |
 | Level 2 features | Blink, difference, stack, brightness chart, FOV and array controls built on simulated data |
-| Level 3 features | Spectrum view, simulated Gaia overlay and a 25-year time machine page built on simulated data. Object tracking, WISE overlay and real catalogues not started |
+| Level 3 features | Spectrum view and simulated Gaia overlay built. Object tracking, WISE overlay and real catalogues not started. The 25-year time machine (2MASS → WISE → SPHEREx) has been **dropped** and its page removed (old `/time-machine` links open Explore) |
 | Public engagement (tutorials, games) | Glossary tooltips, Beginner/Expert mode, guided tour, lessons and training game built |
-| Accounts & submissions | Hard-coded accounts, no database: demo accounts `volunteer` / `starxplorer` and `scientist` / `starxplorer`, plus accounts created in the browser. Play, Review and Profile work with them |
+| Accounts & submissions | Hard-coded accounts, no database and no Supabase (see "Hackathon build: no account backend" in section 5): demo accounts `volunteer` / `starxplorer` and `scientist` / `starxplorer`, plus accounts created in the browser. Submissions are saved in browser storage. Scientists get a **Submissions** tab (`/review`) in the old time machine slot, which reads them on the same device, and Play shows scientists a link to it instead of the submit form |
 | AI explainer assistant | ✅ Done (tested locally 2026-11-14): `POST /explain` answers with Google Gemini (free tier, `gemini-3.8-flash` with `gemini-3.5-flash-lite` as fallback), grounded in the glossary and the current view, rate-limited per IP. Live on the deployed site once `GEMINI_API_KEY` is set on Render; until then, and whenever Gemini fails, the assistant gives labelled offline answers |
 | Science backend | Deployed on Render with `DATA_MODE=irsa` (synthetic data with `mock`): `/epochs`, `/frame`, `/diff` (any two epochs) and `/lightcurve` (aperture photometry; fluxes match 2MASS to about 1 %) serve real SPHEREx data, with limits and retries for a busy IRSA. The presets also ship static visit stacks, light curves (all five), 6-array spectra (Eps Indi B, RW Aur), per-array co-adds (Eps Indi B, RW Aur, WISE 0855), measured motion (the three movers) and the Gaia DR3 stars of each field for the overlay, so the demo works without IRSA. CORS accepts Netlify deploy previews through `CORS_ORIGIN_REGEX` |
