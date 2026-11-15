@@ -3,7 +3,7 @@ Sarawak Space Challenge 2026 - PlanetX and SphereX
 
 A public web tool for viewing SPHEREx sky images as a time-lapse, so anyone can spot moving and variable objects.
 
-**Live site:** <https://sarawak-frontend.onrender.com> (API: <https://sarawak-api.onrender.com/health>). Both are on Render's free tier; the API sleeps when idle, so open its `/health` link a minute before a demo to wake it. The five presets work even while it's asleep.
+**Live site:** <https://sarawak-frontend.onrender.com> (API: <https://sarawak-api.onrender.com/health>). Both are on Render's free tier. The API would sleep when idle, so a GitHub Actions workflow (`.github/workflows/keep-awake.yml`) pings `/health` every 10 minutes; GitHub may delay or skip scheduled runs, so still open the `/health` link a minute before a demo. The five presets work even while it's asleep.
 
 See the [Project Summary](docs/PROJECT_SUMMARY.md) for the challenge, test targets and feature roadmap, the [Tech Stack](docs/TECH_STACK.md) for the technologies, and the [Work Plan](docs/WORK_PLAN.md) for how the work is split across the team.
 

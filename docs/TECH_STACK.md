@@ -205,6 +205,8 @@ Setup steps:
 
 **Free-tier limits:** the service sleeps after about 15 minutes without traffic, and the first request after that takes up to a minute while it wakes. The disk is also wiped on every restart or deploy, so the cutout cache is temporary. Before judging, open `/health` to wake it, and rely on the pre-computed preset frames in `frontend/public/` for the demo.
 
+**Keep-awake ping:** `.github/workflows/keep-awake.yml` calls `/health` every 10 minutes (cron `*/10 * * * *`, plus a manual **Run workflow** button). Caveats: GitHub runs schedules on a best-effort basis, so runs can be late or skipped and the API can still fall asleep now and then; schedules only run from `main` and are disabled after 60 days without repository activity; staying awake uses about 720–744 of the 750 free Render instance hours a month, so a second free web service in the same Render workspace would run out; and Actions minutes are free only while the repository is public. To stop it, disable the workflow in the Actions tab.
+
 **Render CLI (optional):** the [Render CLI](https://render.com/docs/cli) (`render login`) can trigger deploys, list services and stream logs from the terminal (`render deploys create`, `render logs`). Creating the service itself is done once through the Blueprint above.
 
 ### Running the API locally
