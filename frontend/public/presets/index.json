@@ -96,7 +96,8 @@
         },
         "verdict": "visible",
         "note": "Measured 12.1″ towards PA 349° against 10.3″ towards 356° expected over 0.99 yr."
-      }
+      },
+      "gaia_url": "/presets/barnards-star/gaia.json"
     },
     {
       "id": "eps-indi-b",
@@ -303,7 +304,8 @@
           },
           "flagged_fraction": 0.0
         }
-      ]
+      ],
+      "gaia_url": "/presets/eps-indi-b/gaia.json"
     },
     {
       "id": "wise-0855",
@@ -395,7 +397,8 @@
         },
         "verdict": "not visible",
         "note": "Measured 6.4″ towards PA 318° against 8.0″ towards 275° expected over 0.98 yr. The target is too faint in these stacks to measure its motion; the expected track is from the catalogue proper motion."
-      }
+      },
+      "gaia_url": "/presets/wise-0855/gaia.json"
     },
     {
       "id": "rw-aur",
@@ -533,7 +536,8 @@
           },
           "flagged_fraction": 0.0
         }
-      ]
+      ],
+      "gaia_url": "/presets/rw-aur/gaia.json"
     },
     {
       "id": "r-dra",
@@ -566,7 +570,8 @@
           "stacks": 3
         }
       ],
-      "lightcurve_url": "/presets/r-dra/lightcurve.json"
+      "lightcurve_url": "/presets/r-dra/lightcurve.json",
+      "gaia_url": "/presets/r-dra/gaia.json"
     }
   ]
 }

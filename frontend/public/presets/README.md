@@ -31,6 +31,9 @@ SPHEREx data: NASA/IPAC Infrared Science Archive (IRSA)
   of the target on every exposure, in the `GET /lightcurve` shape plus `visit`
   per point (and `tracking` for the movers, whose aperture follows their proper
   motion). Saturated targets (Barnard's Star, R Dra) are `bad` with null flux.
+- `<id>/gaia.json` (`gaia_url`): Gaia DR3 stars in the fov-12 field (G < 19, at most
+  400), with positions moved to the preset's mean SPHEREx epoch, for the overlay
+  (`backend/scripts/build_preset_gaia.py`, which queries the ESA Gaia archive).
 - `coadds` on the entries of `eps-indi-b` and `rw-aur`: one co-added image per
   detector array in `<id>/coadds/D1.png` to `D6.png` (one visit, about 20
   exposures each, fov 3), from `backend/scripts/build_preset_coadds.py`.

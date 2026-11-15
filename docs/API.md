@@ -1,8 +1,11 @@
 # Science API contract
 
-**Version:** 0.6 (2026-11-15) · **Owner:** Track B (Noah) · **Consumers:** Track A (viewer), Track C (AI explainer)
+**Version:** 0.7 (2026-11-15) · **Owner:** Track B (Noah) · **Consumers:** Track A (viewer), Track C (AI explainer)
 
 This is the contract between the frontend and the FastAPI science backend. Mock responses that follow it live in `frontend/public/mock/` (see its `README.md`). Any change to this file is announced in the team chat first.
+
+**Changes in 0.7** (since 0.6):
+- T-011 (Gaia DR3 overlay, presets only): `gaia_url` on every preset entry in `index.json`, pointing to `<id>/gaia.json` with the Gaia DR3 stars in the fov-12 field (section 4). This is an optional, additive field.
 
 **Changes in 0.6** (since 0.5):
 - T-008 (co-adds per detector array, presets only): `coadds` on the `index.json` entries of `eps-indi-b` and `rw-aur`, with one co-added image per array D1–D6 (section 4).
@@ -340,6 +343,8 @@ Pre-computed demo data for the five test targets lives in static files so the de
   | `barnards-star` | 12.1″ towards PA 349° | 10.3″ towards 356° | visible (saturated: core position) |
   | `eps-indi-b` | 6.6″ towards 132° | 6.7″ towards 122° | visible |
   | `wise-0855` | does not match | 8.0″ towards 275° | not visible (too faint; show the catalogue track) |
+
+- **Gaia DR3 stars** (optional, additive field `gaia_url` on every preset entry; `<id>/gaia.json`), for the Gaia overlay on real frames. It lists the stars of `gaiadr3.gaia_source` within `radius_arcmin` (8.5′, the corner of the fov-12 view) of `centre_ra`, `centre_dec`, brighter than `g_mag_limit` (G = 19), brightest first, at most `max_stars` (400; `truncated` says whether the field had more). Each star has `source_id` (a **string**, because 64-bit ids do not fit a JavaScript number), `ra` and `dec` (Gaia's epoch `ref_epoch`, 2016.0), `pmra` (already times cos dec) and `pmdec` in mas/yr, `parallax` (mas), `g_mag`, and **`ra_epoch`, `dec_epoch`: the position moved by its proper motion to `epoch`, the preset's mean SPHEREx time. Draw those**, so a fast star like Barnard's sits on its SPHEREx image (its moved position is about 7″ from the preset centre). `pmra`, `pmdec` and `parallax` are null for stars without a full astrometric solution; their `ra_epoch` equals `ra`. Show `credit` with the overlay. Eps Indi B and WISE 0855 are too faint in G to be in Gaia; Eps Indi A (G 4.3) is in Eps Indi B's field.
 
 - **Co-adds per detector array** (optional, additive field `coadds` on the `index.json` entries of `eps-indi-b` and `rw-aur`). Each of the six entries is one array's image: the mean of one visit's exposures in that array (about 20), cleaned onto the same north-up fov-3 grid (30 × 30 px). Each frame has its median sky subtracted before averaging. Fields: `band`, `url` (`/presets/<id>/coadds/<band>.png`), `visit`, `n_frames`, `wavelength_min_um`, `wavelength_max_um`, `fov_arcmin`, `width_px`, `height_px`, `stretch` (`{vmin, vmax, asinh_a}`, this image's own stretch, the same grey mapping as frames), and `flagged_fraction`. Each co-add has its own stretch, so compare shapes and what is bright, not grey levels; use the spectrum for numbers. Eps Indi B is no brighter than its neighbour star in D1 (about 1 µm) and outshines everything around it in D5–D6 (4–5 µm): a cold brown dwarf's colour. RW Aur stays bright in every array while its neighbours fade at 4–5 µm (its disk's infrared excess).
 
