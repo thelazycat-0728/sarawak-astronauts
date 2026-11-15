@@ -15,6 +15,8 @@
   from the release, exposure id and band in the id), so a warm frame needs no IRSA
   call, even after a restart. On a cache miss it re-finds the exposure with
   ``resolve_epoch`` (one SIA position query) and downloads the cutout.
+  ``load_frame`` does the same and returns the ``CleanFrame`` instead of a PNG
+  (live ``/diff`` subtracts two of them).
 """
 
 from __future__ import annotations
@@ -29,6 +31,7 @@ from PIL import Image
 from app.config import Settings
 from app.cutouts import (
     CutoutCache,
+    CutoutView,
     QueryCache,
     cutout_key,
     default_cache,
@@ -121,32 +124,38 @@ def clean_path(path, ra: float, dec: float, fov: float, settings: Settings) -> C
         return clean_cutout(hdul, ra, dec, fov, settings)
 
 
-def render_frame(
+def load_frame(
     epoch_id: object,
     ra: object,
     dec: object,
     fov: object = 10.0,
     band: object = "D2",
-    vmin: object = None,
-    vmax: object = None,
     *,
     settings: Settings | None = None,
     cache: CutoutCache | None = None,
     session: StreamingSession | None = None,
     sia_session: HttpSession | None = None,
     query_cache: QueryCache | None = None,
-) -> bytes:
-    """PNG bytes of one cleaned frame; equal inputs give equal bytes.
+) -> CleanFrame:
+    """The cleaned frame of one epoch on the view's north-up grid (stateless).
 
-    With ``vmin``/``vmax`` omitted, the frame gets its own stretch (API.md
-    ``/frame``). Raises InvalidParameter for a bad view or stretch, NotFound for an
-    unknown epoch id or one from another band, and UpstreamError or UpstreamTimeout
-    when IRSA is needed and fails.
+    The cutout comes from the cache when it is there (no IRSA call); otherwise
+    the exposure is re-found with one SIA position query and downloaded. Raises
+    InvalidParameter for a bad view, NotFound for an unknown epoch id or one from
+    another band, and UpstreamError or UpstreamTimeout when IRSA is needed and
+    fails.
     """
     settings = settings or Settings()
     view = make_view(ra, dec, fov)
     band_s = validate_band(band)
-    stretch = _check_stretch(vmin, vmax)
+    return _load(epoch_id, view, band_s, settings, cache, session, sia_session,
+                 query_cache)
+
+
+def _load(epoch_id: object, view: CutoutView, band_s: str, settings: Settings,
+          cache: CutoutCache | None, session: StreamingSession | None,
+          sia_session: HttpSession | None, query_cache: QueryCache | None,
+          ) -> CleanFrame:
     if not isinstance(epoch_id, str):
         raise NotFound("unknown epoch id")
     try:
@@ -167,7 +176,37 @@ def render_frame(
                                session=sia_session, query_cache=query_cache)
         path = get_cutout(record, view.ra, view.dec, view.fov_arcmin, settings=settings,
                           cache=cache, session=session, view=view).path
-    frame = clean_path(path, view.ra, view.dec, view.fov_arcmin, settings)
+    return clean_path(path, view.ra, view.dec, view.fov_arcmin, settings)
+
+
+def render_frame(
+    epoch_id: object,
+    ra: object,
+    dec: object,
+    fov: object = 10.0,
+    band: object = "D2",
+    vmin: object = None,
+    vmax: object = None,
+    *,
+    settings: Settings | None = None,
+    cache: CutoutCache | None = None,
+    session: StreamingSession | None = None,
+    sia_session: HttpSession | None = None,
+    query_cache: QueryCache | None = None,
+) -> bytes:
+    """PNG bytes of one cleaned frame (``load_frame``); equal inputs give equal bytes.
+
+    With ``vmin``/``vmax`` omitted, the frame gets its own stretch (API.md
+    ``/frame``). Raises InvalidParameter for a bad view or stretch, NotFound for an
+    unknown epoch id or one from another band, and UpstreamError or UpstreamTimeout
+    when IRSA is needed and fails.
+    """
+    settings = settings or Settings()
+    view = make_view(ra, dec, fov)
+    band_s = validate_band(band)
+    stretch = _check_stretch(vmin, vmax)
+    frame = _load(epoch_id, view, band_s, settings, cache, session, sia_session,
+                  query_cache)
     lo, hi = stretch if stretch is not None else compute_stretch([frame.measurable],
                                                                  settings)
     return frame_png(frame, lo, hi, settings)

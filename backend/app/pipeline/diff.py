@@ -4,6 +4,8 @@
   data in either frame counts as no change (``d = 0``), as in the mock provider.
 - **Scale.** Unless given, the 99.5th percentile of ``abs(d)`` over pixels with data
   in both frames, rounded to 5 significant digits; 1.0 if that is not positive.
+  ``diff_frames`` (live ``/diff``) takes it over the measurable pixels only, so
+  filled saturated cores do not set it.
 - **Grey levels.** ``gray = round(128 + 127 * clip(d / scale, -1, 1))``: 128 means no
   change, white brighter in ``b``, black fainter in ``b``.
 """
@@ -15,6 +17,7 @@ import math
 import numpy as np
 
 from app.errors import InvalidParameter
+from app.pipeline.clean import CleanFrame
 from app.pipeline.render import STRETCH_DIGITS, encode_png
 
 DIFF_PERCENTILE = 99.5
@@ -57,3 +60,16 @@ def diff_png(a: np.ndarray, b: np.ndarray, scale: float | None = None) -> tuple[
     """(PNG bytes of b - a, the scale used)."""
     gray, used = diff_gray(a, b, scale)
     return encode_png(gray), used
+
+
+def diff_frames(a: CleanFrame, b: CleanFrame,
+                scale: float | None = None) -> tuple[bytes, float]:
+    """(PNG bytes of b - a for two cleaned frames, the scale used).
+
+    The same renderer as the preset diffs (``diff_png`` on the display images, so
+    filled saturated cores show and no-data pixels are grey 128). The default
+    scale is ``diff_scale`` of the *measurable* images, so filled pixels never set
+    it, as for the preset stack diff."""
+    if scale is None:
+        scale = diff_scale(a.measurable, b.measurable)
+    return diff_png(a.image, b.image, scale)
