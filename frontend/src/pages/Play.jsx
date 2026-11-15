@@ -29,14 +29,15 @@ export default function Play() {
   const lessons = useProgress((s) => s.lessons);
   const games = useProgress((s) => s.games);
   const navigate = useNavigate();
-  const trained = LESSONS.filter((l) => lessons[l.id]).length >= 3 && LEVELS.filter((l) => games[l.id]?.stars > 0).length >= 2;
+  const trained = Boolean(user?.trained)
+    || (LESSONS.filter((l) => lessons[l.id]).length >= 3 && LEVELS.filter((l) => games[l.id]?.stars > 0).length >= 2);
 
   // Old links to the training games (/play?level=…) now live under Learn.
   if (params.get('level')) return <Navigate to={`/learn/game?level=${encodeURIComponent(params.get('level'))}`} replace />;
 
   if (!user) {
     return (
-      <Gate icon={LogIn} title="Sign in to submit discoveries" text="Exploring and the Learn section are open to everyone. Submitting a discovery needs an account: it stops spam, credits your finds to you and builds your reputation, so scientists can follow up.">
+      <Gate icon={LogIn} title="Sign in to submit discoveries" text="Exploring and the Learn section are open to everyone. Submitting a discovery needs an account: it stops spam, credits your finds to you and builds your reputation, so scientists can follow up. Short on time? Use the demo volunteer account.">
         <Button variant="primary" onClick={() => setSignIn(true)}><LogIn className="size-4" />Sign in</Button>
       </Gate>
     );

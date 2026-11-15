@@ -9,10 +9,10 @@ This document lists the technologies used to build the features in [PROJECT_SUMM
 ```
 Browser (React + Vite, hosted on Netlify)
    │                         │
-   │ sign-in, progress,      │ images, spectra, overlays,
+   │ accounts, progress,     │ images, spectra, overlays,
    │ points, submissions     │ AI explainer, AI ranking
    ▼                         ▼
-Supabase (Auth + Postgres)     Python API (FastAPI on Render)
+Browser localStorage           Python API (FastAPI on Render)
                                   │
                                   ▼
         IRSA (SPHEREx, 2MASS, WISE) · ESA Gaia · SIMBAD · SkyBoT · Google Gemini API
@@ -20,7 +20,7 @@ Supabase (Auth + Postgres)     Python API (FastAPI on Render)
 
 - The **frontend** is a single-page React app on Netlify. Everything except submitting works without logging in.
 - The **science API** does all FITS processing in Python, because the astronomy libraries live there. The browser never calls IRSA directly (avoids CORS issues and heavy FITS handling in JavaScript).
-- **Supabase** handles accounts and stores progress, submissions, reviews and points.
+- **Accounts** are hard-coded in the frontend (two fixed demo accounts plus accounts created in the browser); progress, submissions, reviews and points stay in the browser. See section 5.
 
 ## 2. Frontend
 
@@ -36,7 +36,7 @@ Supabase (Auth + Postgres)     Python API (FastAPI on Render)
 | Charts | **Recharts** | Brightness over time, spectra |
 | Guided tour | **driver.js** | First-run tour and target tutorials (`lib/tour.js`) |
 | Glossary | `frontend/src/glossary.json` (re-exported as `GLOSSARY` from `lib/data.js`); the backend keeps a copy in `backend/app/ai/glossary.json`, and a test checks the two match | Single source for tooltips, the glossary page and the AI explainer's grounding |
-| Guest progress | Browser `localStorage` (Zustand `persist`) | Tutorial and game progress for users without an account. Until Supabase tables exist, submissions, points and the review queue are also stored here |
+| Guest progress | Browser `localStorage` (Zustand `persist`) | Tutorial and game progress, accounts, submissions, points and the review queue |
 | Demo safety | Pre-computed real SPHEREx frames in `public/presets/`; built-in simulator (`lib/sim.js`) | The five presets load real frames even if IRSA or the backend is slow or down. Games, lessons and the time machine still render simulated fields |
 
 ## 3. Science backend (Python)
@@ -52,7 +52,7 @@ Supabase (Auth + Postgres)     Python API (FastAPI on Render)
 | Photometry and tracking | **photutils** | Brightness inspection (Level 2) and centroids for object tracking (Level 3) |
 | Image output | **Pillow** | PNG frames for the viewer |
 | Background jobs | FastAPI `BackgroundTasks` (upgrade to **RQ + Redis** later) | Slow jobs such as the time machine |
-| Rate limiting | In-memory per-IP limiter (`backend/app/ai/ratelimit.py`) | The AI explainer: 6 questions a minute and 60 a day per IP. Submissions will need one once they move to Supabase |
+| Rate limiting | In-memory per-IP limiter (`backend/app/ai/ratelimit.py`) | The AI explainer: 6 questions a minute and 60 a day per IP. Submissions are limited per account by the reputation-based wait (`lib/reputation.js`) |
 | LLM client | **google-genai** (Google Gemini API, free tier) | The AI explainer (`backend/app/ai/`) |
 | Existing pipelines | `spherex_blink.py`, `time_machine.py` | Core processing, to be wrapped as API endpoints. Not in the repo yet |
 
@@ -84,22 +84,16 @@ Supabase (Auth + Postgres)     Python API (FastAPI on Render)
 
 ## 5. Accounts, submissions and points
 
+Accounts are **hard-coded in the frontend**: there is no database or auth server. This keeps the demo self-contained and lets the judging panel sign in with one click.
+
 | Need | Technology | Notes |
 | --- | --- | --- |
-| Authentication | **Supabase Auth** (email magic link, Google sign-in) | No passwords stored by us |
-| Database | **Supabase Postgres** | Users, progress, submissions, reviews, points, ranks |
-| Access control | Postgres **row-level security** | Users see only their own private data; only scientist accounts can read the review queue |
-| Backend trust | FastAPI verifies the Supabase JWT | The science API knows who is submitting without a second login system |
+| Demo accounts | Fixed in `frontend/src/lib/accounts.js` | `volunteer` / `starxplorer` (training already done, can submit in Play) and `scientist` / `starxplorer` (opens the review queue). Shown with one-click buttons in the sign-in window. Public on purpose |
+| Other accounts | Created in the sign-in window, stored in the browser (`useAuth` in `src/store.js`) | Username + password; only a salted SHA-256 hash of the password is kept |
+| Roles | Fixed per account | `volunteer` or `scientist`; only scientists can open `/review` |
+| Submissions, points, reputation | Browser `localStorage` (Zustand `persist`) | Each account keeps its own points; reputation and the wait between submissions come from the account's own submissions (`lib/reputation.js`) |
 
-### Core tables
-
-| Table | Contents |
-| --- | --- |
-| `profiles` | Username, role (`user` / `scientist`), total points, rank |
-| `progress` | Tutorials and training games completed |
-| `submissions` | Coordinates, epochs, band, per-epoch track, notes, status, AI score |
-| `reviews` | Scientist verdict: confirmed, known object, artefact or rejected |
-| `point_events` | Every point award, with its reason (prevents tampering and makes totals auditable) |
+**Limitation:** everything lives in one browser, so accounts and submissions don't follow a user to another device, and clearing site data resets them. Moving them to a shared database later would mean replacing `useAuth` and `useSubmissions` in `src/store.js`.
 
 ## 6. AI services
 
@@ -116,7 +110,6 @@ Supabase (Auth + Postgres)     Python API (FastAPI on Render)
 | --- | --- |
 | Frontend | **Netlify**, deployed from GitHub with a deploy preview for every pull request |
 | Python API | **Render** web service on the native Python runtime (no Docker), configured in `render.yaml`. Fallbacks: a local laptop, optionally behind a tunnel (see below) |
-| Auth and database | **Supabase** (hosted) |
 | Source control and CI | **GitHub** + **GitHub Actions**: frontend lint and build; backend `ruff` and a syntax check (the pytest suite is not run in CI yet) |
 | Secrets | Environment variables on Netlify and the API host; never in the frontend bundle |
 
@@ -150,7 +143,7 @@ Setup steps:
 
 **Fallbacks if Netlify is unavailable:** Cloudflare Pages or a Render static site (same build settings, with a `/*` → `/index.html` rewrite). As a last resort for a demo, run `npm run build && npx serve -s dist` on a laptop.
 
-**Why the Python API is not on Netlify or Supabase:** neither hosts Python servers or containers. Netlify Functions are short-lived JavaScript/TypeScript/Go functions with tight time limits and no persistent disk, and Supabase Edge Functions run TypeScript on Deno. The FITS pipelines need large Python libraries, slow archive queries and a cutout cache, so they run on a long-lived Python server.
+**Why the Python API is not on Netlify:** Netlify doesn't host Python servers or containers. Netlify Functions are short-lived JavaScript/TypeScript/Go functions with tight time limits and no persistent disk. The FITS pipelines need large Python libraries, slow archive queries and a cutout cache, so they run on a long-lived Python server.
 
 ### Render configuration (Python API)
 

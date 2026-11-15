@@ -5,6 +5,17 @@ A public web tool for viewing SPHEREx sky images as a time-lapse, so anyone can 
 
 See the [Project Summary](docs/PROJECT_SUMMARY.md) for the challenge, test targets and feature roadmap, the [Tech Stack](docs/TECH_STACK.md) for the technologies, and the [Work Plan](docs/WORK_PLAN.md) for how the work is split across the team.
 
+## Demo accounts
+
+No sign-up needed: the sign-in window has one-click buttons for both.
+
+| Account | Username | Password | Use it for |
+| --- | --- | --- | --- |
+| Volunteer | `volunteer` | `starxplorer` | Submitting discoveries in Play (training already done) |
+| Scientist | `scientist` | `starxplorer` | The scientists' review queue |
+
+Accounts are hard-coded in the frontend (`frontend/src/lib/accounts.js`); there is no database.
+
 ## Current status
 
 - **We're keeping pull requests to a minimum.** Bundle related changes into as few PRs as possible. Don't open a PR just for a small docs or status tweak; fold it into the next feature PR. For the rest of the hackathon, this replaces the "small PRs, merge every 2–3 hours" rule in the [Work Plan](docs/WORK_PLAN.md). AI coding assistants working in this repo should follow it too when they propose branches and PRs.
