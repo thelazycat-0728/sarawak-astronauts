@@ -337,12 +337,12 @@ Pre-computed demo data for the five test targets lives in static files so the de
   | `eps-indi-b` | 6.6″ towards 132° | 6.7″ towards 122° | visible |
   | `wise-0855` | does not match | 8.0″ towards 275° | not visible (too faint; show the catalogue track) |
 
-- **Spectrum** (optional, additive field `spectrum_url`; for now only `eps-indi-b`). `<id>/spectrum.json` has the light-curve fields plus `bands` (the arrays covered, as `band` objects) and `note`. Its points add `band` and `visit` and are sorted by `wavelength_um`, across all six detector arrays (about 0.75–5 µm). Each array comes from one visit, so a static source gives one consistent spectrum; arrays can come from different visits. Example point:
+- **Spectrum** (optional, additive field `spectrum_url`; for now only `eps-indi-b`). `<id>/spectrum.json` has the light-curve fields plus `bands` (the arrays covered, as `band` objects) and `note`. Its points add `band` and `visit` and are sorted by `wavelength_um`, across all six detector arrays (about 0.75–5 µm). Each array comes from one visit, so a static source gives one consistent spectrum; arrays can come from different visits. Eps Indi B has 120 points (87 measured, 33 `bad` where a masked pixel touches the aperture), about 20 per array from 0.75 to 5.0 µm. It shows a cool brown dwarf's fingerprints: peaks at 1.27 µm (about 40 mJy), 1.58 µm and 2.11 µm; **water** dips at 1.37, 1.9 and 2.5–2.8 µm; **methane** dips at 1.65–1.85 and 2.2–2.4 µm and the start of the 3.3 µm band (its centre, 3.31–3.50 µm, is masked); the bright 4 µm window (58 mJy at 4.03 µm); and **carbon monoxide** absorption at 4.3–4.6 µm. Example point (in the 1.8 µm methane dip):
 
 ```json
-{"epoch_id": "sx_dr1_2025W40_2A_0123_1_D3", "time_utc": "2025-10-06T07:10:00Z", "mjd": 60954.298611,
- "release": "DR1", "wavelength_um": 1.874, "flux": 2150.3, "flux_err": 61.2, "quality": "good",
- "band": "D3", "visit": 2}
+{"epoch_id": "sx_qr3_2026W39_1A_0276_4_D3", "time_utc": "2026-09-22T05:34:09Z", "mjd": 61305.232049,
+ "release": "QR3", "wavelength_um": 1.84394, "flux": 9550.7, "flux_err": 109.2, "quality": "good",
+ "band": "D3", "visit": 4}
 ```
 
 The frontend loads a preset by fetching the `url` for the chosen fov from `index.json` instead of calling `/epochs`. The preset ids and view settings are:

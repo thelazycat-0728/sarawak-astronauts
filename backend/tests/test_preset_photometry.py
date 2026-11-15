@@ -169,9 +169,12 @@ def _point(i: int, band: str, wave: float, flux: float | None = 10.0) -> dict:
 
 
 def test_checker_accepts_a_good_spectrum_and_finds_its_errors(public):
+    _errs, before = check_presets.check(public=public)
     _spectrum(public, [_point(1, "D1", 0.8), _point(2, "D2", 1.2, None)], ["D1", "D2"])
     errs, summary = check_presets.check(public=public)
-    assert errs == [] and summary["spectra"] == 1 and summary["spectrum_points"] == 2
+    assert errs == []
+    assert summary["spectra"] == before["spectra"] + 1
+    assert summary["spectrum_points"] == before["spectrum_points"] + 2
     _spectrum(public, [_point(1, "D2", 1.2), _point(2, "D1", 0.8)], ["D1"])
     errs = _errors(public)
     assert any("rw-aur spectrum: points are empty or not in wavelength order" in e for e in errs)
@@ -203,6 +206,24 @@ def test_committed_motion_matches_the_catalogue_for_the_bright_movers():
     assert motion["barnards-star"].verdict == "visible"
     assert all(v.saturated for v in motion["barnards-star"].visits)
     assert motion["wise-0855"].verdict == "not visible"
+
+
+def test_committed_eps_indi_b_spectrum_covers_six_arrays_with_its_features():
+    index = json.loads((PUBLIC / "presets" / "index.json").read_text("utf-8"))
+    entry = next(p for p in index["presets"] if p["id"] == "eps-indi-b")
+    assert entry["spectrum_url"] == "/presets/eps-indi-b/spectrum.json"
+    spec = pp.PresetSpectrum.model_validate_json(
+        (PUBLIC / "presets" / "eps-indi-b" / pp.SPECTRUM_FILE).read_text("utf-8"))
+    assert [b.id for b in spec.bands] == ["D1", "D2", "D3", "D4", "D5", "D6"]
+
+    def near(um):
+        good = [p for p in spec.points if p.flux is not None]
+        return min(good, key=lambda p: abs(p.wavelength_um - um)).flux
+
+    # a T dwarf: the J peak is brighter than the water band and the methane band
+    assert near(1.27) > 3 * near(1.37)
+    assert near(1.58) > 3 * near(1.84)
+    assert near(4.05) > near(4.56)  # the 4 um window against CO
 
 
 def test_light_curves_are_optional_unless_required(public):

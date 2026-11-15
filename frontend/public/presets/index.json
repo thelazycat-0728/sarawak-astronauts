@@ -198,7 +198,8 @@
         },
         "verdict": "visible",
         "note": "Measured 6.6″ towards PA 132° against 6.7″ towards 122° expected over 1.43 yr."
-      }
+      },
+      "spectrum_url": "/presets/eps-indi-b/spectrum.json"
     },
     {
       "id": "wise-0855",
