@@ -63,7 +63,8 @@ def create_app(
     app.middleware("http")(catch_unhandled)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=list(settings.cors_origins),
+        # The configured origins plus the local dev server (a laptop demo).
+        allow_origins=list(dict.fromkeys(settings.cors_origins + settings.cors_local_origins)),
         allow_origin_regex=settings.cors_origin_regex,
         allow_methods=["GET", "POST"],
         allow_headers=["Content-Type"],

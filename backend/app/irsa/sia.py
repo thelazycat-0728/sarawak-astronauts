@@ -17,6 +17,7 @@ import logging
 import math
 import numbers
 import re
+import time
 import warnings
 from collections.abc import Sequence
 from typing import Any, Protocol
@@ -257,7 +258,44 @@ def read_capped(resp: Any, max_bytes: int, timeout_s: float) -> bytes:
     return b"".join(parts)
 
 
+# HTTP statuses IRSA returns while it is briefly overloaded or restarting.
+RETRY_STATUSES = frozenset({502, 503, 504})
+_sleep = time.sleep  # the tests replace it
+
+
+class _TransientUpstreamError(UpstreamError):
+    """An IRSA failure worth retrying: HTTP 502/503/504 or a dropped connection."""
+
+
 def fetch_sia(
+    params: Sequence[tuple[str, str]],
+    settings: Settings,
+    session: HttpSession | None = None,
+) -> bytes:
+    """``fetch_sia_once``, retried on transient IRSA failures.
+
+    HTTP 502/503/504 and a dropped connection are retried up to
+    ``Settings.irsa_sia_attempts`` times in all, waiting
+    ``irsa_sia_retry_delay_s`` and then three times longer each time (0.5 s,
+    1.5 s by default). Timeouts are not retried: each already used
+    ``irsa_timeout_s``. Other errors (4xx, unreadable responses) fail at once.
+    """
+    attempts = max(1, int(settings.irsa_sia_attempts))
+    delay = max(0.0, float(settings.irsa_sia_retry_delay_s))
+    for attempt in range(1, attempts + 1):
+        try:
+            return fetch_sia_once(params, settings, session)
+        except _TransientUpstreamError as exc:
+            if attempt == attempts:
+                raise UpstreamError(exc.message) from exc
+            log.warning("IRSA SIA attempt %d of %d failed (%s); retrying in %.1f s",
+                        attempt, attempts, exc.message, delay)
+            _sleep(delay)
+            delay *= 3
+    raise AssertionError("unreachable")  # pragma: no cover
+
+
+def fetch_sia_once(
     params: Sequence[tuple[str, str]],
     settings: Settings,
     session: HttpSession | None = None,
@@ -278,10 +316,15 @@ def fetch_sia(
             )
         except requests.Timeout as exc:
             raise UpstreamTimeout(f"IRSA did not answer within {timeout:g} s") from exc
+        except requests.ConnectionError as exc:
+            raise _TransientUpstreamError(
+                f"IRSA request failed ({type(exc).__name__})") from exc
         except requests.RequestException as exc:
             raise UpstreamError(f"IRSA request failed ({type(exc).__name__})") from exc
         try:
             status = int(getattr(resp, "status_code", 0))
+            if status in RETRY_STATUSES:
+                raise _TransientUpstreamError(f"IRSA SIA returned HTTP {status}")
             if status >= 400:
                 raise UpstreamError(f"IRSA SIA returned HTTP {status}")
             return read_capped(resp, settings.irsa_sia_max_bytes, timeout)

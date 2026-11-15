@@ -168,7 +168,8 @@ def test_upstream_errors_are_502_and_not_cached(tmp_path):
     t = live(tmp_path, sia=sia)
     assert_error(t.client.get("/epochs", params=VIEW), 502, "upstream_error")
     assert_error(t.client.get("/epochs", params=VIEW), 502, "upstream_error")
-    assert len(sia.calls) == 2
+    # not cached: the second request asks IRSA again (each with its retries)
+    assert len(sia.calls) == 2 * Settings().irsa_sia_attempts
     assert len(t.provider._cache) == 0
 
 

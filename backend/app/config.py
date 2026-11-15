@@ -66,6 +66,10 @@ class Settings:
     # Extra origins allowed by pattern (CORSMiddleware's allow_origin_regex).
     # Read from CORS_ORIGIN_REGEX by from_env only.
     cors_origin_regex: str | None = None
+    # Always allowed on top of cors_origins: the Vite dev server, so a laptop demo
+    # can use the deployed API. Safe because the API is read-only and sends no
+    # credentials (CORS allow_credentials stays off).
+    cors_local_origins: tuple[str, ...] = ("http://localhost:5173", "http://127.0.0.1:5173")
     # SPHEREx release labels used in responses. Keeping them here means a new
     # release needs no code change. The order matters: when the same exposure is
     # served by more than one release, the release listed first wins.
@@ -80,6 +84,11 @@ class Settings:
     irsa_sia_url: str = "https://irsa.ipac.caltech.edu/SIA"
     # Seconds allowed for connecting to IRSA and for each read from it.
     irsa_timeout_s: float = 30.0
+    # Transient SIA failures (HTTP 502/503/504, a dropped connection) are retried:
+    # this many attempts in all, waiting the delay and then three times longer each
+    # time (0.5 s, 1.5 s). IRSA had bursts of 502s on 2026-11-15.
+    irsa_sia_attempts: int = 3
+    irsa_sia_retry_delay_s: float = 0.5
     # Largest SIA response accepted (streamed; a bigger one is a 502). Barnard's
     # Star D2 (61 exposures) is 158 kB, about 2.1 kB per exposure, so 16 MB holds
     # about 7,500 exposures of one band at one position.
